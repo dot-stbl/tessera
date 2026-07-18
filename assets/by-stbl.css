@@ -1,0 +1,33 @@
+/* .by-stbl utility — embed in any product README */
+
+/* The dot, rendered as a square block (▪) */
+.by-stbl .dot {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  background: currentColor;
+  vertical-align: 0.05em;
+  margin-right: 0.04em;
+}
+
+/* The "by" connector — quieter than the product name and brand */
+.by-stbl .by {
+  color: rgba(0, 0, 0, 0.45);
+  margin: 0 0.4em;
+  font-weight: 400;
+}
+
+/* Force monospace + bold for the whole lockup */
+.by-stbl {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Dark mode inversion */
+@media (prefers-color-scheme: dark) {
+  .by-stbl .by {
+    color: rgba(255, 255, 255, 0.45);
+  }
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  favicon.svg — Tessera mark.
+  4 tiles in a 2x2 mosaic — references "tessera" (Latin for "tile").
+  Per .stbl brand: products use their own mark, not the .stbl logo.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#fff"/>
+  <rect x="2"  y="2"  width="13" height="13" fill="#000"/>
+  <rect x="17" y="2"  width="13" height="13" fill="#000" opacity="0.7"/>
+  <rect x="2"  y="17" width="13" height="13" fill="#000" opacity="0.4"/>
+  <rect x="17" y="17" width="13" height="13" fill="#000" opacity="0.55"/>
+</svg>

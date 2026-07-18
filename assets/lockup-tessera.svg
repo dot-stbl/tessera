@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  lockup-tessera.svg — "tessera by .stbl" lockup
+  Generated from lockup-template.svg per .stbl brand guidelines.
+  Product name (7 chars) — positions adjusted slightly wider than Plexor.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 160" role="img" aria-label="tessera by .stbl">
+  <title>tessera by .stbl</title>
+  <text x="0" y="105"
+        font-family="'JetBrains Mono', ui-monospace, monospace"
+        font-size="100"
+        font-weight="700"
+        fill="#000"
+        letter-spacing="-4">tessera</text>
+  <text x="486" y="105"
+        font-family="'JetBrains Mono', ui-monospace, monospace"
+        font-size="48"
+        font-weight="400"
+        fill="#888"
+        letter-spacing="-1">by</text>
+  <rect x="566" y="73" width="32" height="32" fill="#000"/>
+  <text x="608" y="105"
+        font-family="'JetBrains Mono', ui-monospace, monospace"
+        font-size="100"
+        font-weight="700"
+        fill="#000"
+        letter-spacing="-3">stbl</text>
+</svg>

@@ -1,48 +1,101 @@
-# Tessera
+<div align="center">
 
-> APM UI for the Victoria stack — trace viewer with log correlation, like Kibana APM.
+# tessera <span class="by-stbl"><span class="by">by</span><span class="dot"></span>stbl</span>
 
-**Status:** pre-planning. No code yet. Architecture sketch lives in a `pi html_artifact`
-(id: `victoria-apm-ui-architecture-sketch-mvp`).
+**APM UI for the Victoria stack — traces, logs, metrics, dashboards.**
 
-## Intent
+[Docs](.agents/docs/architecture.md) · [Install](.agents/docs/operations/install.md) · [Issues] · [License]
 
-Self-hosted web app on top of `vtselect` / `vlselect` / `vmselect`.
-Trace-centric: view traces → see logs for each trace → correlate by `trace_id`.
+</div>
 
-## Stack (proposed)
+---
 
-- **Backend** — .NET 10 ASP.NET Core minimal API, single-binary Linux deploy (AOT-friendly)
-- **Frontend** — React 19 + Vite + shadcn/ui + Tailwind
-- **Data** — VictoriaMetrics / VictoriaLogs / VictoriaTraces over HTTP (no ingest in MVP)
+## What it does
 
-## MVP scope
+Tessera is a self-hosted web application that sits in front of the
+[Victoria stack](https://victoriametrics.com/) (Traces + Logs + Metrics) and
+gives it a Kibana-APM-like interface. Trace explorer with waterfall view,
+structured log search, service inventory, and Grafana-style custom dashboards.
 
-Trace list (filterable) → trace detail (waterfall) → log panel per trace/span.
-Settings (endpoints + bearer token), global time range, service filter.
+Built for teams that already run Victoria and want a UI that doesn't
+require Grafana's data-source plumbing to navigate traces.
 
-Deferred: service map, RED metrics, flame graph, metric explorer, SLO, alerting.
+## Install
 
-## Ecosystem
+```sh
+docker run -d \
+  --name tessera \
+  --restart unless-stopped \
+  -p 1990:1990 \
+  -v /var/lib/tessera:/var/lib/tessera:rw \
+  -v /etc/tessera:/etc/tessera:ro \
+  -e TESSERA_ADMIN_TOKEN="$(openssl rand -hex 32)" \
+  -e TESSERA_VICTORIA_TOKEN="your-victoria-bearer-token" \
+  ghcr.io/dot-stbl/tessera:latest
+```
 
-Part of the `.stbl` ecosystem under `C:/Users/bradw/source/stbl/`.
-Sibling projects: `plexor`, `anlytra`, `infrastructure.upva`, `kubix`, `pi-soly-framework`,
-`pi-soly.framework`. Ecosystem-wide conventions TBD — to be documented by the owner.
+See [`.agents/docs/operations/install.md`](.agents/docs/operations/install.md)
+for Docker Compose, systemd, and k8s manifests.
 
-## Conventions inherited from Plexor (reference project)
+## Quickstart
 
-Until tessera-specific rules are written, follow the patterns from
-[`../plexor/AGENTS.md`](../plexor/AGENTS.md):
+```sh
+# 1. Generate admin token
+export TESSERA_ADMIN_TOKEN=$(openssl rand -hex 32)
 
-- Two-name system: architecture theme names for schemas/modules, plain concept names
-  for entities. `tessera` itself is the architecture theme root — internal schema/module
-  names will follow `tile`, `mosaic`, `mortar`, `weave`, `capstone`, `pattern`,
-  `fragment`, `veneer`, `join` (all in the same invented-word, single-token style).
-- `Directory.Build.props`-style strict analyzers + `TreatWarningsAsErrors`.
-- MinVer with `v`-prefix tags (`v0.1.0`).
-- ghcr.io container publish per project.
+# 2. Run with Victoria (assumes vt/vl/vm on localhost)
+docker compose up -d
 
-## Next step
+# 3. Open http://localhost:1990 — guest mode for read,
+#    admin endpoints need Authorization: Bearer $TESSERA_ADMIN_TOKEN
+```
 
-When the architecture sketch is validated, scaffold via `soly new tessera-mvp` and walk
-through `discuss` / `plan` phases for task-by-task acceptance criteria.
+See [`.agents/docs/architecture.md`](.agents/docs/architecture.md) for the
+full architecture overview.
+
+## Documentation
+
+- [`.agents/docs/`](.agents/docs/) — architecture, modules, operations
+- [`.agents/docs/victoria-stack.md`](.agents/docs/victoria-stack.md) — VT / VL / VM API reference
+- [`.agents/docs/architecture/multi-tenancy.md`](.agents/docs/architecture/multi-tenancy.md) — single-tenant config
+- [`.agents/docs/architecture/log-format.md`](.agents/docs/architecture/log-format.md) — dot.case convention
+- [`.agents/docs/dashboard-schema.md`](.agents/docs/dashboard-schema.md) — custom JSON schema
+- [`.agents/rules/`](.agents/rules/) — coding and process rules
+
+## Status
+
+| | |
+|--|--|
+| Version | 0.0.0 (pre-release) |
+| .NET | 10 |
+| UI | React 19 + Vite + shadcn/ui + Tailwind 4 |
+| License | TBD (likely MIT) |
+| Maintained by | [.stbl](https://github.com/dot-stbl) |
+
+## Stack
+
+- **Backend** — ASP.NET Core 10 minimal API, Refit + Polly + OpenTelemetry
+- **Frontend** — React 19 + TanStack Router + TanStack Query + shadcn/ui
+- **Data** — VictoriaMetrics + VictoriaLogs + VictoriaTraces over HTTP
+- **Storage** — SQLite + JSON files (no PostgreSQL, no Kafka)
+- **Auth** — guest (anonymous) + admin (bearer token); OIDC + LDAP stretch
+- **Config** — TOML with env-var overrides; secrets in env only
+
+## Brand
+
+Tessera follows the [`.stbl` brand guidelines](https://github.com/dot-stbl/brand):
+
+- **Pure B&W** — monochrome palette + status semantics
+- **Monospace** — Onest sans + JetBrains Mono for numerics
+- **Lockup** — `tessera by .stbl` (see [`assets/lockup-tessera.svg`](assets/lockup-tessera.svg))
+- **Commit format** — `[.stbl](<feat/...>): <subject>` per `.agents/rules/process/commit-format.md`
+
+## Related
+
+- [.stbl brand kit](https://github.com/dot-stbl/brand) — design rules, templates
+- [Plexor](https://github.com/dot-stbl/plexor) — self-hosted cloud platform (sister project, primary reference)
+- [.stbl org](https://github.com/dot-stbl) — other products
+
+---
+
+<sub>Tessera is built by <a href="https://github.com/dot-stbl">.stbl</a>.</sub>
