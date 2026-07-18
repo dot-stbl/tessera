@@ -30,7 +30,7 @@ Config file search order:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TESSERA_CONFIG` | (auto) | Path to tessera.toml |
-| `ASPNETCORE_URLS` | `http://0.0.0.0:8080` | Listen address (overrides `[server]` section) |
+| `ASPNETCORE_URLS` | `http://0.0.0.0:1990` | Listen address (overrides `[server]` section; port 1990 per coding/project-ports.md) |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | `Development` enables verbose logs |
 
 ### Authentication

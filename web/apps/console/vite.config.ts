@@ -21,7 +21,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    // Tessera port pool: 1990–2120 (see .agents/rules/coding/project-ports.md).
+    // 1991 = vite dev server. strictPort fails if taken (no fallback to 5173).
+    port: 1991,
     strictPort: true,
     cors: true,
   },

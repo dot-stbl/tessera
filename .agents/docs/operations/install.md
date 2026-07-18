@@ -11,13 +11,15 @@ Kubernetes. All paths assume single-binary deploy.
 docker run -d \
   --name tessera \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 1990:1990 \
   -v /var/lib/tessera:/var/lib/tessera:rw \
   -v /etc/tessera:/etc/tessera:ro \
   -e TESSERA_ADMIN_TOKEN="$(openssl rand -hex 32)" \
   -e TESSERA_VICTORIA_TOKEN="your-victoria-bearer-token" \
   ghcr.io/<org>/tessera:latest
 ```
+
+Port **1990** is the Tessera.Host backend port (see `coding/project-ports.md`). Override via `TESSERA_SERVER__PORT` env var.
 
 **Volumes:**
 - `/var/lib/tessera` — SQLite db + dashboards JSON (persistent)
@@ -75,7 +77,7 @@ services:
       - vl
       - vm
     ports:
-      - "8080:8080"
+      - "1990:1990"
     volumes:
       - tessera-data:/var/lib/tessera
       - ./tessera.toml:/etc/tessera/tessera.toml:ro
@@ -98,7 +100,7 @@ version = "1"
 
 [server]
 host = "0.0.0.0"
-port = 8080
+port = 1990
 
 [victoria]
 tenant = "0"
@@ -228,7 +230,7 @@ spec:
         - name: tessera
           image: ghcr.io/<org>/tessera:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 1990
           env:
             - name: TESSERA_ADMIN_TOKEN
               valueFrom:
@@ -250,13 +252,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 8080
+              port: 1990
             initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 8080
+              port: 1990
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
@@ -334,7 +336,7 @@ curl -L -o /usr/local/bin/tessera.new ... && \
 systemctl start tessera
 
 # 6. Verify
-curl -sf http://localhost:8080/health/ready
+curl -sf http://localhost:1990/health/ready
 ```
 
 **Schema migration:** SQLite db may need migration. Backend handles

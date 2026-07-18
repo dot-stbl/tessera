@@ -23,9 +23,9 @@ not in TOML files.
 # Comment (TOML supports #)
 version = "1"           # REQUIRED at root
 
-[server]                # table (nested object)
+[server]                # table (nested object) — port 1990 per coding/project-ports.md
 host = "0.0.0.0"
-port = 8080
+port = 1990
 
 [victoria.traces]       # nested table
 url = "http://vt:10428"
@@ -205,7 +205,7 @@ version = "1"
 
 [server]
 host = "0.0.0.0"
-port = 8080
+port = 1990
 
 [victoria]
 tenant = "0"

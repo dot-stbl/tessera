@@ -111,7 +111,7 @@ dotnet format tessera.slnx --verify-no-changes
 
 # ✅ Background commands for diagnostics ONLY if they self-terminate
 # and the agent never tries to kill them
-curl -s http://localhost:5173/health   # assumes server already running
+curl -s http://localhost:1991/health   # assumes server already running
 ```
 
 ## Verification — non-blocking only
@@ -131,7 +131,7 @@ The agent may use **short-lived** health probes when a server is **already runni
 
 ```bash
 # ✅ Read-only probe, exits in <1s
-curl -sf http://localhost:5173/ || echo "not running"
+curl -sf http://localhost:1991/ || echo "not running"
 curl -sf http://localhost:5000/health
 ```
 

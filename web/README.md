@@ -65,7 +65,7 @@ design tokens, playbook structure).
 ## Commands
 
 ```bash
-bun run dev           # vite dev server (port 5173)
+bun run dev           # vite dev server (port 1991)
 bun run build         # production build to apps/console/dist
 bun run preview       # preview production build
 bun run test          # vitest (unit tests)

@@ -42,10 +42,10 @@ title = "My Dashboard"
 [victoria.traces]
 ```
 
-### Symptom: `Port 8080 is already in use`
+### Symptom: `Port 1990 is already in use`
 
 ```
-[ERR] Failed to bind to address http://0.0.0.0:8080: address already in use
+[ERR] Failed to bind to address http://0.0.0.0:1990: address already in use
 ```
 
 **Fix:** change port in `[server]` or kill conflicting process.
@@ -53,7 +53,7 @@ title = "My Dashboard"
 ```toml
 [server]
 host = "0.0.0.0"
-port = 8081
+port = 1991
 ```
 
 Or set `ASPNETCORE_URLS=http://0.0.0.0:9000` to override.
@@ -63,7 +63,7 @@ Or set `ASPNETCORE_URLS=http://0.0.0.0:9000` to override.
 ### Symptom: `/health/ready` returns 503
 
 ```
-$ curl -i http://localhost:8080/health/ready
+$ curl -i http://localhost:1990/health/ready
 HTTP/1.1 503 Service Unavailable
 ```
 
@@ -106,14 +106,14 @@ journalctl -u tessera | grep -i "victoria\|502\|trace"
 ### Symptom: admin endpoints return 401
 
 ```
-$ curl -i -X POST http://localhost:8080/api/dashboards
+$ curl -i -X POST http://localhost:1990/api/dashboards
 HTTP/1.1 401 Unauthorized
 ```
 
 **Fix:** include bearer token:
 
 ```bash
-curl -X POST http://localhost:8080/api/dashboards \
+curl -X POST http://localhost:1990/api/dashboards \
   -H "Authorization: Bearer $TESSERA_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "id": "test", "title": "Test", ... }'
@@ -133,7 +133,7 @@ systemctl show tessera | grep Environment
 docker logs tessera 2>&1 | grep -i "admin\|token"
 
 # 3. Test token via curl with explicit value
-curl -i -H "Authorization: Bearer abc123..." http://localhost:8080/api/dashboards
+curl -i -H "Authorization: Bearer abc123..." http://localhost:1990/api/dashboards
 ```
 
 **Common causes:**
@@ -156,7 +156,7 @@ time curl -sf "http://vt:10428/select/0/jaeger/api/traces/abc123"
 journalctl -u tessera | grep "slow\|timeout"
 
 # 3. Check tessera metrics (if /metrics enabled)
-curl -sf http://localhost:8080/metrics | grep http_server_request_duration
+curl -sf http://localhost:1990/metrics | grep http_server_request_duration
 ```
 
 **Common causes:**
