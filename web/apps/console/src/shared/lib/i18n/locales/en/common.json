@@ -1,0 +1,150 @@
+{
+  "common": {
+    "create": "Create",
+    "cancel": "Cancel",
+    "back": "Back",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "copy": "Copy",
+    "close": "Close",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "soon": "soon",
+    "settings": "Settings",
+    "configure": "Configure",
+    "done": "Done",
+    "reset": "Reset to defaults",
+    "docs": "Documentation",
+    "resetFilters": "Reset filters",
+    "all": "All",
+    "selected": "selected",
+    "nothingFound": "Nothing found"
+  },
+  "nav": {
+    "sections": {
+      "traces": "Traces",
+      "tracesCaption": "Trace explorer with waterfall view",
+      "logs": "Logs",
+      "logsCaption": "Structured log search and viewer",
+      "services": "Services",
+      "servicesCaption": "Service inventory from VictoriaTraces",
+      "dashboards": "Dashboards",
+      "dashboardsCaption": "Custom Grafana-style dashboards",
+      "settings": "Settings",
+      "settingsCaption": "Victoria endpoints, theme, preferences"
+    }
+  },
+  "shell": {
+    "appName": "Tessera",
+    "goHome": "Go home",
+    "collapseMenu": "Collapse menu",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "traces": {
+    "list": {
+      "title": "Traces",
+      "search": "Search traces",
+      "empty": {
+        "title": "No traces found",
+        "description": "Try adjusting the time range or service filter.",
+        "noResults": "Nothing matches your filters",
+        "reset": "Reset filters"
+      },
+      "errorTitle": "Failed to load traces"
+    },
+    "detail": {
+      "title": "Trace",
+      "notFound": "Trace not found",
+      "backToTraces": "Back to traces",
+      "tabs": {
+        "waterfall": "Waterfall",
+        "logs": "Logs",
+        "tags": "Tags"
+      },
+      "spanDuration": "Duration"
+    }
+  },
+  "logs": {
+    "title": "Logs",
+    "search": "Search logs (LogsQL)",
+    "empty": {
+      "title": "No logs found",
+      "description": "Try adjusting the time range or query."
+    }
+  },
+  "services": {
+    "title": "Services",
+    "empty": {
+      "title": "No services found",
+      "description": "VictoriaTraces has no trace data in the selected time range."
+    }
+  },
+  "dashboards": {
+    "title": "Dashboards",
+    "new": "New dashboard",
+    "empty": {
+      "title": "No dashboards yet",
+      "description": "Create your first dashboard or load one from provisioning."
+    },
+    "panels": {
+      "trace_list": "Trace list",
+      "log_view": "Log viewer",
+      "metric_chart": "Metric chart",
+      "markdown": "Markdown"
+    }
+  },
+  "preferences": {
+    "title": "Visual settings",
+    "description": "Theme and text size. Saved in this browser.",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "fontSize": "Text size",
+    "fontSizeSmall": "Small",
+    "fontSizeMedium": "Medium",
+    "fontSizeLarge": "Large",
+    "fontSizeDescription": "Scales the entire UI proportionally.",
+    "reset": "Reset to defaults"
+  },
+  "table": {
+    "name": "Name",
+    "id": "ID",
+    "status": "Status",
+    "service": "Service",
+    "operation": "Operation",
+    "duration": "Duration",
+    "started": "Started",
+    "spanCount": "Spans",
+    "level": "Level",
+    "time": "Time",
+    "message": "Message",
+    "filter": {
+      "searchName": "Search…"
+    },
+    "copy": {
+      "traceId": "Copy trace ID",
+      "spanId": "Copy span ID"
+    }
+  },
+  "time": {
+    "last15m": "Last 15 minutes",
+    "last1h": "Last 1 hour",
+    "last6h": "Last 6 hours",
+    "last24h": "Last 24 hours",
+    "last7d": "Last 7 days",
+    "custom": "Custom range…"
+  },
+  "log": {
+    "levels": {
+      "trace": "TRACE",
+      "debug": "DEBUG",
+      "info": "INFO",
+      "warn": "WARN",
+      "error": "ERROR",
+      "fatal": "FATAL"
+    }
+  }
+}
