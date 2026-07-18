@@ -1,0 +1,13 @@
+{
+  "name": "tessera-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --filter '@tessera/console' dev",
+    "build": "bun --filter '@tessera/console' build",
+    "test": "bun --filter '@tessera/console' test",
+    "lint": "bun --filter '@tessera/console' lint",
+    "typecheck": "bun --filter '@tessera/console' typecheck"
+  }
+}
