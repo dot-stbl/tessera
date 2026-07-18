@@ -2,12 +2,34 @@
 
 > **Source:** [`web/playbook/styles.css`](../../../web/playbook/styles.css) (adapted from plexor). **Live catalog:** [`web/playbook/index.html`](../../../web/playbook/index.html).
 
-Tessera inherits the **plexor design system** as foundation (typography, colors,
-spacing, layout chrome) and extends it with **APM-specific primitives**.
+Tessera inherits the **plexor design system** as foundation (typography, spacing,
+layout chrome) and extends it with **APM-specific primitives**. **Accent color is
+distinctly tessera** — deep red for primary actions, following the `.stbl` brand
+spirit ("pure B&W + monospace") but with a strong brand color for focus.
+
+## 0. Design direction (locked 2026-07-19)
+
+- **Surfaces** — pure B&W (OKLCH grayscale, no hue). Light mode = white, dark mode = near-black.
+- **Accent** — deep red for primary actions (buttons, links, focus rings). NOT a color hue
+  on surfaces — surfaces stay monochrome.
+- **Status semantics** — only colors that survive:
+  - `--ok` (green) — success, healthy, running
+  - `--err` (bright red) — error, failed, exception (distinct from --accent which is deep red)
+  - `--warn` (amber) — warning, paused, pending
+  - `--idle` (gray) — neutral, disabled
+  - `--slow` (amber) — latency threshold breach
+  - `--level-{trace,debug,info,warn,error,fatal}` — log severity
+- **Ink** — black/white scale (4 levels)
+- **Borders** — subtle gray scale (2 levels)
+- **Typography** — Onest (sans) + JetBrains Mono (numerics), per plexor
+- **Spacing** — 4-base (2–32px), per plexor
+- **Radii** — 6/8/12px scale, per plexor
+- **Status semantics colors are the ONLY colored values** — never use them for
+  decoration. They mean what they say.
 
 ## 1. Inheritance from plexor
 
-Carried over **verbatim** (no adaptation needed):
+Carried over (no adaptation needed):
 
 | Token group | Source |
 |-------------|--------|
@@ -15,16 +37,43 @@ Carried over **verbatim** (no adaptation needed):
 | Surface scale (bg, surface, surface-2, surface-3) | plexor `--bg`, `--surface`, ... |
 | Ink scale (fg, fg-2, muted, muted-2) | plexor `--fg`, ... |
 | Border scale (border, border-2) | plexor `--border`, `--border-2` |
-| Status semantics (ok, err, warn, idle) | plexor `--ok`, `--err`, `--warn`, `--idle` |
 | Spacing scale (4-base) | plexor `--s-1` ... `--s-8` |
 | Radii (sm, base, lg, pill) | plexor `--radius-sm`, `--radius`, ... |
 | Layout chrome (topnav-h, sidebar-w, bc-row-h, row-h) | plexor `--topnav-h`, ... |
 | Dark mode (data-theme="dark") | plexor `:root[data-theme="dark"]` block |
 | Components (buttons, inputs, pills, tabs, table, toolbar, drawer, ...) | plexor `.btn`, `.input`, `.pill`, ... |
 
-## 2. APM-specific extensions
+## 2. Tessera-specific tokens
 
-### 2.1 APM status (extends plexor's ok/err/warn/idle)
+### 2.1 Accent (deep red, NOT blue)
+
+```css
+:root {
+  /* Accent — primary actions: buttons, links, focus rings */
+  --accent: oklch(35% 0.18 25);          /* dark red, light mode */
+  --accent-foreground: oklch(100% 0 0); /* white text on red */
+  --ring: var(--accent);
+}
+.dark {
+  --accent: oklch(70% 0.20 25);          /* lighter red in dark mode */
+  --accent-foreground: oklch(17% 0.012 250); /* dark text on lighter red */
+}
+```
+
+**Why red, not blue?** `.stbl` brand is "pure B&W · monospace only". Plexor
+deviates with subtle blue accent — tolerated because open source utility
+software. Tessera goes a step further with a strong red accent that
+distinguishes it from plexor while still respecting B&W surface rule.
+
+**Accent vs --err**: visually distinct by lightness + chroma:
+- `--accent`: `oklch(35% 0.18 25)` — **dark, deep** (primary action)
+- `--err`: `oklch(58% 0.20 25)` — **bright, vivid** (status semantic)
+
+In dark mode accent brightens; --err stays bright. Always distinguishable.
+
+## 3. APM-specific extensions
+
+### 3.1 APM status (extends plexor's ok/err/warn/idle)
 
 ```css
 :root {
@@ -55,7 +104,7 @@ Carried over **verbatim** (no adaptation needed):
 | `slow` (latency > threshold) | `--slow` (NEW) | p95 latency breach, trace > 1s |
 | `idle` (neutral) | `--idle` | unset status, disabled, draft |
 
-### 2.2 Log levels (Victoria Logs / OpenTelemetry)
+### 3.2 Log levels (Victoria Logs / OpenTelemetry)
 
 ```css
 :root {
@@ -83,7 +132,7 @@ Carried over **verbatim** (no adaptation needed):
 <span class="log-level log-level-warn">WARN</span>
 ```
 
-### 2.3 Duration formatting
+### 3.3 Duration formatting
 
 APM data has many duration values (span duration, request latency, etc.).
 Compact format: `<value> <unit>` with auto-scaling.
@@ -100,7 +149,7 @@ Compact format: `<value> <unit>` with auto-scaling.
 
 **Format:** `100ns`, `2.4µs`, `1.2ms`, `500ms`, `1.5s`, `2m`, `1h` (auto-scale).
 
-### 2.4 Time format
+### 3.4 Time format
 
 ```css
 .time {
@@ -117,7 +166,7 @@ Compact format: `<value> <unit>` with auto-scaling.
 - Relative: `2 min ago` (muted color)
 - Hover: tooltip with absolute
 
-### 2.5 Trace ID / Span ID — abbreviated monospace
+### 3.5 Trace ID / Span ID — abbreviated monospace
 
 ```css
 .trace-id, .span-id {
@@ -131,7 +180,7 @@ Compact format: `<value> <unit>` with auto-scaling.
 
 **Format:** `abc123def456...` (16-char hex prefix + ellipsis).
 
-## 3. APM status pills (log viewer + trace viewer)
+## 4. APM status pills (log viewer + trace viewer)
 
 ```html
 <span class="pill pill-error">
@@ -155,7 +204,7 @@ CSS (extension of plexor's `.pill`):
 .pill.pill-idle { background: var(--idle-soft); color: var(--idle-ink); }
 ```
 
-## 4. Theme: light + dark
+## 5. Theme: light + dark
 
 Inherited from plexor — same `data-theme="dark"` attribute, same token
 inversion pattern. Tessera APM extensions (slow, level-*) also need dark-mode
@@ -172,7 +221,7 @@ counterparts:
 }
 ```
 
-## 5. Implementation status
+## 6. Implementation status
 
 **MVP scope:**
 - [ ] Copy plexor `styles.css` → `web/playbook/styles.css`

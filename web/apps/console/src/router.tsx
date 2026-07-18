@@ -7,6 +7,9 @@ import {
 } from '@tanstack/react-router';
 import { AppShell, PageTemplate } from '@/shared/ui/app-shell';
 import { TracesPage } from '@/features/traces/traces-page';
+import { LogsPage } from '@/features/logs/logs-page';
+import { ServicesPage } from '@/features/services/services-page';
+import { DashboardsPage } from '@/features/dashboards/dashboards-page';
 
 /**
  * Code-based route definitions. Simpler than file-based for MVP — no codegen
@@ -16,38 +19,8 @@ import { TracesPage } from '@/features/traces/traces-page';
 
 // ─── Page components ───────────────────────────────────────────────────
 
-// TracesPage is now imported from @/features/traces/traces-page.
-// Other sections are still placeholders (filled in MVP phase 2-4).
-
-function LogsPage() {
-  return (
-    <PageTemplate title="Logs" subtitle="Structured log search and viewer">
-      <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Log viewer — coming in MVP phase 3.
-      </div>
-    </PageTemplate>
-  );
-}
-
-function ServicesPage() {
-  return (
-    <PageTemplate title="Services" subtitle="Service inventory from VictoriaTraces">
-      <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Service inventory — coming in MVP phase 1.
-      </div>
-    </PageTemplate>
-  );
-}
-
-function DashboardsPage() {
-  return (
-    <PageTemplate title="Dashboards" subtitle="Custom Grafana-style dashboards">
-      <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Dashboards — coming in MVP phase 4.
-      </div>
-    </PageTemplate>
-  );
-}
+// All page components are imported from @/features/<section>/<name>-page.
+// TracesPage, LogsPage, ServicesPage, DashboardsPage.
 
 function SettingsPage() {
   return (

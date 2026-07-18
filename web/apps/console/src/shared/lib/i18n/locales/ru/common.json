@@ -1,0 +1,150 @@
+{
+  "common": {
+    "create": "Создать",
+    "cancel": "Отмена",
+    "back": "Назад",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "copy": "Копировать",
+    "close": "Закрыть",
+    "loading": "Загрузка…",
+    "retry": "Повторить",
+    "soon": "скоро",
+    "settings": "Настройки",
+    "configure": "Настроить",
+    "done": "Готово",
+    "reset": "Сбросить",
+    "docs": "Документация",
+    "resetFilters": "Сбросить фильтры",
+    "all": "Все",
+    "selected": "выбрано",
+    "nothingFound": "Ничего не найдено"
+  },
+  "nav": {
+    "sections": {
+      "traces": "Трейсы",
+      "tracesCaption": "Просмотр трейсов с waterfall",
+      "logs": "Логи",
+      "logsCaption": "Структурированный поиск и просмотр логов",
+      "services": "Сервисы",
+      "servicesCaption": "Реестр сервисов из VictoriaTraces",
+      "dashboards": "Дашборды",
+      "dashboardsCaption": "Кастомные дашборды в стиле Grafana",
+      "settings": "Настройки",
+      "settingsCaption": "Victoria endpoints, тема, предпочтения"
+    }
+  },
+  "shell": {
+    "appName": "Tessera",
+    "goHome": "На главную",
+    "collapseMenu": "Свернуть меню",
+    "settings": "Настройки",
+    "signOut": "Выйти"
+  },
+  "traces": {
+    "list": {
+      "title": "Трейсы",
+      "search": "Поиск трейсов",
+      "empty": {
+        "title": "Трейсов не найдено",
+        "description": "Попробуйте изменить временной диапазон или фильтр сервиса.",
+        "noResults": "Ничего не соответствует фильтрам",
+        "reset": "Сбросить фильтры"
+      },
+      "errorTitle": "Ошибка загрузки трейсов"
+    },
+    "detail": {
+      "title": "Трейс",
+      "notFound": "Трейс не найден",
+      "backToTraces": "К списку трейсов",
+      "tabs": {
+        "waterfall": "Waterfall",
+        "logs": "Логи",
+        "tags": "Теги"
+      },
+      "spanDuration": "Длительность"
+    }
+  },
+  "logs": {
+    "title": "Логи",
+    "search": "Поиск логов (LogsQL)",
+    "empty": {
+      "title": "Логов не найдено",
+      "description": "Попробуйте изменить временной диапазон или запрос."
+    }
+  },
+  "services": {
+    "title": "Сервисы",
+    "empty": {
+      "title": "Сервисов не найдено",
+      "description": "В VictoriaTraces нет данных о трейсах за выбранный период."
+    }
+  },
+  "dashboards": {
+    "title": "Дашборды",
+    "new": "Новый дашборд",
+    "empty": {
+      "title": "Дашбордов пока нет",
+      "description": "Создайте свой первый дашборд или загрузите через provisioning."
+    },
+    "panels": {
+      "trace_list": "Список трейсов",
+      "log_view": "Просмотр логов",
+      "metric_chart": "График метрик",
+      "markdown": "Markdown"
+    }
+  },
+  "preferences": {
+    "title": "Визуальные настройки",
+    "description": "Тема и размер шрифта. Сохраняются в этом браузере.",
+    "theme": "Тема",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
+    "themeSystem": "Системная",
+    "fontSize": "Размер шрифта",
+    "fontSizeSmall": "Маленький",
+    "fontSizeMedium": "Средний",
+    "fontSizeLarge": "Большой",
+    "fontSizeDescription": "Масштабирует весь интерфейс пропорционально.",
+    "reset": "Сбросить"
+  },
+  "table": {
+    "name": "Имя",
+    "id": "ID",
+    "status": "Статус",
+    "service": "Сервис",
+    "operation": "Операция",
+    "duration": "Длительность",
+    "started": "Начало",
+    "spanCount": "Спанов",
+    "level": "Уровень",
+    "time": "Время",
+    "message": "Сообщение",
+    "filter": {
+      "searchName": "Поиск…"
+    },
+    "copy": {
+      "traceId": "Копировать trace ID",
+      "spanId": "Копировать span ID"
+    }
+  },
+  "time": {
+    "last15m": "Последние 15 минут",
+    "last1h": "Последний час",
+    "last6h": "Последние 6 часов",
+    "last24h": "Последние 24 часа",
+    "last7d": "Последние 7 дней",
+    "custom": "Произвольный период…"
+  },
+  "log": {
+    "levels": {
+      "trace": "ТРЕЙС",
+      "debug": "ДЕБАГ",
+      "info": "ИНФО",
+      "warn": "ПРЕДУПР",
+      "error": "ОШИБКА",
+      "fatal": "ФАТАЛ"
+    }
+  }
+}

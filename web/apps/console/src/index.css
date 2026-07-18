@@ -37,8 +37,9 @@
   --border-2: oklch(85% 0.008 240);
   --input: var(--border);
 
-  /* ─── Accent (Tessera DS — monochrome dark ink, NOT blue) ─── */
-  --accent: oklch(28% 0.02 255);
+  /* ─── Accent (Tessera DS — dark red, distinctive from --err) ─── */
+  /* Accent is the deep, primary-action red. --err is the brighter, status-only red. */
+  --accent: oklch(35% 0.18 25);
   --accent-foreground: oklch(100% 0 0);
   --ring: var(--accent);
 
@@ -46,7 +47,13 @@
   --destructive: oklch(58% 0.20 25);
   --destructive-foreground: oklch(98% 0.005 250);
 
-  /* ─── Status semantics — Plexor DS ─── */
+  /* ─── Status semantics ───
+ * --err is the BRIGHT red for status (error/exception). Distinct from --accent
+ * (deep red for primary actions) by lightness + chroma:
+ *   - accent: oklch(35% 0.18 25)  (dark, primary action — buttons, links)
+ *   - err:    oklch(58% 0.20 25)  (bright, status semantic)
+ * In dark mode they invert (accent brightens, err stays).
+ */
   --ok: oklch(58% 0.16 145);
   --ok-soft: oklch(95% 0.03 145);
   --ok-ink: oklch(45% 0.13 145);
@@ -122,7 +129,7 @@
   --border-2: oklch(38% 0.014 250);
   --input: var(--border);
 
-  --accent: oklch(82% 0.014 250);
+  --accent: oklch(70% 0.20 25);
   --accent-foreground: oklch(17% 0.012 250);
 
   --ok: oklch(72% 0.16 145);

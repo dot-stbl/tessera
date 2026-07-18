@@ -18,7 +18,7 @@ import i18n from '@/shared/lib/i18n';
  */
 export type Theme = 'light' | 'dark' | 'system';
 export type FontSize = 'small' | 'medium' | 'large';
-export type Language = 'en';
+export type Language = 'en' | 'ru';
 
 export interface Preferences {
   theme: Theme;
@@ -63,7 +63,10 @@ function loadFromStorage(): Preferences {
       parsed.fontSize && parsed.fontSize in FONT_SIZE_VALUES
         ? (parsed.fontSize as FontSize)
         : PREFERENCES_DEFAULT.fontSize;
-    const language: Language = 'en';
+    const language: Language =
+      parsed.language === 'en' || parsed.language === 'ru'
+        ? parsed.language
+        : PREFERENCES_DEFAULT.language;
     return { theme, fontSize, language };
   } catch {
     return PREFERENCES_DEFAULT;

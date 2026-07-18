@@ -3,17 +3,18 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en/common.json';
+import ru from './locales/ru/common.json';
 
-export const SUPPORTED_LANGUAGES = ['en'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'ru'] as const;
 export type Language = (typeof SUPPORTED_LANGUAGES)[number];
 export const DEFAULT_LANGUAGE: Language = 'en';
 
 /**
  * i18n setup. react-i18next + browser language detector.
  *
- * MVP: English only. Russian and other locales added in stretch.
- * Language is detected from localStorage ('tessera-lang') → navigator.language,
- * with fallback to DEFAULT_LANGUAGE ('en').
+ * MVP: English + Russian. Russian chosen for the primary maintainer's
+ * daily use. Language is detected from localStorage ('tessera-lang') →
+ * navigator.language, with fallback to DEFAULT_LANGUAGE ('en').
  *
  * PreferencesProvider syncs the language pref; this module is initialized once
  * at app bootstrap in main.tsx.
@@ -24,6 +25,7 @@ void i18n
   .init({
     resources: {
       en: { translation: en },
+      ru: { translation: ru },
     },
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: [...SUPPORTED_LANGUAGES],
