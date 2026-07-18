@@ -1,17 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import path from 'node:path';
 
 export default defineConfig({
+  // NOTE: we use code-based TanStack Router (defined in src/router.tsx),
+  // not file-based. Do not add @tanstack/router-plugin/vite — it would
+  // require src/routes/ to exist.
   plugins: [
-    // TanStack Router file-based code-gen — generates routeTree.gen.ts
-    // when src/routes/ has files. Optional — disabled if routesDir absent.
-    TanStackRouterVite({
-      routesDirectory: './src/routes',
-      generatedRouteTree: './src/routeTree.gen.ts',
-    }),
     react(),
     tailwindcss(),
   ],

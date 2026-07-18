@@ -6,6 +6,7 @@ import {
   redirect,
 } from '@tanstack/react-router';
 import { AppShell, PageTemplate } from '@/shared/ui/app-shell';
+import { TracesPage } from '@/features/traces/traces-page';
 
 /**
  * Code-based route definitions. Simpler than file-based for MVP — no codegen
@@ -15,15 +16,8 @@ import { AppShell, PageTemplate } from '@/shared/ui/app-shell';
 
 // ─── Page components ───────────────────────────────────────────────────
 
-function TracesPage() {
-  return (
-    <PageTemplate title="Traces" subtitle="Trace explorer with waterfall view">
-      <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Trace list — coming in MVP phase 2.
-      </div>
-    </PageTemplate>
-  );
-}
+// TracesPage is now imported from @/features/traces/traces-page.
+// Other sections are still placeholders (filled in MVP phase 2-4).
 
 function LogsPage() {
   return (

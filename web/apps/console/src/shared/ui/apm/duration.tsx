@@ -60,10 +60,10 @@ export function Duration({
  */
 export function formatDuration(ms: number): { value: string; unit: string } {
   if (ms < 0) return { value: '0', unit: 'ms' };
-  if (ms < 1) return { value: (ms * 1_000_000).toFixed(0), unit: 'ns' };
-  if (ms < 1_000) return { value: (ms * 1_000).toFixed(1), unit: 'µs' };
-  if (ms < 60_000) return { value: ms.toFixed(0), unit: 'ms' };
-  if (ms < 3_600_000) return { value: (ms / 1_000).toFixed(1), unit: 's' };
-  if (ms < 86_400_000) return { value: (ms / 60_000).toFixed(1), unit: 'm' };
+  if (ms < 0.001) return { value: (ms * 1_000_000).toFixed(0), unit: 'ns' };
+  if (ms < 1) return { value: (ms * 1_000).toFixed(1), unit: 'µs' };
+  if (ms < 1_000) return { value: ms.toFixed(0), unit: 'ms' };
+  if (ms < 60_000) return { value: (ms / 1_000).toFixed(1), unit: 's' };
+  if (ms < 3_600_000) return { value: (ms / 60_000).toFixed(1), unit: 'm' };
   return { value: (ms / 3_600_000).toFixed(1), unit: 'h' };
 }
