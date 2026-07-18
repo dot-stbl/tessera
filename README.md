@@ -83,16 +83,30 @@ full architecture overview.
 
 ## Brand
 
-Tessera follows the [`.stbl` brand guidelines](https://github.com/dot-stbl/brand):
+Tessera follows the [`.stbl` brand guidelines](https://github.com/dot-stbl/brand).
 
-- **Pure B&W** — monochrome palette + status semantics
-- **Monospace** — Onest sans + JetBrains Mono for numerics
-- **Lockup** — `tessera by .stbl` (see [`assets/lockup-tessera.svg`](assets/lockup-tessera.svg))
-- **Commit format** — `[.stbl](<feat/...>): <subject>` per `.agents/rules/process/commit-format.md`
+Brand assets are vendored via git submodule from
+[dot-stbl/.github](https://github.com/dot-stbl/.github) at `assets/stbl/`:
+
+- `assets/stbl/assets/by-stbl.css` — `.by-stbl` utility class (used in this README)
+- `assets/stbl/assets/lockup-template.svg` — template for `ProductName by .stbl` lockups
+- `assets/stbl/assets/og-plexor.svg` — reference OG card
+
+**Tessera-specific assets** (not submodule):
+
+- `assets/lockup-tessera.svg` — generated from `lockup-template.svg`
+- `assets/og-tessera.svg` — generated from `og-plexor.svg` template
+- `assets/favicon.svg` — Tessera mark (4-tile mosaic)
+
+To update brand assets: `git submodule update --remote assets/stbl`. To
+modify the `.stbl` brand kit itself, open a PR at
+[dot-stbl/brand](https://github.com/dot-stbl/brand) or
+[dot-stbl/.github](https://github.com/dot-stbl/.github).
 
 ## Related
 
 - [.stbl brand kit](https://github.com/dot-stbl/brand) — design rules, templates
+- [dot-stbl/.github](https://github.com/dot-stbl/.github) — org profile + brand assets
 - [Plexor](https://github.com/dot-stbl/plexor) — self-hosted cloud platform (sister project, primary reference)
 - [.stbl org](https://github.com/dot-stbl) — other products
 

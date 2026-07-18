@@ -88,8 +88,53 @@ This IS the `.stbl` convention — same as plexor and other products.
 - **Git submodule** — `git submodule add git@github.com:dot-stbl/.github.git assets/stbl`
 - **Copy on every release** — simpler, error-prone
 
-Tessera uses **copy** for MVP (assets/by-stbl.css, assets/lockup-tessera.svg,
-etc. are static copies). For production, switch to submodule.
+Tessera uses **git submodule** at `assets/stbl/`:
+
+```
+$ cat .gitmodules
+[submodule "assets/stbl"]
+    path = assets/stbl
+    url = <github.com/dot-stbl/.github or local path>
+```
+
+To update brand assets:
+
+```sh
+git submodule update --remote assets/stbl
+```
+
+The submodule structure (from `.github` repo):
+
+```
+assets/stbl/
+├── LICENSE
+├── profile/
+│   └── README.md
+└── assets/
+    ├── by-stbl.css
+    ├── logo.svg, logo-light.svg
+    ├── wordmark.svg, wordmark-dark.svg
+    ├── lockup-template.svg, lockup-plexor.svg
+    ├── og-default.svg, og-plexor.svg
+    ├── badge.svg
+    └── favicon.ico, favicon-{16,32,64,128,256}.png
+```
+
+**Tessera-specific assets** (not submodule, kept in main repo):
+
+```
+assets/
+├── lockup-tessera.svg   generated from assets/stbl/assets/lockup-template.svg
+├── og-tessera.svg       generated from assets/stbl/assets/og-plexor.svg
+└── favicon.svg          Tessera mark (4-tile mosaic)
+```
+
+When publishing to GitHub, change the submodule URL to the public remote:
+
+```sh
+# In assets/stbl/ (or via .gitmodules edit)
+git remote set-url origin git@github.com:dot-stbl/.github.git
+```
 
 ## When to publish
 
@@ -127,13 +172,14 @@ project-level convention, mirrored from the rules:
 | `.stbl` convention | Tessera implementation |
 |---|---|
 | `.stbl` org brand | `assets/lockup-tessera.svg`, `assets/og-tessera.svg` |
-| `by-stbl` CSS class | `assets/by-stbl.css` (copied from kit) |
+| `by-stbl` CSS class | `assets/stbl/assets/by-stbl.css` (submodule) |
 | `ProductName by .stbl` lockup in README | `README.md` (already in this repo) |
 | `[.stbl](<feat/...>): <subject>` commits | enforced by `process/commit-format.md` |
 | JetBrains Mono for numerics | `web/index.css` (font import) |
 | Plexor as reference | `web/` scaffolded from plexor template, adapted for tessera |
 | No playwright / browser automation | `process/agent-runtime-safety.md` |
 | "Powered by stbl" pattern | `og-tessera.svg` tagline: "APM UI for the Victoria stack" |
+| Asset sync via submodule | `assets/stbl/` tracks `dot-stbl/.github` |
 
 ## Related docs
 
