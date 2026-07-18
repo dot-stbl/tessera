@@ -1,0 +1,49 @@
+# ─── .NET ────────────────────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+.vs/
+TestResults/
+artifacts/
+coverage/
+*.coverage
+*.coveragexml
+coverage.*.xml
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# ─── Node / frontend ─────────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+.next/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun.lockb
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+!.vscode/settings.json
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Editor scratch ──────────────────────────────────────────────────────────
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
