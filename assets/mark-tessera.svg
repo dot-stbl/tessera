@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  mark-tessera.svg — canonical Tessera mark (5-tile scatter).
+
+  Tessera = "tile" (Latin). The mark evokes five discrete data points
+  (traces, logs, events) in irregular positions — the pattern of an
+  observability surface where one event stands out (accent red).
+
+  Usage: 16px favicon, 32px sidebar, 80px lockup, 128px+ hero.
+  Black tiles + one accent (Tessera's deep red, oklch(35% 0.18 25)).
+  White background.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Tessera">
+  <title>Tessera</title>
+  <rect width="80" height="80" fill="#fff"/>
+  <rect x="8"  y="8"  width="16" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="32" y="8"  width="16" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="56" y="32" width="16" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="20" y="56" width="16" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="44" y="56" width="16" height="16" rx="2" fill="#a8201c"/>
+</svg>

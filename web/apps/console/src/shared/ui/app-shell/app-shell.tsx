@@ -29,7 +29,13 @@ export function AppShell({ children }: AppShellProps) {
     <div className="app-shell">
       <header className="app-topnav">
         <Link to="/" className="app-topnav-brand">
-          <TesseraMark />
+          <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="3"  y="3"  width="6" height="6" rx="1" fill="currentColor"/>
+            <rect x="13" y="3"  width="6" height="6" rx="1" fill="currentColor"/>
+            <rect x="23" y="13" width="6" height="6" rx="1" fill="currentColor"/>
+            <rect x="8"  y="23" width="6" height="6" rx="1" fill="currentColor"/>
+            <rect x="18" y="23" width="6" height="6" rx="1" fill="var(--accent)"/>
+          </svg>
           <span>{APP_NAME}</span>
         </Link>
         <span className="app-topnav-spacer" />
@@ -58,13 +64,15 @@ export function AppShell({ children }: AppShellProps) {
 }
 
 function TesseraMark() {
-  // Tessera logo: a small mosaic of 4 tiles.
+  // Tessera mark — 5 tiles in irregular scatter, one accent red.
+  // Canonical SVG: assets/mark-tessera.svg. Here inlined for fast load.
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-      <rect x="0" y="0" width="9" height="9" rx="1" fill="currentColor" />
-      <rect x="11" y="0" width="9" height="9" rx="1" fill="currentColor" opacity="0.7" />
-      <rect x="0" y="11" width="9" height="9" rx="1" fill="currentColor" opacity="0.4" />
-      <rect x="11" y="11" width="9" height="9" rx="1" fill="currentColor" opacity="0.55" />
+    <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="3"  y="3"  width="6" height="6" rx="1" fill="currentColor" />
+      <rect x="13" y="3"  width="6" height="6" rx="1" fill="currentColor" />
+      <rect x="23" y="13" width="6" height="6" rx="1" fill="currentColor" />
+      <rect x="8"  y="23" width="6" height="6" rx="1" fill="currentColor" />
+      <rect x="18" y="23" width="6" height="6" rx="1" fill="var(--accent)" />
     </svg>
   );
 }

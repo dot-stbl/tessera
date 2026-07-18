@@ -96,7 +96,8 @@ Brand assets are vendored via git submodule from
 
 - `assets/lockup-tessera.svg` — generated from `lockup-template.svg`
 - `assets/og-tessera.svg` — generated from `og-plexor.svg` template
-- `assets/favicon.svg` — Tessera mark (4-tile mosaic)
+- `assets/favicon.svg` — Tessera mark (5-tile scatter, one accent red)
+- `assets/mark-tessera.svg` — canonical 80×80 mark (source of truth)
 
 To update brand assets: `git submodule update --remote assets/stbl`. To
 modify the `.stbl` brand kit itself, open a PR at
