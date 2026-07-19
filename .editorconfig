@@ -15,7 +15,7 @@
 # Required analyzers (centralized in Directory.Packages.props + .csproj):
 #   Microsoft.CodeAnalysis.NetAnalyzers          (CA rules)
 #   Microsoft.VisualStudio.Threading.Analyzers   (VSTHRD rules)
-#   Meziantou.Analyzer                           (MA rules)
+#   (Meziantou.Analyzer удалён 2026-07-19: false-positive noise)
 #   Roslynator.Analyzers                         (RCS rules)
 #   Roslynator.Formatting.Analyzers               (layout rules)
 #   Roslynator.CodeAnalysis.Analyzers             (analysis rules)
@@ -101,7 +101,7 @@ csharp_style_var_elsewhere = true : error
 dotnet_diagnostic.IDE0007.severity = error # use var
 dotnet_diagnostic.IDE0008.severity = none # use explicit type — inverse of IDE0007
 dotnet_diagnostic.IDE0046.severity = none # convert to conditional expression — owner-disabled: цепочки if (typeof(T)==typeof(long)) ... else if ... лучше читаются чем nested ternary (RCS1238 конфликтует). Format не трогает if-структуру.
-dotnet_diagnostic.IDE0072.severity = none # populate switch expression — owner-disabled: auto-format разворачивает wildcard `_ =>` на per-kind case'ы с NotImplementedException (триггерит MA0025). Wildcard preferred — JsonElement.ValueKind cases handled explicitly.
+dotnet_diagnostic.IDE0072.severity = none # populate switch expression — owner-disabled: auto-format разворачивает wildcard `_ =>` на per-kind case'ы с NotImplementedException. Wildcard preferred — JsonElement.ValueKind cases handled explicitly.
 dotnet_diagnostic.IDE0010.severity = none # populate switch statement — owner-disabled: same family as IDE0072, auto-format adds exhaustive cases that conflict with wildcard `_ =>`.
 dotnet_diagnostic.CMK0001.severity = warning # AccessFilter missing on public controller action — Phase 18 fail-closed authorization.
 dotnet_diagnostic.IDE1006.severity = none # naming style — owner-disabled: статические readonly массивы типа `helpFlags` (camelCase) конфликтуют с дефолтом PascalCase для публичных. Per-glob Migrations-override уже есть; здесь глобально выключаем чтобы `private static readonly string[]` с lowerCamel не ломал билд.
@@ -162,7 +162,6 @@ dotnet_diagnostic.VSTHRD104.severity = error
 dotnet_diagnostic.VSTHRD110.severity = warning
 
 # ConfigureAwait — для library code; в app можно отключить
-dotnet_diagnostic.MA0004.severity = none
 
 #---------------------------------------------------------------------
 # Section 2: sealed по умолчанию
@@ -299,16 +298,9 @@ dotnet_diagnostic.RCS1218.severity = warning # simplify code branching
 dotnet_diagnostic.RCS1238.severity = warning # avoid nested ternary
 
 #---------------------------------------------------------------------
-# Meziantou — дополнительные best practices
+# Microsoft.CodeAnalysis.NetAnalyzers (CA rules)
 #---------------------------------------------------------------------
-dotnet_diagnostic.MA0006.severity = none # use String.Equals instead of == — owner-disabled 2026-07-13: breaks EF Core LINQ translatability (provider translates `a == b` to SQL; `a.Equals(b)` requires analyzer-confusing StringComparison arg). Use `==` for strings in handlers/specs/queries.
-dotnet_diagnostic.MA0011.severity = warning # IFormatProvider missing
-dotnet_diagnostic.MA0016.severity = warning # prefer returning collection abstraction
-dotnet_diagnostic.MA0040.severity = warning # forward CancellationToken
-dotnet_diagnostic.MA0080.severity = warning # use a cancellation token
-dotnet_diagnostic.MA0099.severity = warning # use Explicit enum value
-dotnet_diagnostic.MA0110.severity = none # use Regex source generator — owner-disabled: dotnet format переписывает `static readonly Regex` на `partial Regex` property и ломает build (CS9248/CS9249). Класс не partial, генератор не может подсунуть implementation. OK to keep inline Regex для утилитарных парсеров.
-dotnet_diagnostic.MA0179.severity = none # use Attribute.IsDefined instead of GetCustomAttribute — owner-disabled 2026-07-02: false positive когда нужно значение атрибута (attr.Alias, attr.AllowedOps). IsDefined возвращает bool, не значение. Конфликтует с VerifyAntiPatternsOnBuild (требует inline `is not { } attr`). См. .planning/BACKEND-ISSUES.md.
+dotnet_diagnostic.CA1305.severity = warning
 
 #---------------------------------------------------------------------
 # Microsoft.CodeAnalysis.NetAnalyzers (CA rules)
@@ -323,7 +315,7 @@ dotnet_diagnostic.CA2008.severity = warning # do not create tasks without TaskSc
 # NEW (added 2026-06-15 rework) — for build-time visibility
 dotnet_diagnostic.CA1002.severity = warning # don't expose generic lists — enforce IReadOnlyCollection<T> in public API
 dotnet_diagnostic.CA1052.severity = warning # static holder types should be Static or NotInheritable
-dotnet_diagnostic.CA2016.severity = warning # forward CancellationToken — BCL variant, complements MA0040
+dotnet_diagnostic.CA2016.severity = warning # forward CancellationToken — BCL variant
 
 #---------------------------------------------------------------------
 # Project-specific OFF — `severity = none` with documented justification
@@ -331,15 +323,9 @@ dotnet_diagnostic.CA2016.severity = warning # forward CancellationToken — BCL 
 # Group A: real analyzer false positives (analyzer bug or limitation).
 dotnet_diagnostic.IDE0001.severity = none # simplify name — false positive on (ICommand<Unit>) cast and IOptions<>
 dotnet_diagnostic.IDE0058.severity = none # expression value never used — false positive on `using var x = ...`
-dotnet_diagnostic.MA0003.severity = none # name the parameter — argument-name hints are a style preference
-dotnet_diagnostic.MA0007.severity = none # trailing comma in collection initializer — noise, owner-disabled 2026-06-29
-dotnet_diagnostic.MA0038.severity = none # make method static — false positive on primary-ctor methods
-dotnet_diagnostic.MA0154.severity = none # use langword in XML — false positive on 'try' (not in langword list)
 dotnet_diagnostic.RCS1208.severity = none # reduce 'if' nesting — logger.IsEnabled wrappers and foreach+if patterns are common
 dotnet_diagnostic.RCS1228.severity = none # unused param element — delegate callbacks with unused params
 dotnet_diagnostic.RCS1247.severity = none # fix doc tag — multiline <c> tag is fine
-dotnet_diagnostic.MA0136.severity = none # raw string contains implicit EOL — multi-line raw SQL/log templates are intentional
-dotnet_diagnostic.MA0101.severity = none # string contains non-deterministic EOL — same family as MA0136, raw strings with newlines
 
 # Group B: project-specific divergences from analyzer defaults.
 dotnet_diagnostic.CA1031.severity = none # do not catch general exception types — иногда оправдано
@@ -351,11 +337,7 @@ dotnet_diagnostic.CA1716.severity = none # identifier should not match keyword
 dotnet_diagnostic.CA1812.severity = none # avoid uninstantiated internal classes (DI)
 dotnet_diagnostic.CA1873.severity = none # wrap logger.LogX in IsEnabled — IsEnabled wrappers are noise
 dotnet_diagnostic.xUnit1004.severity = none # \`[Fact(Skip = \"...\")]\` is the canonical xUnit pattern for environment-dependent tests; xUnit encourages \`[Trait(\"Category\", \"Integration\")]\` + filter, but for v0.1 single-suite projects the Skip parameter is the simpler escape hatch.
-dotnet_diagnostic.CA2007.severity = none # ConfigureAwait — не нужно в app code (dup of MA0004)
-dotnet_diagnostic.MA0042.severity = none # do not use blocking calls in async — sync Validate() in preloaders is fine
-dotnet_diagnostic.MA0045.severity = none # make method async — sync filter/extension methods intentionally sync
-dotnet_diagnostic.MA0048.severity = none # file name must match type name — cascading from Dependency file splits
-dotnet_diagnostic.MA0051.severity = none # method too long (>60 lines) — exchange subscribers are intrinsically long
+dotnet_diagnostic.CA2007.severity = none # ConfigureAwait — не нужно в app code
 # VSTHRD002 / VSTHRD103 moved to §6 (Async / await) as `error` — 2026-06-16.
 
 #---------------------------------------------------------------------
@@ -468,7 +450,7 @@ resharper_unused_method_return_value_local_highlighting = none
 
 # --- EF Core migrations ---
 # Generated by `dotnet ef migrations add`. Re-formatting creates noisy diffs
-# every regeneration; the IDE0058 / MA0197 warnings come from the EF Core
+# every regeneration; the IDE0058 warnings come from the EF Core
 # fluent builder pattern. We don't hand-edit migrations.
 [**/Migrations/**]
 charset = utf-8-bom
@@ -491,8 +473,7 @@ dotnet_diagnostic.IDE0290.severity = none # use primary constructor (gen: explic
 dotnet_diagnostic.IDE0022.severity = suggestion # expression-bodied method (gen: block body)
 dotnet_diagnostic.IDE0021.severity = suggestion # expression-bodied constructor (gen: block)
 dotnet_diagnostic.IDE0060.severity = suggestion # unused parameter (gen: required by override)
-# MA / CA / RCS — analyzer noise on generated code.
-dotnet_diagnostic.MA0197.severity = suggestion # unused private member (gen: fluent tmp vars)
+# CA / RCS — analyzer noise on generated code.
 dotnet_diagnostic.CA1861.severity = suggestion # constant array allocation (gen: every time)
 dotnet_diagnostic.CA1305.severity = suggestion # locale-specific string op (gen: SQL string keys)
 dotnet_diagnostic.CA1822.severity = suggestion # make member static (gen: instance pattern)
@@ -519,7 +500,6 @@ dotnet_diagnostic.IDE0290.severity = none
 dotnet_diagnostic.IDE0022.severity = suggestion
 dotnet_diagnostic.IDE0021.severity = suggestion
 dotnet_diagnostic.IDE0060.severity = suggestion
-dotnet_diagnostic.MA0197.severity = suggestion
 dotnet_diagnostic.CA1861.severity = suggestion
 dotnet_diagnostic.CA1305.severity = suggestion
 dotnet_diagnostic.CA1822.severity = suggestion
@@ -532,7 +512,6 @@ charset = unset
 # body files.
 [**/_NamespaceMarker.cs]
 dotnet_diagnostic.RCS1251.severity = none
-dotnet_diagnostic.MA0182.severity = none
 
 # --- Tests ---
 # Test-only relaxations now live in tests/.editorconfig (a non-root

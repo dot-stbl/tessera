@@ -16,7 +16,6 @@ CPM выключен (см. комментарий в `Directory.Packages.props`
 |-------|--------|--------|
 | `Microsoft.CodeAnalysis.NetAnalyzers` (CA) | встроен в .NET SDK | `<AnalysisLevel>latest</AnalysisLevel>` в `Directory.Build.props` |
 | `Microsoft.VisualStudio.Threading.Analyzers` (VSTHRD) | встроен в SDK | используется через analyzer rules |
-| `Meziantou.Analyzer` (MA) | подключён | `Directory.Packages.props` + `Directory.Build.props` |
 | `Roslynator.Analyzers` (RCS) | подключён | `Directory.Packages.props` + `Directory.Build.props` |
 
 Build-флаги в `Directory.Build.props`:

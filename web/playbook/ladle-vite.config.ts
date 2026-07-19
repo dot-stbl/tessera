@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'node:path';
@@ -17,36 +17,44 @@ import path from 'node:path';
  * Ladle's `!hasTSConfigPathPlugin` short-circuit fires and we own the alias
  * mapping — pointing at `apps/console/tsconfig.json` so `@/...` resolves to
  * `apps/console/src/...` correctly.
+ *
+ * The `tesseraStylesInjector` plugin ensures `src/styles.css` is loaded by
+ * Vite's CSS pipeline. Ladle's config.mjs can't import CSS (Node has no CSS
+ * loader), so we inject the import at build time via a `transformIndexHtml`
+ * hook — Vite then bundles it through `@tailwindcss/vite` and the result
+ * lands in the production bundle.
  */
+const tesseraStylesInjector = (): Plugin => ({
+  name: 'tessera-styles-injector',
+  transformIndexHtml() {
+    return [
+      {
+        tag: 'script',
+        attrs: { type: 'module' },
+        // The path Vite uses to resolve the import; this virtual module
+        // is rewritten in the `resolveId` hook below to point at the
+        // real file on disk.
+        children: "import '/@fs/__tessera-styles__';",
+        injectTo: 'head-prepend',
+      },
+    ];
+  },
+  resolveId(id) {
+    if (id === '/@fs/__tessera-styles__') {
+      return path.resolve(import.meta.dirname, 'src/styles.css');
+    }
+    return null;
+  },
+});
+
 export default defineConfig({
   plugins: [
+    tesseraStylesInjector(),
     tsconfigPaths({
       root: import.meta.dirname,
       projects: [path.resolve(import.meta.dirname, '../apps/console/tsconfig.json')],
     }),
     tailwindcss(),
-    {
-      name: 'tessera-at-alias-fallback',
-      enforce: 'pre',
-      async resolveId(id, importer, options) {
-        if (id.startsWith('@/') && importer) {
-          const subpath = id.slice(2);
-          const target = path.resolve(
-            import.meta.dirname,
-            '../apps/console/src',
-            subpath,
-          );
-          // Defer to Vite's resolver so it picks up the right extension
-          // (.ts/.tsx/.js/.jsx) and file resolution rules.
-          const resolved = await this.resolve(target, importer, {
-            ...options,
-            skipSelf: true,
-          });
-          return resolved ?? target;
-        }
-        return null;
-      },
-    },
   ],
   resolve: {
     dedupe: ['react', 'react-dom'],

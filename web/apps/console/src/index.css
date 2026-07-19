@@ -3,6 +3,14 @@
 
 @import '@fontsource-variable/onest';
 
+/* Tailwind 4 content sources. By default Tailwind auto-detects from the
+ * Vite module graph; Ladle's Vite root is its own bundled app dir, so
+ * `@source` directives below tell Tailwind to also scan our actual
+ * component trees (console + playbook stories). */
+@source './**/*.{ts,tsx}';
+@source '../../playbook/src/**/*.{ts,tsx}';
+@source '../../playbook/src/**/*.mdx';
+
 @custom-variant dark (&:is(.dark *));
 
 /* =========================================================================

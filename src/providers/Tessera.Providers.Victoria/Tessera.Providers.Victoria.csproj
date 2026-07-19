@@ -5,6 +5,7 @@
     <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
     <PackageReference Include="Refit" Version="7.0.*"/>
     <PackageReference Include="Refit.HttpClientFactory" Version="7.0.*"/>
+    <PackageReference Remove="Meziantou.Analyzer" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Tessera.Providers.Victoria.Unit" />
