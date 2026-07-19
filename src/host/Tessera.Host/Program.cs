@@ -1,17 +1,13 @@
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Scalar.AspNetCore;
 using System.Text.Json.Serialization;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
 using Tessera.Providers.Victoria.DependencyInjection;
-using Tessera.Shared.Authentication.Admin;
-using Tessera.Shared.Kernel.Configuration;
-using Tessera.Shared.Web.Errors;
-using Tessera.Shared.Web.OpenApi;
+using Tessera.Shared.Authentication;
 using Tessera.Shared.Kernel.Configuration.Source;
+using Tessera.Shared.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,28 +46,12 @@ builder.Services
     .AddApplicationPart(typeof(Tessera.Modules.Logs.Controllers.LogsController).Assembly);
 
 // --------------------------------------------------------------------
-// ProblemDetails pipeline (RFC 9457)
+// Web infrastructure (ProblemDetails + OpenAPI + Scalar)
 // --------------------------------------------------------------------
-// AddProblemDetails wires IProblemDetailsService for any status-code-page
-// branch (404 from constraint miss, 415 from content-type miss).
-// AddExceptionHandler<TesseraExceptionHandler>() registers the global handler
-// that catches ProviderException / ProviderNotFoundException /
-// ProviderTimeoutException and writes a ProblemDetails body.
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<TesseraExceptionHandler>();
-
-// --------------------------------------------------------------------
-// OpenAPI doc + ProblemDetails transformer + Scalar UI
-// --------------------------------------------------------------------
-// AddOpenApi wires Microsoft.AspNetCore.OpenApi source-generated document
-// provider. The ProblemDetailsResponsesTransformer injects the canonical
-// RFC 9457 response shapes (400/404/409/500/502/503/504) onto every
-// operation so the wire format and the OpenAPI doc stay in lock-step
-// without per-endpoint [ProducesResponseType<ProblemDetails>] attributes.
-// Scalar.AspNetCore 2.16 auto-discovers the OpenAPI doc registered above;
-// MapScalarApiReference() mounts the API reference UI at /scalar/v1.
-builder.Services.AddOpenApi(options =>
-    options.AddOperationTransformer<ProblemDetailsResponsesTransformer>());
+// Tessera.Shared.Web encapsulates the global RFC 9457 handler, the
+// problem-details response transformer, and the Scalar mount. Host no
+// longer references those types directly — composition stays declarative.
+builder.Services.AddTesseraWebInfrastructure();
 
 // --------------------------------------------------------------------
 // Authentication (admin bearer — optional in MVP-01)
@@ -81,23 +61,16 @@ builder.Services.AddOpenApi(options =>
 // host changes. The handler reads the token from TESSERA_ADMIN_TOKEN env var;
 // if the env var is unset the handler returns NoResult() for every request,
 // so admin endpoints reject with 401 and the host still starts cleanly.
-// This matches the MVP-01 "admin bearer optional" decision.
-builder.Services
-    .AddAuthentication("admin")
-    .AddScheme<AdminBearerOptions, AdminBearerHandler>("admin", options =>
-    {
-        options.AdminToken = builder.Configuration["TESSERA_ADMIN_TOKEN"]
-            ?? Environment.GetEnvironmentVariable("TESSERA_ADMIN_TOKEN");
-    });
+builder.Services.AddTesseraAdminAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 // --------------------------------------------------------------------
 // Module DI
 // --------------------------------------------------------------------
 // Each AddXxxModule registers the module's Mapperly mapper + any per-module
-// services. AddVictoriaProvider (below) wires the concrete IHealthProvider /
+// services. AddVictoriaProvider wires the concrete IHealthProvider /
 // ITraceProvider / ILogProvider / IDiscoveryProvider implementations from
-// Tessera.Providers.Victoria — modules stay provider-agnostic (PROJECT-DEP-AND-TESTS.MD
+// Tessera.Providers.Victoria — modules stay provider-agnostic (project-deps-and-tests.md
 // provider isolation rule).
 builder.Services
     .AddHealthModule()
@@ -130,8 +103,7 @@ app.MapGet("/",
         docs = "See .agents/docs/architecture.md",
     }));
 
-app.MapOpenApi();
-app.MapScalarApiReference();
+app.UseTesseraOpenApi();
 app.MapControllers();
 
 app.Run();
