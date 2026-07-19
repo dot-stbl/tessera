@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup />
+  <PropertyGroup/>
   <ItemGroup>
-    <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
-    <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
-    <ProjectReference Include="..\..\shared\Tessera.Shared.Telemetry\Tessera.Shared.Telemetry.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj"/>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
 </Project>

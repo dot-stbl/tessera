@@ -45,7 +45,7 @@ src/
 
 ### `host/` — entry points
 
-**Tessera.Host** — ASP.NET Core minimal API, DI composition, options binding, middleware, OpenAPI setup.
+**Tessera.Host** — ASP.NET Core controllers (matches plexor), DI composition, options binding, middleware (`UseExceptionHandler`, `UseStatusCodePages`), OpenAPI setup, ProblemDetails wiring, `AddVictoriaProvider(...)` composition.
 **Tessera.Build.Tools** — MSBuild SDK + targets (VerifyFormatOnBuild, VerifyAntiPatternsOnBuild, VerifyFolderLimits — будущее).
 
 Содержит:
@@ -53,6 +53,8 @@ src/
 - `appsettings.json`, `appsettings.Development.json`
 - Options binding setup
 - Module registration через `services.AddTracesModule()`, `AddLogsModule()`, etc.
+- `AddControllers().AddApplicationPart(...)` × per-module assemblies
+- `AddOpenApi(...)` + `AddProblemDetails()` + `AddExceptionHandler<TesseraExceptionHandler>()`
 
 **Не должно быть:** бизнес-логика, Refit clients, models.
 
@@ -91,10 +93,10 @@ project в `providers/` + регистрация в composition root.
 содержит всё для своего feature.
 
 MVP модули:
-- `Tessera.Modules.Traces` — `Trace`, `Span` models + VT Refit client + handlers + endpoint
-- `Tessera.Modules.Logs` — `LogEntry` model + VL Refit client + handlers + endpoint
-- `Tessera.Modules.Discovery` — Service inventory aggregator
-- `Tessera.Modules.Health` — `/health` endpoint + per-Victoria checks
+- `Tessera.Modules.Traces` — Trace list + detail (with ILogProvider correlation) via `ITraceProvider`
+- `Tessera.Modules.Logs` — log query (MVP-01: trace correlation only) via `ILogProvider`
+- `Tessera.Modules.Discovery` — Service inventory aggregator via `IDiscoveryProvider`
+- `Tessera.Modules.Health` — `/health` endpoint + per-Victoria probes via `IHealthProvider`
 
 Stretch (когда вырастет scope):
 - `Tessera.Modules.Metrics` — RED-метрики, flame graph
@@ -113,20 +115,20 @@ src/modules/
 ```
 Tessera.Modules.Traces/
 ├── Tessera.Modules.Traces.csproj
-├── IVictoriaTracesClient.cs             Refit interface
-├── Models/
-│   ├── Trace.cs
-│   ├── Span.cs
-│   └── TraceSummary.cs
-├── Handlers/
-│   ├── GetTraceHandler.cs
-│   ├── ListTracesHandler.cs
-│   └── ListTraceLogsHandler.cs          cross-ref на Logs через IVictoriaLogsClient
+├── Controllers/
+│   └── TracesController.cs             [ApiController] + ControllerBase
+├── Contracts/
+│   ├── ListTracesRequest.cs            [FromQuery] input
+│   └── GetTraceResponse.cs             response DTO
+├── Mapping/
+│   ├── ITracesMapper.cs                domain → DTO contract
+│   └── TracesMapper.cs                 [Mapper] partial impl (Riok.Mapperly)
 ├── Endpoints/
-│   └── TracesEndpoint.cs                minimal API group
-├── Options/
-│   └── VictoriaTracesOptions.cs         base URL, timeout, tenant
-└── DependencyInjection.cs               static AddTracesModule(this IServiceCollection)
+│   └── TracesEndpointHelpers.cs        internal static — query shaping (TimeRange, LogQuery)
+├── Errors/
+│   └── TracesErrors.cs                 dot.case error code constants
+└── DependencyInjection/
+    └── TracesModuleExtensions.cs        static AddTracesModule(this IServiceCollection)
 ```
 
 **Cross-module communication:** через интерфейсы в `shared/` или через composition root в `host/`. Модули НЕ ссылаются друг на друга напрямую (см. `project-deps-and-tests.md`).

@@ -10,7 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "playbook:dev": "ladle serve",
+    "playbook:build": "ladle build --outDir dist-playbook",
+    "playbook:preview": "ladle preview"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-beta.7",
@@ -20,6 +23,10 @@
     "@hookform/resolvers": "3.10.0",
     "@hugeicons/core-free-icons": "^4.2.2",
     "@hugeicons/react": "^1.1.9",
+    "@iconify-json/logos": "^1",
+    "@iconify/react": "^5",
+    "@nine-thirty-five/material-symbols-react": "^2",
+    "@shadcn/react": "^0.2",
     "@tanstack/react-query": "5.95.0",
     "@tanstack/react-router": "1.91.0",
     "@tanstack/react-table": "^8.21.3",
@@ -48,6 +55,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@ladle/react": "^5.1.1",
     "@tailwindcss/vite": "^4.3.2",
     "@testing-library/dom": "^10.4.0",
     "@tanstack/router-cli": "^1.167.18",

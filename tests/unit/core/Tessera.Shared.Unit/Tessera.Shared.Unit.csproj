@@ -3,14 +3,12 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Telemetry\Tessera.Shared.Telemetry.csproj" />
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.OpenApi\Tessera.Shared.OpenApi.csproj" />
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Validation\Tessera.Shared.Validation.csproj" />
-    <PackageReference Include="xunit" Version="2.9.*" />
-    <PackageReference Include="NSubstitute" Version="5.3.*" />
-    <PackageReference Include="Shouldly" Version="4.3.*" />
-    <PackageReference Include="Bogus" Version="35.6.*" />
+    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+    <PackageReference Include="coverlet.collector" Version="6.0.*"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.*"/>
+    <PackageReference Include="xunit" Version="2.9.*"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.*"/>
+    <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
 </Project>

@@ -47,6 +47,7 @@ Tessera.<Layer>[.<Feature>]
 | `host/` | `Tessera.<EntryPoint>` | `Tessera.Host`, `Tessera.Build.Tools` |
 | `shared/` | `Tessera.Shared.<Capability>` | `Tessera.Shared.Kernel`, `Tessera.Shared.Http` |
 | `modules/` | `Tessera.Modules.<Feature>` | `Tessera.Modules.Traces`, `Tessera.Modules.Logs` |
+| `providers/` | `Tessera.Providers.<Name>` | `Tessera.Providers.Victoria`, `Tessera.Providers.Tempo` (future) |
 | `tests/unit/<group>/` | `<SourceProject>.Unit[.<SubGroup>]` | `Tessera.Modules.Traces.Unit` |
 | `tests/integration/` | `<SourceProject>.Integration[.<SubGroup>]` | `Tessera.Host.Integration` |
 
@@ -56,6 +57,7 @@ Tessera.<Layer>[.<Feature>]
 Tessera.<Layer>.<Capability>      → ок (3 сегмента)
 Tessera.Modules.<Feature>         → ок
 Tessera.Shared.<Capability>.<Sub> → ок (для больших shared)
+Tessera.Providers.<Name>          → ок (Grafana datasource model)
 Глубже 4 — перебор. Поднимай на уровень вверх.
 ```
 
@@ -84,16 +86,21 @@ Tessera.Shared.<Capability>.<Sub> → ок (для больших shared)
 4. Vertical-slice feature (один feature = один .csproj)?
    → modules/Tessera.Modules.<Feature>/
 
-5. Unit tests (per source project)?
+5. Concrete data source backend (provider implementation)?
+   → providers/Tessera.Providers.<Name>/
+   (implements provider interfaces from Tessera.Shared.Kernel;
+    e.g. Tessera.Providers.Victoria, Tessera.Providers.Tempo future)
+
+6. Unit tests (per source project)?
    → tests/unit/<SourceProject>.Unit/
 
-6. Integration tests (WebApplicationFactory + Testcontainers)?
+7. Integration tests (WebApplicationFactory + Testcontainers)?
    → tests/integration/<SourceProject>.Integration/
 
-7. Architecture tests (NetArchTest rules)?
+8. Architecture tests (NetArchTest rules)?
    → tests/unit/core/Tessera.ArchitectureTests/
 
-8. Frontend?
+9. Frontend?
    → web/apps/<app>/
 ```
 
@@ -114,8 +121,10 @@ Tessera.Shared.<Capability>.<Sub> → ок (для больших shared)
 создаёт** физическую папку — она должна быть на диске **до** `sln add`.
 
 **Шаблоны:** `classlib` для большинства; `webapi` для `Tessera.Host`;
-`xunit` для тестов. Test framework фиксируется **один** на solution
-(xUnit + NSubstitute + Shouldly + Bogus, по образцу plexor).
+`xunit` для тестов. Test framework — **один** на solution: **xUnit v2**
+(`xunit` + `xunit.runner.visualstudio`, VSTest). Mocking — NSubstitute;
+Shouldly/Bogus подключены в части тест-csproj. Точный стек и открытый вопрос
+про assertion-style (Assert vs Shouldly) — в `testing-stack-and-pyramid.md`.
 
 **Folder cap:** перед созданием нового проекта — проверь что в целевой папке
 < 5 `.csproj`. Если 5 — **nest** папку (см. `module-structure-5-cap.md`).
@@ -161,25 +170,51 @@ diff <(find src tests -name '*.csproj' | sort) \
 
 ## 6. Internal project structure
 
-Базовый шаблон модуля:
+### Модуль (`Tessera.Modules.<Feature>`)
+
+Modules consume provider **interfaces** from `Tessera.Shared.Kernel` —
+NOT direct Refit clients. Refit + DTO mapping live in providers.
 
 ```
 Tessera.Modules.Traces/
 ├── Tessera.Modules.Traces.csproj
-├── IVictoriaTracesClient.cs             Refit interface (для тестов мокается)
-├── Models/
-│   ├── Trace.cs
-│   ├── Span.cs
-│   └── TraceSummary.cs
-├── Handlers/
-│   ├── GetTraceHandler.cs
-│   ├── ListTracesHandler.cs
-│   └── ListTraceLogsHandler.cs          cross-ref на Logs через IVictoriaLogsClient
+├── Controllers/
+│   └── TracesController.cs             [ApiController] : ControllerBase
+├── Contracts/
+│   ├── ListTracesRequest.cs            [FromQuery] input
+│   └── GetTraceResponse.cs             response DTO
+├── Mapping/
+│   ├── ITracesMapper.cs                domain → DTO contract
+│   └── TracesMapper.cs                 [Mapper] partial impl (Riok.Mapperly)
 ├── Endpoints/
-│   └── TracesEndpoint.cs                minimal API group
-├── Options/
-│   └── VictoriaTracesOptions.cs         base URL, timeout, tenant
-└── DependencyInjection.cs               static AddTracesModule(this IServiceCollection)
+│   └── TracesEndpointHelpers.cs        internal static — query shaping helpers
+├── Errors/
+│   └── TracesErrors.cs                 dot.case error code constants
+└── DependencyInjection/
+    └── TracesModuleExtensions.cs        static AddTracesModule(this IServiceCollection)
+```
+
+### Provider (`Tessera.Providers.<Name>`)
+
+Concrete backend implementation. Implements provider interfaces from
+`Tessera.Shared.Kernel`, owns Refit clients + DTO mapping.
+
+```
+Tessera.Providers.Victoria/
+├── Tessera.Providers.Victoria.csproj
+├── Clients/                             Refit interfaces (provider-specific)
+│   ├── IVictoriaTracesClient.cs
+│   └── IVictoriaLogsClient.cs
+├── Dto/                                 Provider-native DTOs (Jaeger, LogsQL, ...)
+│   ├── JaegerTrace.cs
+│   ├── JaegerSpan.cs
+│   └── VLLogEntry.cs
+├── VictoriaTraceProvider.cs             implements ITraceProvider
+├── VictoriaLogProvider.cs               implements ILogProvider
+├── VictoriaDiscoveryProvider.cs         implements IDiscoveryProvider
+├── VictoriaHealthProvider.cs            implements IHealthProvider
+├── VictoriaOptions.cs                   base URL, timeout, tenant, auth token
+└── VictoriaServiceCollectionExtensions.cs  AddVictoriaProvider(this IServiceCollection)
 ```
 
 ❌ Папки `Helpers/`, `Utils/`, `Common/`, `Misc/`, `Tools/` внутри проекта

@@ -34,3 +34,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 bun-debug.log*
+
+# Ladle playbook build output (separate from console)
+dist-playbook/

@@ -1,0 +1,4 @@
+# Tessera runtime config — gitignored.
+# Copy tessera.toml.example to tessera.toml and edit values, or rely on env vars.
+tessera.toml
+tessera.local.toml

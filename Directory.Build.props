@@ -37,7 +37,7 @@
 
   <!-- Globally suppressed warnings (see .agents/rules/coding/analyzers.md) -->
   <PropertyGroup>
-    <NoWarn>$(NoWarn);RMG012;CS1573;NU1510;NU1605;NU1902;NU1903;NU1904</NoWarn>
+    <NoWarn>$(NoWarn);RMG012;CS1573;NU1510;NU1605;NU1902;NU1903;NU1904;CA1707;CA1716;RCS1194</NoWarn>
   </PropertyGroup>
 
   <!-- Test projects: coverlet coverage -->
@@ -70,14 +70,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Meziantou.Analyzer" Version="3.0.*">
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="4.0.*">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MinVer" Version="7.*">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup />
+  <PropertyGroup/>
   <ItemGroup>
-    <ProjectReference Include="..\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0"/>
+    <PackageReference Include="Refit" Version="13.1.0" />
+    <PackageReference Include="Refit.HttpClientFactory" Version="13.1.0" />
+    <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
 </Project>

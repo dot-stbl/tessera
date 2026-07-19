@@ -37,10 +37,10 @@ Config file search order:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `TESSERA_ADMIN_TOKEN` | **yes** | Bearer token for admin endpoints |
-| `TESSERA_ADMIN_TOKEN_FILE` | alternative | Path to file containing the token (when env var unavailable) |
+| `TESSERA_ADMIN_TOKEN` | **optional in MVP-01** — unset → admin scheme disabled (handler returns `NoResult`) | Bearer token for **future** admin endpoints (none exist in MVP-01) |
+| `TESSERA__ADMIN__TOKEN` | alternative | ASP.NET Core double-underscore convention (`[auth]:admin:token` config section); if both set, `configuration["TESSERA_ADMIN_TOKEN"]` wins (see `AddTesseraAdminAuthentication` in `Tessera.Shared.Authentication.AuthenticationInstallerExtensions`) |
 
-**Generate strong token:**
+**Generate strong token (Phase 5+ admin endpoints):**
 
 ```bash
 openssl rand -hex 32  # 64-char hex
@@ -51,8 +51,8 @@ openssl rand -hex 32  # 64-char hex
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `TESSERA_VICTORIA_TOKEN` | yes | Bearer token for vtselect / vlselect / vmselect |
-| `TESSERA_VICTORIA_TOKEN_FILE` | alternative | Path to file with token |
+| `TESSERA_VICTORIA_TOKEN` | no (mandatory for any non-anonymous VT/VL/VM) | Bearer token applied uniformly to vtselect / vlselect / vmselect via `[victoria.*]` `token = "env:TESSERA_VICTORIA_TOKEN"` inline reference |
+| `TESSERA_VICTORIA_TOKEN_FILE` | alternative | Path to file containing the token (resolved by inline `file:/path` prefix in TOML) |
 
 ### Observability
 

@@ -1,14 +1,37 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IsTestProject>true</IsTestProject>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NetArchTest.Rules" Version="1.3.*" />
+    <PackageReference Include="NSubstitute" Version="5.3.*" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\host\Tessera.Host\Tessera.Host.csproj" />
     <ProjectReference Include="..\..\..\..\src\modules\Tessera.Modules.Traces\Tessera.Modules.Traces.csproj" />
     <ProjectReference Include="..\..\..\..\src\modules\Tessera.Modules.Logs\Tessera.Modules.Logs.csproj" />
     <ProjectReference Include="..\..\..\..\src\modules\Tessera.Modules.Discovery\Tessera.Modules.Discovery.csproj" />
     <ProjectReference Include="..\..\..\..\src\modules\Tessera.Modules.Health\Tessera.Modules.Health.csproj" />
-    <PackageReference Include="NetArchTest.Rules" Version="1.3.*" />
-    <PackageReference Include="xunit" Version="2.9.*" />
+    <ProjectReference Include="..\..\..\..\src\providers\Tessera.Providers.Victoria\Tessera.Providers.Victoria.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Web\Tessera.Shared.Web.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Authentication\Tessera.Shared.Authentication.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Validation\Tessera.Shared.Validation.csproj" />
   </ItemGroup>
+
 </Project>

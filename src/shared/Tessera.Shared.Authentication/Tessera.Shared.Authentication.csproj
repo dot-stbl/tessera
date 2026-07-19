@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup/>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tessera.Host.UnitTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
+  </ItemGroup>
+</Project>

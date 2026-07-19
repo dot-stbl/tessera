@@ -1,0 +1,64 @@
+# .dockerignore for Tessera.Host container build context.
+#
+# Goal: minimum bytes crossing the docker build context boundary.
+# Anything not strictly required by `dotnet restore` + `dotnet publish`
+# of Tessera.Host belongs here.
+#
+# Rules:
+#   - Keep bin/ obj/ out — incremental caches shouldn't be in the build
+#     context; the Dockerfile uses BuildKit cache mounts for NuGet anyway.
+#   - Keep test projects EXCEPT the two csproj manifests we need for restore
+#     (the Dockerfile already copies those before the . -> COPY . .).
+#   - Keep web/ out — frontend deferred to MVP-02.
+#   - Keep .git/ docs/ infra/ out — host build doesn't need them.
+
+# Git metadata (large on big repos, useless to the SDK layer)
+.git
+.gitignore
+.gitattributes
+.github
+
+# Build outputs / caches
+**/bin
+**/obj
+**/out
+**/TestResults
+**/coverage*
+
+# Frontend — separate deployment lane (MVP-02)
+web/
+node_modules/
+bun.lock
+bun.lockb
+
+# Docs — not consumed by host build
+.agents/
+docs/
+*.md
+LICENSE*
+.dockerignore
+.editorconfig
+
+# IDE / OS noise
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Source generator caches (regenerated on build)
+**/Generated/
+
+# Local config / secrets — never bake into images
+tessera.toml
+tessera.local.toml
+.env
+.env.local
+secrets/
+
+# Module test projects (Host.UnitTests still needed for parallel
+# type-resolution during full solution restore — keep those csprojs
+# only). The Dockerfile re-copies the specific csprojs it needs before
+# this ignore line is reached; this line filters the wholesale
+# `COPY . .` so the final layer doesn't carry test source.
+tests/

@@ -6,6 +6,8 @@
   "workspaces": ["apps/*", "tooling/*"],
   "scripts": {
     "dev": "bun --filter '@tessera/console' dev",
+    "playbook:dev": "bun --filter '@tessera/console' playbook:dev",
+    "playbook:build": "bun --filter '@tessera/console' playbook:build",
     "build": "bun --filter '@tessera/console' build",
     "test": "bun --filter '@tessera/console' test",
     "lint": "bun --filter '@tessera/console' lint",

@@ -2,8 +2,25 @@
 @import 'tw-animate-css';
 
 @import '@fontsource-variable/onest';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
+/* Tailwind 4 content sources. By default Tailwind auto-detects from the
+ * Vite module graph. We add explicit `@source` rules so Ladle stories
+ * (which live under `.ladle/stories/`) are also scanned — Ladle's Vite
+ * root is its own bundled app dir, so they would otherwise be missed. */
+@source './**/*.{ts,tsx}';
+@source './.ladle/stories/**/*.{ts,tsx,mdx}';
+
+/*
+ * Dark mode variant. Listens to BOTH:
+ *   - `.dark` class on any ancestor (used by next-themes / shadcn convention)
+ *   - `[data-theme="dark"]` on any ancestor (used by Ladle theme toggle)
+ * This way the same index.css works in both the console SPA and the Ladle
+ * playground without each call site needing its own dark-mode plumbing.
+ */
+@custom-variant dark (&:is(.dark *, [data-theme="dark"] *, [data-theme="dark"]));
 
 /* =========================================================================
  * Tessera Design System — tokens.
@@ -15,36 +32,48 @@
 
 :root {
   /* ─── Surface (3 layers) ─── */
-  --background: oklch(98% 0.005 250);
-  --card: oklch(100% 0 0);
-  --popover: oklch(100% 0 0);
-  --secondary: oklch(97% 0.006 250);
-  --muted: oklch(97% 0.006 250);
+  --background: oklch(1 0 0);
+  --card: oklch(1 0 0);
+  --popover: oklch(1 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --muted: oklch(0.967 0.001 286.375);
   --surface-2: oklch(97% 0.006 250);
   --surface-3: oklch(95% 0.008 240);
 
   /* ─── Ink (4 levels) ─── */
-  --foreground: oklch(22% 0.02 240);
-  --card-foreground: var(--foreground);
-  --popover-foreground: var(--foreground);
-  --secondary-foreground: var(--foreground);
-  --muted-foreground: oklch(50% 0.018 240);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted-foreground: oklch(0.552 0.016 285.938);
   --fg-2: oklch(35% 0.018 240);
   --muted-2: oklch(65% 0.014 240);
 
   /* ─── Borders (2 levels) ─── */
-  --border: oklch(91% 0.008 240);
+  --border: oklch(0.92 0.004 286.32);
   --border-2: oklch(85% 0.008 240);
-  --input: var(--border);
+  --input: oklch(0.92 0.004 286.32);
+
+  /* ─── Waterfall gridlines + categorical service palette (APM) ───
+   * Service hues live in 190–320 only, clear of the status hues
+   * (green 145 / orange 50 / amber 75 / red 25) so a service colour is
+   * never mistaken for a status. */
+  --grid: oklch(0.55 0.02 260 / 0.14);
+  --svc-1: oklch(0.60 0.12 250);
+  --svc-2: oklch(0.60 0.10 190);
+  --svc-3: oklch(0.58 0.13 300);
+  --svc-4: oklch(0.62 0.10 220);
+  --svc-5: oklch(0.55 0.13 275);
+  --svc-6: oklch(0.60 0.11 320);
 
   /* ─── Accent (Tessera DS — dark red, distinctive from --err) ─── */
   /* Accent is the deep, primary-action red. --err is the brighter, status-only red. */
-  --accent: oklch(35% 0.18 25);
-  --accent-foreground: oklch(100% 0 0);
-  --ring: var(--accent);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --ring: oklch(0.705 0.015 286.067);
 
   /* ─── Destructive ─── */
-  --destructive: oklch(58% 0.20 25);
+  --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(98% 0.005 250);
 
   /* ─── Status semantics ───
@@ -88,27 +117,30 @@
   --level-fatal-bg: oklch(95% 0.05 0);
 
   /* ─── Radius ─── */
-  --radius: 0.5rem;
+  --radius: 0.45rem;
 
   /* ─── Chart colors (shadcn defaults — OK for MVP) ─── */
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --chart-1: oklch(0.808 0.114 19.571);
+  --chart-2: oklch(0.637 0.237 25.331);
+  --chart-3: oklch(0.577 0.245 27.325);
+  --chart-4: oklch(0.505 0.213 27.518);
+  --chart-5: oklch(0.444 0.177 26.899);
 
   /* ─── Sidebar (shadcn defaults — keep) ─── */
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.577 0.245 27.325);
+  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+  --primary: oklch(0.505 0.213 27.518);
+  --primary-foreground: oklch(0.971 0.013 17.38);
 }
 
-.dark {
+.dark,
+[data-theme="dark"] {
   --background: oklch(17% 0.012 250);
   --card: oklch(21% 0.014 250);
   --popover: oklch(21% 0.014 250);
@@ -129,8 +161,20 @@
   --border-2: oklch(38% 0.014 250);
   --input: var(--border);
 
-  --accent: oklch(70% 0.20 25);
-  --accent-foreground: oklch(17% 0.012 250);
+  --grid: oklch(1 0 0 / 0.06);
+  --svc-1: oklch(0.70 0.12 250);
+  --svc-2: oklch(0.72 0.10 190);
+  --svc-3: oklch(0.70 0.13 300);
+  --svc-4: oklch(0.74 0.10 220);
+  --svc-5: oklch(0.68 0.13 275);
+  --svc-6: oklch(0.72 0.11 320);
+
+  --primary: oklch(70% 0.20 25);
+  --primary-foreground: oklch(17% 0.012 250);
+  --accent: oklch(28% 0.016 250);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.704 0.191 22.216);
+  --ring: oklch(0.552 0.016 285.938);
 
   --ok: oklch(72% 0.16 145);
   --ok-soft: oklch(28% 0.05 145);
@@ -163,14 +207,111 @@
   --level-error-bg: var(--err-soft);
   --level-fatal-bg: oklch(25% 0.05 0);
 
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-primary: oklch(0.637 0.237 25.331);
+  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+/* =========================================================================
+ * @theme inline — maps tokens to Tailwind utilities.
+ * After this: bg-primary, text-foreground, bg-ok-soft, text-ok-ink etc.
+ * all resolve to Tessera DS values automatically.
+ * ========================================================================= */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-2: var(--border-2);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Tessera DS extra scale */
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-fg-2: var(--fg-2);
+  --color-muted-2: var(--muted-2);
+
+  /* Status semantics */
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
+  --color-err: var(--err);
+  --color-err-soft: var(--err-soft);
+  --color-err-ink: var(--err-ink);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-ink: var(--warn-ink);
+  --color-idle: var(--idle);
+  --color-idle-soft: var(--idle-soft);
+  --color-idle-ink: var(--idle-ink);
+
+  /* APM extensions */
+  --color-slow: var(--slow);
+  --color-slow-soft: var(--slow-soft);
+  --color-slow-ink: var(--slow-ink);
+
+  /* Log severity */
+  --color-level-trace: var(--level-trace);
+  --color-level-debug: var(--level-debug);
+  --color-level-info: var(--level-info);
+  --color-level-warn: var(--level-warn);
+  --color-level-error: var(--level-error);
+  --color-level-fatal: var(--level-fatal);
+  --color-level-trace-bg: var(--level-trace-bg);
+  --color-level-debug-bg: var(--level-debug-bg);
+  --color-level-info-bg: var(--level-info-bg);
+  --color-level-warn-bg: var(--level-warn-bg);
+  --color-level-error-bg: var(--level-error-bg);
+  --color-level-fatal-bg: var(--level-fatal-bg);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Typography */
+  --font-sans: 'Geist Variable', sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace;
+
+  /* Radii */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --font-heading: var(--font-sans);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* =========================================================================
@@ -179,11 +320,40 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
+    /* One consistent thin scrollbar everywhere (Firefox). Replaces the
+     * chunky ~17px native Windows scrollbar that reserved width in every
+     * overflow container and read as random gaps. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+  }
+  /* Chromium / Edge / Safari counterpart. */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-2);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-2);
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply antialiased bg-background text-foreground;
     font-family: 'Onest Variable', system-ui, sans-serif;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
@@ -261,12 +431,20 @@
 /* ─── Log entry ─── */
 .log-entry {
   border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--lvc, transparent);
   padding: 6px 12px;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-size: 12px;
   line-height: 1.5;
 }
 .log-entry:hover { background: var(--surface-2); }
+/* severity gutter — the left stripe scans faster than reading chips */
+.log-entry-trace { --lvc: var(--level-trace); }
+.log-entry-debug { --lvc: var(--level-debug); }
+.log-entry-info  { --lvc: var(--level-info); }
+.log-entry-warn  { --lvc: var(--level-warn); }
+.log-entry-error { --lvc: var(--level-error); }
+.log-entry-fatal { --lvc: var(--level-fatal); }
 .log-entry-row {
   display: flex;
   align-items: center;
@@ -274,7 +452,7 @@
   flex-wrap: nowrap;
 }
 .log-time { flex-shrink: 0; min-width: 80px; }
-.log-service { color: var(--fg-2); flex-shrink: 0; }
+.log-service { color: var(--fg-2); flex-shrink: 0; min-width: 112px; }
 .log-message { color: var(--foreground); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log-expand {
   background: none;
@@ -299,78 +477,141 @@
 .log-fields dt { color: var(--muted-foreground); font-weight: 500; }
 .log-fields dd { color: var(--foreground); margin: 0; word-break: break-word; }
 
-/* ─── Waterfall (Jaeger-style timeline) ─── */
+/* ─── Waterfall (Jaeger / Kibana APM style) ─── */
 .waterfall {
+  --wf-label: 300px;
+  --wf-dur: 88px;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-size: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
-.waterfall-header,
-.span-row {
+
+/* time axis + tick labels */
+.waterfall-axis {
   display: grid;
-  grid-template-columns: 240px 1fr 80px;
+  grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
   align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-}
-.waterfall-header {
-  background: var(--surface-3);
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted-foreground);
-  border-bottom: 1px solid var(--border);
-}
-.waterfall-body .span-row { border-bottom: 1px solid var(--border); }
-.waterfall-body .span-row:last-child { border-bottom: 0; }
-.span-row { background: var(--background); cursor: default; }
-.span-row[data-clickable] { cursor: pointer; }
-.span-row[data-clickable]:hover { background: var(--surface-2); }
-.span-row-selected { background: var(--accent) !important; color: var(--accent-foreground); }
-.span-row-selected .span-service,
-.span-row-selected .span-name { color: inherit; }
-.span-row-selected .span-duration { color: inherit; opacity: 0.9; }
-.span-label { display: flex; gap: 6px; min-width: 0; overflow: hidden; }
-.span-service { color: var(--muted-foreground); flex-shrink: 0; }
-.span-name { color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.span-track {
-  position: relative;
-  height: 16px;
+  height: 30px;
   background: var(--surface-2);
-  border-radius: 3px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
 }
-.span-bar {
+.waterfall-axis-label {
+  padding-left: 14px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.waterfall-axis-track { position: relative; height: 100%; }
+.waterfall-tick {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--accent);
-  border-radius: 3px;
   display: flex;
   align-items: center;
-  padding-left: 4px;
-  color: var(--accent-foreground);
+  transform: translateX(-50%);
+  padding: 0 3px;
   font-size: 10px;
-  overflow: hidden;
+  color: var(--muted-foreground);
 }
-.span-bar-ok { background: var(--ok); }
-.span-bar-error { background: var(--err); }
-.span-bar-unset { background: var(--muted); }
-.span-bar-error-icon {
-  font-weight: 700;
-  font-size: 11px;
-  margin-right: 2px;
+.waterfall-tick.is-first { transform: none; }
+.waterfall-tick.is-last { transform: translateX(-100%); }
+.waterfall-axis-dur {
+  padding-right: 14px;
+  text-align: right;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.span-duration { color: var(--muted-foreground); font-variant-numeric: tabular-nums; text-align: right; }
 
-/* Span indentation by depth */
-.span-row[data-depth="0"] .span-label { padding-left: 0; }
-.span-row[data-depth="1"] .span-label { padding-left: 16px; }
-.span-row[data-depth="2"] .span-label { padding-left: 32px; }
-.span-row[data-depth="3"] .span-label { padding-left: 48px; }
-.span-row[data-depth="4"] .span-label { padding-left: 64px; }
+.waterfall-empty { padding: 24px 14px; text-align: center; color: var(--muted-foreground); }
+
+.span-row {
+  display: grid;
+  grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
+  align-items: center;
+  height: 30px;
+  background: var(--background);
+  cursor: default;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+}
+.waterfall-body .span-row:last-child { border-bottom: 0; }
+.span-row[data-clickable] { cursor: pointer; }
+.span-row[data-clickable]:hover { background: var(--surface-2); }
+.span-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.span-row-error { background: color-mix(in oklch, var(--err) 6%, var(--card)); }
+.span-row-selected { background: color-mix(in oklch, var(--primary) 9%, var(--card)); }
+.span-row-selected[data-clickable]:hover { background: color-mix(in oklch, var(--primary) 13%, var(--card)); }
+
+.span-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  padding-left: calc(14px + var(--depth, 0) * 15px);
+  padding-right: 12px;
+}
+.span-crit-tick {
+  position: absolute;
+  left: 4px;
+  width: 5px;
+  height: 5px;
+  background: var(--primary);
+  border-radius: 1px;
+  rotate: 45deg;
+  flex: none;
+}
+.span-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--svc, var(--muted-2)); flex: none; }
+.span-service { color: var(--muted-foreground); flex: none; }
+.span-name { color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.span-row-crit .span-name { font-weight: 600; }
+
+.span-track {
+  position: relative;
+  height: 100%;
+  background-image: linear-gradient(to right, var(--grid) 0, var(--grid) 1px, transparent 1px);
+  background-size: 25% 100%;
+}
+.span-bar {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  height: 13px;
+  background: var(--svc, var(--muted-2));
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.06);
+}
+.span-bar-error { background: var(--err); }
+.span-bar-flag {
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  translate: 50% -50%;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  background: var(--err);
+  color: oklch(1 0 0);
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+}
+.span-duration {
+  padding-right: 14px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.span-duration-unit { margin-left: 1px; color: var(--muted-2); font-size: 0.85em; }
+.span-duration.is-slow { color: var(--slow-ink); }
+.span-duration.is-error { color: var(--err-ink); font-weight: 600; }
 
 /* ─── Dashboard grid ─── */
 .dashboard-panel {
@@ -475,6 +716,10 @@
 .app-main {
   grid-area: main;
   overflow-y: auto;
+  /* Reserve the gutter on the single main scroll root so opening a
+   * Select/Dialog/Popover (Base UI locks body scroll + compensates with
+   * padding-right) no longer shifts the whole layout. */
+  scrollbar-gutter: stable;
   background: var(--background);
 }
 

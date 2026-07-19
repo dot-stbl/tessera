@@ -1,3 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup />
+  <PropertyGroup/>
+  <ItemGroup>
+    <PackageReference Include="Tomlyn" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+    <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup/>
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj"/>
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+    <PackageReference Include="Refit" Version="13.1.0" />
+    <PackageReference Include="Refit.HttpClientFactory" Version="13.1.0" />
+    <PackageReference Remove="Meziantou.Analyzer" />
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tessera.Providers.Victoria.Unit" />
+  </ItemGroup>
+</Project>

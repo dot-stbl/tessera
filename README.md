@@ -74,7 +74,7 @@ full architecture overview.
 
 ## Stack
 
-- **Backend** — ASP.NET Core 10 minimal API, Refit + Polly + OpenTelemetry
+- **Backend** — ASP.NET Core 10 controllers, Refit + Polly + OpenTelemetry
 - **Frontend** — React 19 + TanStack Router + TanStack Query + shadcn/ui
 - **Data** — VictoriaMetrics + VictoriaLogs + VictoriaTraces over HTTP
 - **Storage** — SQLite + JSON files (no PostgreSQL, no Kafka)
