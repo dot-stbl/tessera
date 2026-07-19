@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Paths;
 
 /// <summary>
 ///     Filesystem-anchored lookup for Tessera's TOML configuration files. The

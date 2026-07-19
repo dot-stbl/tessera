@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Tessera.Shared.Kernel.Configuration.Paths;
 
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Source;
 
 /// <summary>
 ///     Tessera composition-root extensions for the

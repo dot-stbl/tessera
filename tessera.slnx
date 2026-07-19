@@ -28,8 +28,8 @@
     </Folder>
     <Folder Name="/src/shared/infra/">
         <Project Path="src/shared/Tessera.Shared.Http/Tessera.Shared.Http.csproj"/>
-        <Project Path="src/shared/Tessera.Shared.Telemetry/Tessera.Shared.Telemetry.csproj"/>
-        <Project Path="src/shared/Tessera.Shared.OpenApi/Tessera.Shared.OpenApi.csproj"/>
+        <Project Path="src/shared/Tessera.Shared.Web/Tessera.Shared.Web.csproj"/>
+        <Project Path="src/shared/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj"/>
         <Project Path="src/shared/Tessera.Shared.Validation/Tessera.Shared.Validation.csproj"/>
     </Folder>
 

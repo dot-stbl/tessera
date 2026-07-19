@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Tessera.Shared.Kernel.Api;
 using Tessera.Shared.Kernel.Exceptions;
 
-namespace Tessera.Host.Errors;
+namespace Tessera.Shared.Web.Errors;
 
 /// <summary>
 ///     Global <see cref="IExceptionHandler" /> that converts a

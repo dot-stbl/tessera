@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Tessera.Shared.Kernel.Exceptions;
 
-namespace Tessera.Host.Errors;
+namespace Tessera.Shared.Web.Errors;
 
 /// <summary>
 ///     Status-code mapping for the global <see cref="TesseraExceptionHandler" />.

@@ -1,6 +1,6 @@
 using Tomlyn.Model;
 
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Source;
 
 /// <summary>
 ///     Pure recursive <see cref="TomlTable" /> / <see cref="TomlArray" />

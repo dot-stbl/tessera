@@ -1,6 +1,6 @@
 using Microsoft.OpenApi;
 
-namespace Tessera.Host.OpenApi;
+namespace Tessera.Shared.Web.OpenApi;
 
 /// <summary>
 ///     Pure helper that appends an <see cref="OpenApiResponse" /> entry to an

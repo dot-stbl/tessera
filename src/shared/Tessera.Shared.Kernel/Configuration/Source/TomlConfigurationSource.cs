@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Source;
 
 /// <summary>
 ///     Source descriptor for <see cref="TomlConfigurationProvider" />. The

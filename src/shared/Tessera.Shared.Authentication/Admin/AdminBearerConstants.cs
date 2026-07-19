@@ -1,4 +1,4 @@
-namespace Tessera.Host.Auth;
+namespace Tessera.Shared.Authentication.Admin;
 
 /// <summary>
 ///     Wire constants for the admin-bearer scheme — scheme name (as registered

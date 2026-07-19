@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Paths;
 
 /// <summary>
 ///     Parses and resolves inline secret references that appear in TOML config

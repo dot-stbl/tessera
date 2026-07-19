@@ -5,7 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 
-namespace Tessera.Host.Auth;
+namespace Tessera.Shared.Authentication.Admin;
 
 /// <summary>
 ///     Authentication handler for the admin-bearer scheme. Single-factor:

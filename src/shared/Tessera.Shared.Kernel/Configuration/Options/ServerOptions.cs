@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using Tessera.Shared.Kernel.Configuration.Source;
 
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Options;
 
 /// <summary>
 ///     HTTP server bind settings. Bound from the <c>[server]</c> TOML table by

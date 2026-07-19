@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace Tessera.Host.OpenApi;
+namespace Tessera.Shared.Web.OpenApi;
 
 /// <summary>
 ///     OpenAPI operation transformer that injects the canonical RFC 9457

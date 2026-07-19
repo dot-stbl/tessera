@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Tomlyn.Model;
 
-namespace Tessera.Shared.Kernel.Configuration;
+namespace Tessera.Shared.Kernel.Configuration.Source;
 
 /// <summary>
 ///     <see cref="FileConfigurationProvider" /> that parses a TOML file via
@@ -19,17 +19,8 @@ namespace Tessera.Shared.Kernel.Configuration;
 ///     TomlArray) are handled by recursive flattening in
 ///     <see cref="TomlTableFlattener" />.
 /// </remarks>
-public sealed class TomlConfigurationProvider : FileConfigurationProvider
+public sealed class TomlConfigurationProvider(TomlConfigurationSource source) : FileConfigurationProvider(source)
 {
-    /// <summary>
-    ///     Initializes a new instance bound to <paramref name="source" />. The
-    ///     source's <c>Path</c> / <c>Optional</c> / <c>ReloadOnChange</c> flow
-    ///     through the base class.
-    /// </summary>
-    public TomlConfigurationProvider(TomlConfigurationSource source) : base(source)
-    {
-    }
-
     /// <inheritdoc />
     public override void Load(Stream stream)
     {

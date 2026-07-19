@@ -2,15 +2,16 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Scalar.AspNetCore;
 using System.Text.Json.Serialization;
-using Tessera.Host.Auth;
-using Tessera.Host.Errors;
-using Tessera.Host.OpenApi;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
 using Tessera.Providers.Victoria.DependencyInjection;
+using Tessera.Shared.Authentication.Admin;
 using Tessera.Shared.Kernel.Configuration;
+using Tessera.Shared.Web.Errors;
+using Tessera.Shared.Web.OpenApi;
+using Tessera.Shared.Kernel.Configuration.Source;
 
 var builder = WebApplication.CreateBuilder(args);
 
