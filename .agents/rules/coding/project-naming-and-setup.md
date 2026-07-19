@@ -47,6 +47,7 @@ Tessera.<Layer>[.<Feature>]
 | `host/` | `Tessera.<EntryPoint>` | `Tessera.Host`, `Tessera.Build.Tools` |
 | `shared/` | `Tessera.Shared.<Capability>` | `Tessera.Shared.Kernel`, `Tessera.Shared.Http` |
 | `modules/` | `Tessera.Modules.<Feature>` | `Tessera.Modules.Traces`, `Tessera.Modules.Logs` |
+| `providers/` | `Tessera.Providers.<Name>` | `Tessera.Providers.Victoria`, `Tessera.Providers.Tempo` (future) |
 | `tests/unit/<group>/` | `<SourceProject>.Unit[.<SubGroup>]` | `Tessera.Modules.Traces.Unit` |
 | `tests/integration/` | `<SourceProject>.Integration[.<SubGroup>]` | `Tessera.Host.Integration` |
 
@@ -56,6 +57,7 @@ Tessera.<Layer>[.<Feature>]
 Tessera.<Layer>.<Capability>      → ок (3 сегмента)
 Tessera.Modules.<Feature>         → ок
 Tessera.Shared.<Capability>.<Sub> → ок (для больших shared)
+Tessera.Providers.<Name>          → ок (Grafana datasource model)
 Глубже 4 — перебор. Поднимай на уровень вверх.
 ```
 
@@ -84,16 +86,21 @@ Tessera.Shared.<Capability>.<Sub> → ок (для больших shared)
 4. Vertical-slice feature (один feature = один .csproj)?
    → modules/Tessera.Modules.<Feature>/
 
-5. Unit tests (per source project)?
+5. Concrete data source backend (provider implementation)?
+   → providers/Tessera.Providers.<Name>/
+   (implements provider interfaces from Tessera.Shared.Kernel;
+    e.g. Tessera.Providers.Victoria, Tessera.Providers.Tempo future)
+
+6. Unit tests (per source project)?
    → tests/unit/<SourceProject>.Unit/
 
-6. Integration tests (WebApplicationFactory + Testcontainers)?
+7. Integration tests (WebApplicationFactory + Testcontainers)?
    → tests/integration/<SourceProject>.Integration/
 
-7. Architecture tests (NetArchTest rules)?
+8. Architecture tests (NetArchTest rules)?
    → tests/unit/core/Tessera.ArchitectureTests/
 
-8. Frontend?
+9. Frontend?
    → web/apps/<app>/
 ```
 
@@ -161,25 +168,48 @@ diff <(find src tests -name '*.csproj' | sort) \
 
 ## 6. Internal project structure
 
-Базовый шаблон модуля:
+### Модуль (`Tessera.Modules.<Feature>`)
+
+Modules consume provider **interfaces** from `Tessera.Shared.Kernel` —
+NOT direct Refit clients. Refit + DTO mapping live in providers.
 
 ```
 Tessera.Modules.Traces/
 ├── Tessera.Modules.Traces.csproj
-├── IVictoriaTracesClient.cs             Refit interface (для тестов мокается)
-├── Models/
-│   ├── Trace.cs
-│   ├── Span.cs
-│   └── TraceSummary.cs
-├── Handlers/
-│   ├── GetTraceHandler.cs
+├── Models/                              DTOs для HTTP responses
+│   ├── TraceSummary.cs
+│   ├── TraceDetail.cs
+│   ├── ListTracesRequest.cs
+│   └── ListTracesResponse.cs
+├── Handlers/                            consume ITraceProvider, ILogProvider
 │   ├── ListTracesHandler.cs
-│   └── ListTraceLogsHandler.cs          cross-ref на Logs через IVictoriaLogsClient
+│   └── GetTraceHandler.cs               spans + log correlation
 ├── Endpoints/
 │   └── TracesEndpoint.cs                minimal API group
-├── Options/
-│   └── VictoriaTracesOptions.cs         base URL, timeout, tenant
 └── DependencyInjection.cs               static AddTracesModule(this IServiceCollection)
+```
+
+### Provider (`Tessera.Providers.<Name>`)
+
+Concrete backend implementation. Implements provider interfaces from
+`Tessera.Shared.Kernel`, owns Refit clients + DTO mapping.
+
+```
+Tessera.Providers.Victoria/
+├── Tessera.Providers.Victoria.csproj
+├── Clients/                             Refit interfaces (provider-specific)
+│   ├── IVictoriaTracesClient.cs
+│   └── IVictoriaLogsClient.cs
+├── Dto/                                 Provider-native DTOs (Jaeger, LogsQL, ...)
+│   ├── JaegerTrace.cs
+│   ├── JaegerSpan.cs
+│   └── VLLogEntry.cs
+├── VictoriaTraceProvider.cs             implements ITraceProvider
+├── VictoriaLogProvider.cs               implements ILogProvider
+├── VictoriaDiscoveryProvider.cs         implements IDiscoveryProvider
+├── VictoriaHealthProvider.cs            implements IHealthProvider
+├── VictoriaOptions.cs                   base URL, timeout, tenant, auth token
+└── VictoriaServiceCollectionExtensions.cs  AddVictoriaProvider(this IServiceCollection)
 ```
 
 ❌ Папки `Helpers/`, `Utils/`, `Common/`, `Misc/`, `Tools/` внутри проекта
