@@ -4,6 +4,7 @@ import { Check, KeyboardArrowDown } from '@nine-thirty-five/material-symbols-rea
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/primitives/button';
 import { Calendar } from '@/shared/ui/primitives/calendar';
+import { Input } from '@/shared/ui/primitives/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/primitives/popover';
 
 export interface TimeRange {
@@ -47,9 +48,6 @@ export function presetRangeValue(preset: TimeRangePreset, now: number = Date.now
 export function defaultTimeRange(now: number = Date.now()): TimeRangeValue {
   return presetRangeValue(TIME_RANGE_PRESETS[1], now);
 }
-
-const TIME_INPUT_CLASS =
-  'h-7 w-full rounded-md border border-input bg-input/20 px-2 font-mono text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30';
 
 const HHMM = /^(\d{1,2}):(\d{2})$/;
 
@@ -158,24 +156,24 @@ export function TimeRangePicker({ value, onChange, className }: TimeRangePickerP
           <div className="mt-2 grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-[10px] text-muted-foreground">
               From
-              <input
+              <Input
                 value={fromTime}
                 onChange={(e) => setFromTime(e.target.value)}
                 placeholder="HH:MM"
                 inputMode="numeric"
                 aria-invalid={!parsedFrom || undefined}
-                className={TIME_INPUT_CLASS}
+                className="font-mono"
               />
             </label>
             <label className="flex flex-col gap-1 text-[10px] text-muted-foreground">
               To
-              <input
+              <Input
                 value={toTime}
                 onChange={(e) => setToTime(e.target.value)}
                 placeholder="HH:MM"
                 inputMode="numeric"
                 aria-invalid={!parsedTo || undefined}
-                className={TIME_INPUT_CLASS}
+                className="font-mono"
               />
             </label>
           </div>

@@ -1,4 +1,6 @@
+import { Close } from '@nine-thirty-five/material-symbols-react/rounded/700';
 import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/primitives/button';
 import { StatusPill, type StatusVariant } from '@/shared/ui/primitives/status-pill';
 import { Duration } from './duration';
 import { TraceId } from './trace-id';
@@ -107,14 +109,16 @@ export function SpanDetailPanel({
           </h2>
         </div>
         {onClose && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
             aria-label="Close span detail"
-            className="ml-auto rounded-sm p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="ml-auto"
           >
-            ✕
-          </button>
+            <Close strokeWidth={2} />
+          </Button>
         )}
       </header>
 
