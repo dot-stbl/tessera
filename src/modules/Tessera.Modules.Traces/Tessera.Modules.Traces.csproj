@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Telemetry\Tessera.Shared.Telemetry.csproj" />
+  </ItemGroup>
+</Project>

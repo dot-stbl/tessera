@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <!-- Container publish via 'dotnet publish /t:PublishContainer' — see .agents/docs/operations/install.md -->
+    <EnableContainerPublish>true</EnableContainerPublish>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Telemetry\Tessera.Shared.Telemetry.csproj" />
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.OpenApi\Tessera.Shared.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Validation\Tessera.Shared.Validation.csproj" />
+    <ProjectReference Include="..\..\modules\Tessera.Modules.Traces\Tessera.Modules.Traces.csproj" />
+    <ProjectReference Include="..\..\modules\Tessera.Modules.Logs\Tessera.Modules.Logs.csproj" />
+    <ProjectReference Include="..\..\modules\Tessera.Modules.Discovery\Tessera.Modules.Discovery.csproj" />
+    <ProjectReference Include="..\..\modules\Tessera.Modules.Health\Tessera.Modules.Health.csproj" />
+  </ItemGroup>
+</Project>

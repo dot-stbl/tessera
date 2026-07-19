@@ -1,0 +1,8 @@
+<Project>
+
+  <!-- Tessera.Build.Tools.targets — solution-level build hooks placeholder.
+       Real targets (VerifyFormatOnBuild, anti-pattern gates) land in a later
+       commit. For now this file just exists so Tessera.Build.Tools.csproj's
+       <Import Project="Tessera.Build.Tools.targets" /> resolves. -->
+
+</Project>

@@ -1,0 +1,86 @@
+<Project>
+
+  <!--
+    Tessera — Directory.Build.props (inherited by every project).
+    Source of truth: .agents/rules/coding/project-naming-and-setup.md
+    Mirrors plexor's strict mode (https://github.com/dot-stbl/plexor).
+  -->
+
+  <PropertyGroup>
+    <!-- Versioning: MinVer derives the version from git tags (v0.1.0, ...). -->
+    <RepositoryType>git</RepositoryType>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerSkipPrerelease>true</MinVerSkipPrerelease>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateRequiresPreviewFeaturesAttribute>false</GenerateRequiresPreviewFeaturesAttribute>
+  </PropertyGroup>
+
+  <!-- Language + nullable + warnings-as-errors -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Analyzers (strict mode) -->
+  <PropertyGroup>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- Globally suppressed warnings (see .agents/rules/coding/analyzers.md) -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);RMG012;CS1573;NU1510;NU1605;NU1902;NU1903;NU1904</NoWarn>
+  </PropertyGroup>
+
+  <!-- Test projects: coverlet coverage -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>./TestResults/$(MSBuildProjectName)_coverage.cobertura.xml</CoverletOutput>
+    <ExcludeByFile>**/Generated/**/*.cs</ExcludeByFile>
+  </PropertyGroup>
+
+  <!-- Container publish (ghcr.io/dot-stbl/tessera) -->
+  <PropertyGroup Condition="'$(EnableContainerPublish)' == 'true'">
+    <ContainerRegistry>ghcr.io/dot-stbl</ContainerRegistry>
+    <ContainerImageTags>latest;%VERSION%</ContainerImageTags>
+    <ContainerUser>tessera</ContainerUser>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Analyzer packages (PrivateAssets=all so they don't leak into runtime) -->
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="4.15.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.15.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Meziantou.Analyzer" Version="3.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="4.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="MinVer" Version="7.*">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tessera.Build.Tools — solution-level build hooks.
+
+    This project does NOT produce a DLL. Its purpose is to host the
+    Tessera.Build.Tools.targets file (format gate + anti-pattern gate) and
+    ensure the targets fire exactly once per solution build (because the
+    project is built once, at the top of MSBuild's topological order — it
+    has no ProjectReferences).
+
+    Key tricks:
+      EnableDefaultCompileItems=false → no .cs files picked up
+      IncludeBuildOutput=false        → no .dll emitted
+      NoWarn=CS5001;CS1591            → no Main / no XML doc expected
+      <Import Project="Tessera.Build.Tools.targets"/> → hosts the targets
+
+    Pattern from plexor/.agent/docs/architecture.md.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);CS5001;CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Remove="Meziantou.Analyzer" />
+  </ItemGroup>
+
+  <Import Project="Tessera.Build.Tools.targets" />
+
+</Project>
