@@ -1,269 +1,311 @@
 ---
-description: API design — minimal API endpoints, route naming, OpenAPI attributes, ProblemDetails for errors
+description: API design — controllers (matches plexor), route prefix v1, JSON conventions, ProblemDetails for errors, [Tags] multi-element, no Result<T> at HTTP boundary
 globs: ["**/*.cs"]
 always: true
 ---
 
 # API design
 
-Tessera uses **ASP.NET Core minimal API** (not controllers). Endpoints are
-small, focused, and grouped by feature.
+Tessera uses **ASP.NET Core controllers** (`[ApiController] + ControllerBase`),
+matching plexor's convention. Endpoints are grouped by feature, route templates
+are kebab-case literals composed from `ApiRoutes.Base = "api/v1"`.
 
-## 1. Minimal API over controllers
+The "minimal API vs controllers" decision was reversed on 2026-07-19 — see
+`.agents/STATE.md` decision log. The Plexor-style controllers win on tooling,
+testability, and consistency with the reference codebase.
 
-```csharp
-// ✅ Tessera pattern — minimal API
-// Endpoint handler method is `private static` (allowed per
-// class-layout-and-tooling.md §1a exemption for minimal API endpoint
-// handlers). All non-trivial DTO mapping lives in a separate
-// file-scoped static class under Endpoints/Mapping/.
-
-namespace Tessera.Modules.Traces.Endpoints;
-
-public static class TracesEndpoint
-{
-    public static void MapTracesEndpoints(this IEndpointRouteBuilder app)
-    {
-        var group = app.MapGroup("/api/traces").WithTags("Traces");
-
-        group.MapGet("/", ListTracesAsync);
-        group.MapGet("/{traceId}", GetTraceAsync);
-        group.MapGet("/{traceId}/logs", ListTraceLogsAsync);
-    }
-
-    private static async Task<Ok<TraceSummary[]>> ListTracesAsync(
-        [AsParameters] ListTracesRequest request,
-        ITraceProvider provider,
-        CancellationToken cancellationToken)
-    {
-        var query = request.ToTraceSearchQuery();
-        var page = await provider.SearchAsync(query, cancellationToken);
-        return TypedResults.Ok(TraceEndpointMapper.ToSummaries(page));
-    }
-}
-
-// File: Endpoints/Mapping/TraceEndpointMapper.cs
-// File-scoped static class. Pure DTO transformation — separate file because
-// per class-layout-and-tooling.md §1a, helpers cannot be private to the
-// endpoint class.
-internal static class TraceEndpointMapper
-{
-    public static TraceSummary[] ToSummaries(Page<TraceSummary> page) => /* ... */;
-    public static TraceDetail ToDetail(TraceDetail detail) => /* ... */;
-}
-```
-
-**Why:** less boilerplate than controllers, faster compile, easier to
-co-locate with module.
-
-## 2. Endpoint organization — one file per feature
-
-```
-src/modules/Tessera.Modules.Traces/
-├── Endpoints/
-│   └── TracesEndpoint.cs        # MapTracesEndpoints + handler methods
-```
-
-**One file per endpoint group.** Avoid monolithic `Endpoints.cs`.
-
-## 3. Route naming
-
-```
-GET    /api/traces                       # list
-GET    /api/traces/{traceId}            # get single
-GET    /api/traces/{traceId}/logs       # sub-resource (logs for trace)
-POST   /api/traces                       # create (admin)
-PUT    /api/traces/{traceId}            # update (admin)
-DELETE /api/traces/{traceId}            # delete (admin)
-```
-
-- Plural nouns (`/traces`, `/logs`, `/services`)
-- Lowercase kebab-case for multi-word: `/api/trace-logs`, `/api/service-maps`
-- Sub-resources via nested path: `/api/traces/{traceId}/logs`
-- Auth via attributes, not path: `/api/admin/...` is **wrong**, use `[Authorize]`
-
-## 4. Request/Response DTOs
+## 1. Controller skeleton
 
 ```csharp
-// Request — query parameters via [AsParameters]
-public sealed record ListTracesRequest(
-    string? Service,
-    string? Operation,
-    long StartUnixMs,
-    long EndUnixMs,
-    int? MinDurationMs,
-    int? MaxDurationMs,
-    int? Limit = 50);
-
-// Response
-public sealed record ListTracesResponse(
-    IReadOnlyList<TraceSummary> Items,
-    string? Cursor,
-    bool HasMore);
-
-// Pagination convention: cursor-based, not offset
-public sealed record PaginationRequest(string? Cursor, int? Limit = 50);
-```
-
-## 5. Error responses — ProblemDetails
-
-```csharp
-private static async Task<Results<Ok<TraceDetail>, NotFound, ProblemHttpResult>> GetTraceAsync(
-    string traceId,
-    ITraceProvider provider,
-    TraceEndpointMapper mapper,
-    CancellationToken cancellationToken)
+[ApiController]
+[Route(ApiRoutes.Traces)]
+[Tags(["traces"])]
+public sealed class TracesController(
+    ITraceProvider traceProvider,
+    ILogProvider logProvider,
+    ITracesMapper mapper) : ControllerBase
 {
-    try
+    [HttpGet]
+    [EndpointSummary("Search traces by service / operation / time / duration")]
+    [ProducesResponseType<Page<TraceSummary>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<Page<TraceSummary>>> ListAsync(
+        [FromQuery] ListTracesRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var detail = await provider.GetByIdAsync(new TraceId(traceId), cancellationToken);
-        return detail is null
-            ? TypedResults.NotFound()
-            : TypedResults.Ok(mapper.ToDetail(detail));
+        var page = await traceProvider.SearchAsync(
+            request.ToTraceSearchQuery(), cancellationToken);
+        return Ok(page);
     }
-    catch (Exception ex)
+
+    [HttpGet("{traceId:length(32)}")]
+    [EndpointSummary("Trace detail with correlated logs (single response)")]
+    [ProducesResponseType<GetTraceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GetTraceResponse>> GetAsync(
+        [FromRoute] string traceId,
+        CancellationToken cancellationToken = default)
     {
-        logger.LogError(ex, "Failed to fetch trace {TraceId}", traceId);
-        return TypedResults.Problem(
-            title: "Trace fetch failed",
-            detail: ex.Message,
-            statusCode: StatusCodes.Status502BadGateway);
+        var parsed = new TraceId(traceId);
+        var trace = await traceProvider.GetByIdAsync(parsed, cancellationToken);
+        if (trace is null)
+        {
+            throw new ProviderNotFoundException(
+                TracesErrors.TraceNotFound, $"trace {traceId} not found");
+        }
+
+        var range = TracesEndpointHelpers.ToLogCorrelationRange(trace);
+        var logs = await logProvider.ListByTraceAsync(parsed, range, cancellationToken);
+        return Ok(mapper.ToResponse(trace, logs));
     }
 }
 ```
 
-Standard HTTP error semantics:
-- `400` — bad request (validation)
-- `401` — unauthorized
-- `403` — forbidden
-- `404` — not found
-- `409` — conflict (e.g., dashboard already exists)
-- `422` — unprocessable (semantic validation)
-- `500` — internal error
-- `502`/`503`/`504` — upstream errors (Victoria)
+Key points:
 
-## 6. OpenAPI / Scalar
+- `sealed class`, primary-constructor injection (no private fields).
+- `[ApiController]` enables automatic 400 on model-binding failures + ProblemDetails.
+- `[Route(ApiRoutes.Traces)]` — never literal route strings.
+- `[Tags(["module", "resource"])]` on the **class** (multi-element, kebab-case).
+- `[EndpointSummary(...)]` on each action.
+- `[ProducesResponseType<T>(StatusCodes.X)]` — **only for 2xx** (4xx/5xx wired
+  globally via `IExceptionHandler` + `ProblemDetailsResponsesTransformer`).
+- Returns `ActionResult<T>` with raw DTOs (`Ok(dto)`) — no `Result<T>` envelope.
 
-Tessera exposes OpenAPI doc + Scalar UI:
+## 2. URL prefix — `v1`
+
+`ApiRoutes.Base = "api/v1"`. Every `[Route]` composes from `ApiRoutes.*`
+constants; never literal `"/api/v1/traces"` strings.
+
+```csharp
+public static class ApiRoutes
+{
+    public const string ApiVersion = "v1";
+    public const string Base = "api/" + ApiVersion;
+    public static string Resource(string name) => Base + "/" + name;
+
+    public const string Health    = Base + "/health";
+    public const string Services  = Base + "/services";
+    public const string Traces    = Base + "/traces";
+    public const string Trace     = Base + "/traces/{traceId:length(32)}";
+    public const string TraceLogs = Base + "/traces/{traceId:length(32)}/logs";
+    public const string Logs      = Base + "/logs";
+}
+```
+
+Tessera docs originally said *"MVP single version, add v1 when needed"* —
+MVP-01+ ships with `v1` baked in to match plexor.
+
+## 3. Attribute ordering convention
+
+On each action, attributes appear in this order (top to bottom):
+
+1. `[HttpXxx(template, Name = RouteNamesConst)]` — `Name` is optional in MVP-01.
+2. `[EndpointSummary("...")]` — required for OpenAPI doc.
+3. `[Authorize]` / `[AllowAnonymous]` / `[RequirePermission(...)]` (when present).
+4. `[ProducesResponseType<T>(StatusCodes.X)]` — 2xx shapes only.
+
+`[Tags]` and `[ApiController]` go on the **class** only, never on actions.
+
+## 4. Request / Response DTOs
+
+Records with **init-only properties** (Mapperly source-generator requirement).
+Positional records banned for DTOs that flow through mappers.
+
+```csharp
+public sealed record ListTracesRequest
+{
+    public string? Service { get; init; }
+    public string? Operation { get; init; }
+    public long StartUnixMs { get; init; }
+    public long EndUnixMs { get; init; }
+    public int? MinDurationMs { get; init; }
+    public int? MaxDurationMs { get; init; }
+    public string? Cursor { get; init; }
+    public int? Limit { get; init; } = 50;
+}
+
+public sealed record HealthResponse
+{
+    public required string Provider { get; init; }
+    public required HealthStatus Status { get; init; }
+    public string? Detail { get; init; }
+}
+```
+
+Cursor-based pagination via `Page<T>` (already in `Tessera.Shared.Kernel.Pagination`).
+No envelope beyond `Page<T>` itself.
+
+## 5. Error responses — ProblemDetails (RFC 9457)
+
+**Every** error response is `application/problem+json`. Boundaries:
+
+| Layer | Mechanism |
+|-------|-----------|
+| Provider (Tessera.Providers.\*) | Throws typed `ProviderException` / `ProviderTimeoutException` / `ProviderNotFoundException` (in `Tessera.Shared.Kernel.Exceptions`) |
+| Host composition root | One global `IExceptionHandler` (`TesseraExceptionHandler`) maps typed exceptions → `ProblemDetails` by stable `Code` |
+| OpenAPI doc | `ProblemDetailsResponsesTransformer` injects 400/404/409/500/502/503/504 ProblemDetails responses on every operation |
+
+**Per-endpoint try/catch is banned.** Controllers throw, never wrap.
+
+### 5.1 — NO `Result<T>` at HTTP boundary
+
+`Tessera.Shared.Kernel.Results.Result<T>` exists for **internal** operations
+where the caller branches on outcome inline (rare in MVP-01). It is **not**
+the HTTP-boundary failure mode — that's what typed exceptions + ProblemDetails
+are for. New controller code does **not** use `Result<T>` for endpoint
+returns. Status code is the wire-level result indicator; `ProblemDetails.code`
+is the machine-readable discriminator.
+
+```csharp
+// ❌ WRONG — Result<T> at HTTP boundary
+public async Task<ActionResult<Result<TraceDetail>>> GetAsync(...)
+{
+    var detail = await provider.GetByIdAsync(id, ct);
+    return detail is null
+        ? Result<TraceDetail>.Err(new Error(TracesErrors.TraceNotFound, "..."))
+        : Result<TraceDetail>.Ok(detail);
+}
+
+// ✅ CORRECT — throw, let IExceptionHandler map
+public async Task<ActionResult<TraceDetail>> GetAsync(...)
+{
+    var detail = await provider.GetByIdAsync(id, ct);
+    return detail is null
+        ? throw new ProviderNotFoundException(TracesErrors.TraceNotFound, $"trace {id} not found")
+        : Ok(detail);
+}
+```
+
+### 5.2 — Error code constants
+
+Per-module static classes in `Tessera.Modules.<X>.Errors.<X>Errors`:
+
+```csharp
+namespace Tessera.Modules.Traces.Errors;
+
+public static class TracesErrors
+{
+    public const string TraceNotFound       = "trace.not_found";
+    public const string SearchInvalid       = "trace.search.invalid";
+    public const string BackendUnreachable  = "provider.network_error";
+}
+```
+
+Dot.case, three-segment (`<module>.<entity>.<condition>`). Used as `Code` on
+`ProviderException`/`Error`. The first segment mirrors the module name so a
+client can branch on category without parsing.
+
+## 6. OpenAPI — `Microsoft.AspNetCore.OpenApi` + transformer
 
 ```csharp
 // Program.cs
-builder.Services.AddOpenApi();   // Microsoft.AspNetCore.OpenApi (built-in)
-builder.Services.AddScalar();     // Tessera.Shared.OpenApi
+builder.Services.AddOpenApi(o => o.AddOperationTransformer<ProblemDetailsResponsesTransformer>());
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<TesseraExceptionHandler>();
 
-var app = builder.Build();
-app.MapOpenApi();                 // /openapi/v1.json
-app.MapScalarApiReference();      // /scalar/v1 (UI)
+// app pipeline
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+app.MapControllers();   // not MapGroup / MapGet
 ```
 
-Endpoint annotations:
+Endpoint-level attributes document **only 2xx** shapes. 4xx/5xx ProblemDetails
+is added globally so per-endpoint `[ProducesResponseType<ProblemDetails>]` is
+never needed.
+
+`[EndpointName]` from `Microsoft.AspNetCore.Mvc` is **not** part of the standard
+MVC surface — use `[HttpGet(..., Name = "...")]` for OpenAPI operationId.
+
+## 7. Validation — FluentValidation → 400 ProblemDetails
 
 ```csharp
-group.MapGet("/{traceId}", GetTraceAsync)
-    .WithName("GetTrace")
-    .WithSummary("Get trace by ID")
-    .WithDescription("Returns full trace with reconstructed span tree")
-    .Produces<TraceDetail>(StatusCodes.Status200OK)
-    .Produces(StatusCodes.Status404NotFound)
-    .ProducesProblem(StatusCodes.Status502BadGateway);
-```
-
-## 7. Validation
-
-Via FluentValidation, automatic via `IEndpointFilter`:
-
-```csharp
-// src/shared/Tessera.Shared.Validation/ValidationFilter.cs
-public sealed class ValidationFilter<TRequest> : IEndpointFilter where TRequest : class
+[HttpPost]
+public async Task<ActionResult<CreateTraceRequest>> CreateAsync(
+    [FromBody] CreateTraceRequest request,
+    CancellationToken cancellationToken = default)
 {
-    public async ValueTask<object?> InvokeAsync(
-        EndpointFilterInvocationContext ctx,
-        EndpointFilterDelegate next)
-    {
-        var validator = ctx.HttpContext.RequestServices
-            .GetService<IValidator<TRequest>>();
-        if (validator is null) return await next(ctx);
-
-        var request = ctx.Arguments.OfType<TRequest>().FirstOrDefault();
-        if (request is null) return await next(ctx);
-
-        var result = await validator.ValidateAsync(request, ctx.HttpContext.RequestAborted);
-        if (!result.IsValid)
-        {
-            return TypedResults.ValidationProblem(result.ToDictionary());
-        }
-
-        return await next(ctx);
-    }
+    // ValidationFilter (registered in Tessera.Host) emits ValidationProblem
+    // before the action body runs on any failing validator.
+    ...
 }
-
-// Registration:
-builder.Services.AddTransient<IEndpointFilter, ValidationFilter<CreateDashboardRequest>>();
 ```
+
+The `ValidationFilter<TRequest>` returns `TypedResults.ValidationProblem(...)` —
+never hand-rolled JSON, never per-endpoint try/catch on `ModelState`.
 
 ## 8. Authorization
 
+MVP-01: all endpoints **anonymous** (no `[Authorize]` attribute). Guest tier
+reads APM data without auth; admin bearer lands in MVP-02 with the auth model.
+
+When auth arrives:
+
 ```csharp
-group.MapGet("/", ListTracesAsync).AllowAnonymous();
-group.MapPost("/", CreateDashboardAsync).RequireAuthorization("admin");
+[ApiController]
+[Route(ApiRoutes.Traces)]
+[Tags(["traces"])]
+public sealed class TracesController(...) : ControllerBase
+{
+    [HttpGet("{traceId:length(32)}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<GetTraceResponse>> GetAsync(...) { ... }
+
+    [HttpPost]
+    [Authorize(Policy = "admin")]
+    public async Task<ActionResult<TraceSummary>> CreateAsync(...) { ... }
+}
 ```
 
-See `../../docs/security/auth-model.md` for full model.
+Per-action attributes; never `[Authorize]` on the class for MVP-01 (the
+class-level attribute blocks the anonymous `[AllowAnonymous]` actions).
 
-## 9. Versioning (stretch)
+## 9. Versioning
 
-When API changes break backward compatibility, version via header or path:
-
-```
-GET /api/v1/traces     (URL-based — preferred)
-GET /api/traces        (header Accept: application/vnd.tessera.v2+json)
-```
-
-For MVP, single version. Add `v1` prefix only when needed.
+URL prefix `v1` (constant in `ApiRoutes.ApiVersion`). No attribute-based
+sub-versioning yet. Bumping the constant is a one-line change.
 
 ## 10. Anti-patterns
 
 ```csharp
-// ❌ Wrong — controllers (we use minimal API)
-public class TracesController : ControllerBase { /* ... */ }
-
-// ❌ Wrong — endpoint in random file
-public class SomeRandomFile
-{
-    public static void Map(IEndpointRouteBuilder app) { /* ... */ }
-}
-
-// ❌ Wrong — return type is dynamic / object / Tuple
-app.MapGet("/api/foo", () => new { foo = "bar" });  // OK for trivial, bad for typed API
-app.MapGet("/api/foo", () => (Foo, Bar));          // banned — see anti-patterns.md
-
-// ❌ Wrong — ad-hoc JSON serialization in endpoint
-app.MapGet("/api/foo", (HttpContext ctx) =>
-{
-    ctx.Response.ContentType = "application/json";
-    return ctx.Response.WriteAsync("{\"foo\":\"bar\"}");
-});
-
-// ❌ Wrong — magic strings for routes
-app.MapGet("/api/v1/traces-v2-final", Handler);  // use /api/traces/{id}
+❌ public class TracesController : ControllerBase { ... }              // not sealed
+❌ app.MapGet("/api/traces", (ITraceProvider p) => ...)                  // minimal API, banned
+❌ return TypedResults.Ok(mapper.ToDetail(detail));                      // in controllers — use Ok(dto)
+❌ return Result<TraceDetail>.Err(new Error(...));                      // at HTTP boundary, use throw
+❌ [HttpGet("{traceId}")]                                               // unconstrained, use :length(32)
+❌ [Route("/api/traces")]                                               // literal, use ApiRoutes.Traces
+❌ return Results.Json(new { error = "..." });                           // ad-hoc envelope, use ProblemDetails
+❌ detail: ex.ToString()                                                 // leaks stack/internals
+❌ 200 OK with an error-shaped body                                      // errors carry error status
 ```
 
 ## Self-audit grep
 
 ```bash
-# Controller classes (banned — we use minimal API)
-rg -n ": ControllerBase\b" src/ --type cs
+# Controllers not sealed
+rg -n 'public class \w+Controller' src/modules --type cs
 
-# Tuples in return types
-rg -n "public\s+\([^)]+\)\s+\w+\(" src/ --type cs
+# Minimal API leftovers (banned)
+rg -n 'app\.Map(Get|Post|Put|Delete)\(' src/ --type cs
+rg -n 'MapXxxEndpoints' src/ --type cs
 
-# Magic strings in routes
-rg -n 'Map(Get|Post|Put|Delete)\("[^"]*"' src/ --type cs
+# Result<T> at controller boundary
+rg -n 'ActionResult<Result<' src/modules --type cs
+
+# Unconstrained route templates for trace ids
+rg -n 'HttpGet\("\{traceId\}"' src/modules --type cs
+
+# Literal route strings
+rg -n '\[Route\("/' src/modules --type cs
+
+# Ad-hoc error envelopes
+rg -n 'new \{ error' src/ --type cs
 ```
 
 ## Related rules
 
-- `naming-and-types.md` — sealed classes for endpoints
-- `code-shape.md` — var, braces
-- `anti-patterns.md` — tuple ban
-- `../../docs/security/auth-model.md` — auth model
+- `naming-and-types.md` — sealed classes, init-only properties, Mapperly partials
+- `code-shape.md` — file-scoped namespaces, var, block bodies
+- `error-mapping.md` — exception → HTTP status table
+- `problem-details.md` — RFC 9457 shape + wiring
+- `api-route-constants.md` — `ApiRoutes` as single source
+- `~/.agents/rules/csharp/anti-patterns.md` — DTO record placement

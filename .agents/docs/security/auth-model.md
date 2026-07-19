@@ -18,24 +18,31 @@ Stretch (v0.2+): OIDC (Google, Keycloak), LDAP.
 ## Endpoint authorization
 
 ```csharp
-// src/host/Tessera.Host/Program.cs
+// Tessera uses controllers (not minimal API) — authorization is per-action
+// attribute, not inline at endpoint registration. MVC applies attributes
+// before the action method runs; `[AllowAnonymous]` opts an action out of
+// the class-level `[Authorize]` policy.
 
-// Guest endpoints — read-only APM data
-app.MapGet("/api/traces", /* ... */).AllowAnonymous();
-app.MapGet("/api/traces/{id}", /* ... */).AllowAnonymous();
-app.MapGet("/api/logs", /* ... */).AllowAnonymous();
-app.MapGet("/api/services", /* ... */).AllowAnonymous();
-app.MapGet("/api/health", /* ... */).AllowAnonymous();
+// src/modules/Tessera.Modules.Traces/Controllers/TracesController.cs
 
-// Admin endpoints — require bearer token
-app.MapPut("/api/settings", /* ... */).RequireAuthorization("admin");
-app.MapPost("/api/dashboards", /* ... */).RequireAuthorization("admin");
-app.MapPut("/api/dashboards/{id}", /* ... */).RequireAuthorization("admin");
-app.MapDelete("/api/dashboards/{id}", /* ... */).RequireAuthorization("admin");
+[ApiController]
+[Route(ApiRoutes.Traces)]             // "/api/v1/traces"
+public sealed class TracesController(...) : ControllerBase
+{
+    [HttpGet("{traceId:length(32)}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<GetTraceResponse>> GetAsync(...) { ... }
 
-// Static SPA — guest (login is client-side for future providers)
-app.MapFallbackToFile("index.html").AllowAnonymous();
+    [HttpPost]
+    [Authorize(Policy = "admin")]
+    public async Task<ActionResult<TraceSummary>> CreateAsync(...) { ... }
+}
 ```
+
+MVP-01 ships with **all endpoints anonymous** (no `[Authorize]` attribute).
+Guest tier reads APM data without auth; admin bearer lands in MVP-02 with the
+auth model. See `appsettings.json` + `TESSERA_ADMIN_TOKEN` env var plan below.
+
 
 ## Admin bearer authentication
 
@@ -246,18 +253,21 @@ public sealed class AdminAuditMiddleware(RequestDelegate next)
 opts.AdminToken = "abc123-hardcoded";
 
 // ❌ WRONG — auth check in handler instead of endpoint metadata
-app.MapPost("/api/dashboards", (Dashboard d) =>
+[HttpPost]
+public async Task<IActionResult> CreateAsync([FromBody] Dashboard d, CancellationToken ct)
 {
-    if (!ctx.User.Identity?.IsAuthenticated ?? true)
-        return Results.Unauthorized();
+    if (!User.Identity?.IsAuthenticated ?? true)
+        return Unauthorized();
     // ...
-});
+}
 
 // ❌ WRONG — logging tokens
 logger.LogInformation("Admin token: {Token}", token);
 
 // ❌ WRONG — guest endpoint with auth requirement
-app.MapGet("/api/traces", /* ... */).RequireAuthorization("admin");
+[HttpGet]
+[Authorize(Policy = "admin")]
+public async Task<ActionResult<TraceSummary>> GetAsync(...) { ... }
 ```
 
 ## Test requirements

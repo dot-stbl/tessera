@@ -19,7 +19,7 @@ Stack:
 
 | Layer | Tech |
 |-------|------|
-| Backend | **.NET 10** ASP.NET Core minimal API, single-binary Linux deploy |
+| Backend | **.NET 10** ASP.NET Core controllers (matches plexor), single-binary Linux deploy |
 | Frontend | **React 19** + Vite + shadcn/ui + Tailwind, bun + Turbo monorepo |
 | Data | **VictoriaMetrics / VictoriaLogs / VictoriaTraces** over HTTP (no ingest in MVP) |
 
@@ -31,19 +31,19 @@ with a **hard 5-project-per-folder cap** (enforced via NetArchTest rule):
 ```
 src/
 ├── host/              # 2 projects
-│   ├── Tessera.Host/              ASP.NET Core minimal API + DI
+│   ├── Tessera.Host/              ASP.NET Core controllers + DI + composition root
 │   └── Tessera.Build.Tools/       MSBuild SDK + gates
 ├── shared/            # 5 projects (at cap)
-│   ├── Tessera.Shared.Kernel/     Result, Error, Id, TimeRange, Pagination
+│   ├── Tessera.Shared.Kernel/     Provider interfaces, Result<T>, Error, Id, TimeRange, Pagination, ProviderException types
 │   ├── Tessera.Shared.Http/       Refit + resilience + OTel HTTP
 │   ├── Tessera.Shared.Telemetry/  OTel setup + logging helpers
 │   ├── Tessera.Shared.OpenApi/    Scalar + Swashbuckle annotations
 │   └── Tessera.Shared.Validation/ FluentValidation helpers
 └── modules/           # 4 projects (MVP)
-    ├── Tessera.Modules.Traces/    Trace, Span + VT Refit client
-    ├── Tessera.Modules.Logs/      LogEntry + VL Refit client
-    ├── Tessera.Modules.Discovery/ Service inventory aggregator
-    └── Tessera.Modules.Health/    /health endpoint + per-Victoria checks
+    ├── Tessera.Modules.Traces/    TracesController + ITracesMapper + ITraceProvider consumer
+    ├── Tessera.Modules.Logs/      LogsController + ILogProvider consumer
+    ├── Tessera.Modules.Discovery/ DiscoveryController + IDiscoveryProvider consumer
+    └── Tessera.Modules.Health/    HealthController + IHealthMapper + IHealthProvider consumer
 ```
 
 **Theme words for internal naming:** `tessera`, `tile`, `mosaic`, `mortar`, `weave`,
@@ -114,9 +114,12 @@ the user's browser (TanStack Query cache + zustand for filters).
 
 | Decision | Choice | Why |
 |----------|--------|-----|
-| API style | Minimal API (not controllers) | Lighter, faster, fits MVP scope |
+| API style | **Controllers** (`[ApiController]` + `ControllerBase`, matches Plexor) | Consistent with reference codebase, better tooling/testability. Minimal API was the prior choice; reversed 2026-07-19 — see STATE.md. |
+| URL prefix | `ApiRoutes.Base = "api/v1"` (v1 baked in from MVP-01) | Single-line bump for v2; matches Plexor convention |
 | HTTP client | **Refit** with interfaces | Type-safe, easy to mock in tests |
 | Resilience | `Microsoft.Extensions.Http.Resilience` (Polly) | Standard ASP.NET pattern |
+| Error pipeline | IExceptionHandler + ProblemDetails (RFC 9457) globally; per-endpoint try/catch banned | Plexor pattern; no `Result<T>` on HTTP boundary |
+| JSON conventions | `JsonStringEnumConverter` for enum-as-string in wire format | Plexor pattern; OpenAPI emits lowercase status names |
 | Time format on wire | **UTC unix ms** everywhere | Matches VT/VL/VM native format, no tz bugs |
 | Tenant | **single, hardcoded `0`** in MVP | Multi-tenant is a routing concern, not MVP |
 | Pagination | **cursor-based** on trace list | VT uses `limit`, not offset — cursor is forward-compatible |

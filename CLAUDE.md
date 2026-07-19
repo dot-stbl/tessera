@@ -89,7 +89,7 @@ Consequences you must preserve:
 ### Wire & domain conventions
 
 - **Time on the wire is UTC unix milliseconds everywhere** (matches VT/VL/VM native format — avoids tz bugs).
-- **Minimal API, not controllers** (Plexor uses controllers; Tessera does not). Each module owns a `Map<Feature>Endpoints` group + an `Add<Feature>Module(IServiceCollection)` extension.
+- **Controllers** ([ApiController] + ControllerBase, matches Plexor). Each module owns a `<Module>Controller : ControllerBase` + an `Add<Feature>Module(IServiceCollection)` extension. Routes via `ApiRoutes` constants composed from `ApiRoutes.Base = "api/v1"`. Never use `Result<T>` on HTTP boundary — throw typed `ProviderException` and let `IExceptionHandler` emit ProblemDetails.
 - **Span tree is reconstructed on the backend** from VT's flat spans (parent/child via `references[CHILD_OF]`).
 - **Single tenant, hardcoded `0`** in MVP. HTTP resilience via `Microsoft.Extensions.Http.Resilience` (Polly). Victoria bearer token stays server-side (SPA never sees it).
 
@@ -144,7 +144,7 @@ Project-neutral rules loaded for every `.stbl` session.
 - [`coding/project-naming-and-setup.md`](.agents/rules/coding/project-naming-and-setup.md) — `Tessera.<Layer>…` naming + new-project setup
 - [`coding/module-structure-5-cap.md`](.agents/rules/coding/module-structure-5-cap.md) — 5-project folder cap
 - [`coding/naming-tessera-theme.md`](.agents/rules/coding/naming-tessera-theme.md) — theme words
-- [`coding/api-design.md`](.agents/rules/coding/api-design.md) — minimal API (not controllers)
+- [`coding/api-design.md`](.agents/rules/coding/api-design.md) — controllers (matches plexor), v1 prefix, ProblemDetails, no Result<T> at HTTP boundary
 - [`coding/project-ports.md`](.agents/rules/coding/project-ports.md) — 1990–2120 port pool
 
 ### Design docs — [`.agents/docs/`](.agents/docs/architecture.md)

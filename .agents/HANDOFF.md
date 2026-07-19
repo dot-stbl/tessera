@@ -20,7 +20,7 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - Host composition root wires конкретного provider'а в DI
 
 **Stack:**
-- **Backend:** .NET 10 — ASP.NET Core minimal API, Refit + Polly + OpenTelemetry
+- **Backend:** .NET 10 — ASP.NET Core controllers (matches plexor), Refit + Polly + OpenTelemetry
 - **Frontend:** React 19 + Vite 6 + TanStack Router + shadcn/ui (Tessera DS) + Tailwind 4
 - **Data:** VictoriaMetrics + VictoriaLogs + VictoriaTraces (HTTP)
 - **Storage:** SQLite + JSON files (no PostgreSQL)
@@ -53,7 +53,7 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - **`Directory.Build.props`** — net10.0, nullable, warnings-as-errors, MinVer, container publish
 - **`Directory.Packages.props`** — CPM disabled, central versions (Refit 12.1.0, OpenTelemetry 1.16.0, Scalar, xUnit, NSubstitute, Shouldly, Bogus, NetArchTest, Testcontainers, Respawn)
 - **`Tessera.Build.Tools`** — MSBuild SDK project + placeholder `.targets` (gate fires once per solution build)
-- **`Tessera.Host`** — ASP.NET Core minimal API stub (Program.cs возвращает version JSON)
+- **`Tessera.Host`** — ASP.NET Core controllers composition root (Program.cs); routes wired through `AddControllers().AddApplicationPart(...)` per module.
 - **`Tessera.Shared.{Kernel,Http,Telemetry,OpenApi,Validation}`** — 5 shared проектов (пустые, refs via ProjectReference)
 - **`Tessera.Modules.{Traces,Logs,Discovery,Health}`** — 4 vertical-slice modules (пустые)
 - **9 test проектов:**
@@ -186,7 +186,7 @@ tessera/
 │   └── rules/                             20 rule файлов (C# conventions, project structure)
 ├── src/                                   BACKEND (.NET 10)
 │   ├── host/
-│   │   ├── Tessera.Host/                  ASP.NET Core minimal API stub
+│   │   ├── Tessera.Host/                  ASP.NET Core controllers + DI composition root
 │   │   │   ├── Program.cs                 returns version JSON
 │   │   │   └── Tessera.Host.csproj
 │   │   └── Tessera.Build.Tools/           MSBuild SDK + .targets

@@ -178,17 +178,20 @@ NOT direct Refit clients. Refit + DTO mapping live in providers.
 ```
 Tessera.Modules.Traces/
 ├── Tessera.Modules.Traces.csproj
-├── Models/                              DTOs для HTTP responses
-│   ├── TraceSummary.cs
-│   ├── TraceDetail.cs
-│   ├── ListTracesRequest.cs
-│   └── ListTracesResponse.cs
-├── Handlers/                            consume ITraceProvider, ILogProvider
-│   ├── ListTracesHandler.cs
-│   └── GetTraceHandler.cs               spans + log correlation
+├── Controllers/
+│   └── TracesController.cs             [ApiController] : ControllerBase
+├── Contracts/
+│   ├── ListTracesRequest.cs            [FromQuery] input
+│   └── GetTraceResponse.cs             response DTO
+├── Mapping/
+│   ├── ITracesMapper.cs                domain → DTO contract
+│   └── TracesMapper.cs                 [Mapper] partial impl (Riok.Mapperly)
 ├── Endpoints/
-│   └── TracesEndpoint.cs                minimal API group
-└── DependencyInjection.cs               static AddTracesModule(this IServiceCollection)
+│   └── TracesEndpointHelpers.cs        internal static — query shaping helpers
+├── Errors/
+│   └── TracesErrors.cs                 dot.case error code constants
+└── DependencyInjection/
+    └── TracesModuleExtensions.cs        static AddTracesModule(this IServiceCollection)
 ```
 
 ### Provider (`Tessera.Providers.<Name>`)

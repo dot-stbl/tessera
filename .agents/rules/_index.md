@@ -15,7 +15,7 @@ always: true
    - `process/` — commit-format, build-verification, agent-runtime-safety, engineering-zone-access, project-slnx-registration, worker-audit
 
 2. **Tessera-specific** (this folder) — only what's specific to the Tessera project:
-   - `coding/api-design.md` — minimal API endpoints (NOT controllers — Plexor uses controllers)
+   - `coding/api-design.md` — controllers (matches plexor), v1 prefix, ProblemDetails, no Result<T> at HTTP boundary
    - `coding/module-structure-5-cap.md` — 5-project (csproj) cap per folder in Tessera repo
    - `coding/naming-tessera-theme.md` — Tessera theme words (tile, mosaic, mortar, weave, capstone, pattern, fragment, veneer, join)
    - `coding/project-deps-and-tests.md` — Tessera's layer structure + provider isolation rule

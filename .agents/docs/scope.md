@@ -25,7 +25,7 @@ service filter. Single-binary Linux deploy.
 
 | Layer | Choice |
 |-------|--------|
-| Backend | .NET 10 ASP.NET Core minimal API (AOT-friendly single binary) |
+| Backend | .NET 10 ASP.NET Core controllers (matches Plexor), AOT-friendly single binary |
 | Frontend | React 19 + Vite + shadcn/ui + Tailwind, bun + Turbo monorepo |
 | Data | VictoriaMetrics / VictoriaLogs / VictoriaTraces over HTTP, **read-only** (no ingest) |
 | Tests | xUnit + NSubstitute + Shouldly + Bogus + NetArchTest + Testcontainers |
