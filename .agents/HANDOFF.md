@@ -6,7 +6,7 @@
 
 **Tessera** — APM UI в стиле Grafana (multi-provider data sources), не Victoria-specific UI. Self-hosted web приложение. Trace viewer с waterfall, структурированный log search, service inventory, кастомные Grafana-style дашборды. MVP-01 ships with Victoria (Traces + Logs + Metrics) как **первый** provider; future phases добавят другие backends (Tempo, Jaeger, Loki) через тот же provider interface — без refactor модулей.
 
-**Status:** pre-MVP scaffold. **Frontend работает с mock data. Backend skeleton landed, modules empty.**
+**Status at handoff date (2026-07-19):** Phase 0/1/2/3 DONE. Phase 4 (architecture tests + integration) + Phase 5 (E2E + handoff to next). Frontend deferred to MVP-02 — Phase 3 runs on existing FE shell с mock data. Backend is functional: 4 controllers wire all 4 providers, ProblemDetails pipeline + admin bearer optional + OpenAPI doc + Scalar UI mounted at `/scalar/v1`.
 
 ### Strategic positioning (owner-set, 2026-07-19)
 
@@ -26,14 +26,35 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - **Storage:** SQLite + JSON files (no PostgreSQL)
 - **Auth:** guest (anonymous) + admin (bearer token) в MVP; OIDC + LDAP в stretch
 
-## Что сделано (19 commits)
+## Что сделано (Phase 0/1/2/3, ~30 commits)
 
-### Документация (`.agents/docs/` + `.agents/rules/`)
-- **20 rule файлов** — C# conventions, project structure, port pool, brand
-- **17 doc файлов** — architecture, scope, victoria-stack, modules, dashboard-schema, ecosystem, ops (install/configure/troubleshoot/storage), design system, log format, config format, multi-tenancy, auth model, storage
+### Phase 0 — Documentation + scaffold
+- **20+ rule файлов** в `.agents/rules/` — C# conventions, project structure, port pool, brand, commit format, build gate, worker-audit, agent-runtime-safety
+- **17+ doc файлов** в `.agents/docs/` — architecture, scope, victoria-stack, modules, dashboard-schema, ecosystem, ops (install/configure/troubleshoot/storage), design system, log format, config format, multi-tenancy, auth model
 - **1 submodule** — `assets/stbl/` (`.stbl/.github` repo) для brand assets
+- **`tessera.slnx`** — plexor-style Folder hierarchy (src/build, src/shared/{kernel,infra}, src/modules, src/host, tests/{unit,integration})
+- **`Directory.Build.props`** — net10.0, nullable, warnings-as-errors, MinVer, container publish, Riok.Mapperly source-gen
+- **`Directory.Packages.props`** — CPM disabled, central versions (Refit 13.1.0, Microsoft.Extensions.Http.Resilience 10.8.0, Scalar 2.16, Mapperly 4.3.1, Tomlyn 2.x, Microsoft.AspNetCore.OpenApi 10.0.9, xUnit 2.9.x, NSubstitute, Shouldly, Bogus, NetArchTest, Testcontainers)
+- **`Tessera.Build.Tools`** — MSBuild SDK project + `VerifyFormatOnBuild` target fires `dotnet format --verify-no-changes --severity hidden` once per solution build
 
-### Frontend scaffold (web/) — компилируется, тесты проходят
+### Phase 1 — Shared primitives + Tessera.Providers.Victoria
+- **`Tessera.Shared.Kernel`** — domain primitives (`Tenant`, `TraceId`, `SpanId`, `LogLevel`, `TimeRange`, `Page<T>`, `Result<T>`, `Error`), domain models (`Trace`, `Span`, `LogEntry`, `ServiceSummary`), **4 provider interfaces** (`ITraceProvider`/`ILogProvider`/`IDiscoveryProvider`/`IHealthProvider`), `ProviderException` hierarchy, `Api/` namespace (`ApiRoutes` + `TesseraJsonOptions`), `Configuration/` namespace (TOML provider + path resolution + secret refs + `ServerOptions`).
+- **`Tessera.Shared.Http`** — `RefitExtensions.AddTesseraRefitClient<T>` (bearer + Polly standard resilience + OTel), `BearerTokenHandler`, `HttpClientAuthOptions`.
+- **`Tessera.Providers.Victoria`** — 4 provider implementations (Trace/Log/Discovery/Health), Jaeger + LogsQL DTOs, NDJSON parsing, span tree reconstruction (flat list → tree), `VictoriaServiceCollectionExtensions.AddVictoriaProvider(...)` DI extension. **34/34 unit tests passing.**
+
+### Phase 2 — 4 backend modules as controllers (Plexor-aligned)
+- **`Tessera.Modules.{Health,Discovery,Traces,Logs}`** — каждый с `[ApiController] : ControllerBase`, primary-ctor injection, `AddXxxModule()` extension method, `AddApplicationPart(...)` для discovery без host-side type reference, Mapperly-based `I<Module>Mapper` для entity → DTO projections, route template константа в `ApiRoutes.*` (`:length(32)` constraint на trace id в `Traces/[HttpGet(ApiRoutes.Trace)]`).
+- Per-module **`Errors/<Module>Errors.cs`** static class with dot.case constants (`health.provider.unreachable`, `trace.not_found`, `logs.trace_id_required`).
+- `ProviderException` thrown для не-2xx (404 / 502 / 504), per-endpoint try/catch **banned**, global `IExceptionHandler` (см. Phase 3) → ProblemDetails.
+
+### Phase 3 — Host composition root (DONE 2026-07-19, 4 commits)
+- **`Tessera.Host/Program.cs`** — declarative composition chain: `AddTesseraConfiguration()` (TOML main + local override) → `AddControllers().AddJsonOptions` (`JsonStringEnumConverter`) → `AddApplicationPart(...)` × 4 modules → `AddTesseraWebInfrastructure()` (ProblemDetails + IExceptionHandler + OpenAPI + Scalar) → `AddTesseraAdminAuthentication(builder.Configuration)` (bearer optional) → `AddAuthorization()` → `Add<Module>Module()` × 4 → `AddVictoriaProvider(builder.Configuration)`. Runtime pipeline: `UseExceptionHandler`/`UseStatusCodePages`/`UseAuthentication`/`UseAuthorization` → `MapGet("/")` version banner → `UseTesseraOpenApi()` → `MapControllers()`.
+- **`Tessera.Shared.Web`** (renamed from `Tessera.Shared.OpenApi`) — `TesseraExceptionHandler` + `ProblemDetailsResponsesTransformer` + `ProblemDetailsResponseShims`. `WebInstallerExtensions.AddTesseraWebInfrastructure()` + `UseTesseraOpenApi()`. Holds `Microsoft.AspNetCore.OpenApi`/`Microsoft.OpenApi`/`Scalar.AspNetCore` PackageReferences with `PrivateAssets="all"` so source generator Microsoft.AspNetCore.OpenApi не утекает в Host.
+- **`Tessera.Shared.Authentication`** (renamed from `Tessera.Shared.Telemetry`) — `AdminBearerHandler` (CryptographicOperations.FixedTimeEquals + отключается когда TESSERA_ADMIN_TOKEN unset → NoResult для всех запросов → 401 на admin endpoints), `AdminBearerConstants`, `AdminBearerCryptography`, `AdminBearerOptions`. `AuthenticationInstallerExtensions.AddTesseraAdminAuthentication(IConfiguration)`.
+- **TOML config** — `TesseraConfigPaths.ResolveMainPath` (4-level lookup: TESSERA_CONFIG env > /etc/tessera > XDG > cwd) + `ResolveLocalOverridePath` (всегда tessera.local.toml рядом). `TesseraConfigurationExtensions.AddTesseraConfiguration(this IConfigurationBuilder)` chained на host `WebApplicationBuilder`. `SecretReference.Resolve` парсит `env:VAR` / `file:/path` prefixes inline. `tessera.toml.example` + `tessera.local.toml.example` committed, реальные `tessera.toml`/`tessera.local.toml` gitignored.
+- **OpenAPI + ProblemDetails globally** — `AddOpenApi` с `ProblemDetailsResponsesTransformer : IOpenApiOperationTransformer` инжектит 400/404/409/500/502/503/504 problem-details responses on every operation (через `Responses.TryAdd`). Non-2xx `[ProducesResponseType]` per-endpoint **redundant**. Source generator Microsoft.AspNetCore.OpenApi работает в Web, не в Host.
+
+### Frontend scaffold (web/) — компилируется, тесты проходят (MVP-02 deferred)
 - **Config:** package.json, tsconfig.base.json, bunfig.toml, vite.config.ts, vitest.config.ts, eslint.config.js, components.json
 - **Workspace structure:** bun workspaces (`apps/*`, `tooling/*`)
 - **Static assets:** `assets/{lockup-tessera.svg, og-tessera.svg, mark-tessera.svg, mark-tessera-transparent.svg, favicon.svg}` + `.stbl` submodule
@@ -48,24 +69,48 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - **26 unit tests** passing (duration, log-level, time-format)
 - **Playbook:** `web/playbook/index.html` — static HTML visual catalog, открывается в браузере без dev-сервера
 
-### Backend skeleton (src/) — собирается clean
-- **`tessera.slnx`** — plexor-style Folder hierarchy (src/build, src/shared/{kernel,infra}, src/modules, src/host, tests/{unit,integration})
-- **`Directory.Build.props`** — net10.0, nullable, warnings-as-errors, MinVer, container publish
-- **`Directory.Packages.props`** — CPM disabled, central versions (Refit 12.1.0, OpenTelemetry 1.16.0, Scalar, xUnit, NSubstitute, Shouldly, Bogus, NetArchTest, Testcontainers, Respawn)
-- **`Tessera.Build.Tools`** — MSBuild SDK project + placeholder `.targets` (gate fires once per solution build)
-- **`Tessera.Host`** — ASP.NET Core controllers composition root (Program.cs); routes wired through `AddControllers().AddApplicationPart(...)` per module.
-- **`Tessera.Shared.{Kernel,Http,Telemetry,OpenApi,Validation}`** — 5 shared проектов (пустые, refs via ProjectReference)
-- **`Tessera.Modules.{Traces,Logs,Discovery,Health}`** — 4 vertical-slice modules (пустые)
-- **9 test проектов:**
-  - `tests/unit/core/{Tessera.ArchitectureTests, Tessera.Host.UnitTests, Tessera.Shared.Unit}`
-  - `tests/unit/modules/Tessera.Modules.{Traces,Logs,Discovery,Health}.Unit`
-  - `tests/integration/{Tessera.Host.Integration, Tessera.Victoria.Integration}`
+### Solution structure at handoff
+```
+src/
+├── host/
+│   ├── Tessera.Host/                   composition root (Program.cs only)
+│   │   ├── Program.cs                  declarative composition chain
+│   │   ├── Tessera.Host.csproj         only ProjectReferences + analyzer-suppressions
+│   │   ├── tessera.toml.example        TOML config template (gitignored real file)
+│   │   ├── tessera.local.toml.example  TOML local override template
+│   │   └── .gitignore                  ignores real tessera.toml/tessera.local.toml
+│   └── Tessera.Build.Tools/            MSBuild SDK + VerifyFormatOnBuild target
+├── shared/
+│   ├── Tessera.Shared.Kernel/          domain primitives, provider interfaces, Api/, Configuration/
+│   ├── Tessera.Shared.Http/            Refit base + Polly resilience + BearerTokenHandler
+│   ├── Tessera.Shared.Web/             RFC 9457 ProblemDetails + OpenAPI source-gen + Scalar
+│   ├── Tessera.Shared.Authentication/  admin bearer scheme (optional in MVP-01)
+│   └── Tessera.Shared.Validation/      options validators (shell, no content yet)
+├── modules/
+│   ├── Tessera.Modules.Traces/         GET /api/v1/traces, GET /api/v1/traces/{traceId:length(32)}
+│   ├── Tessera.Modules.Logs/           GET /api/v1/logs?traceId=... (MVP-01: trace correlation only)
+│   ├── Tessera.Modules.Discovery/      GET /api/v1/services
+│   └── Tessera.Modules.Health/         GET /api/v1/health (composite across providers)
+├── providers/
+│   └── Tessera.Providers.Victoria/     concrete impls of ITrace/Log/Discovery/HealthProvider
+└── (Build.Tools  — см. host/)
+```
 
-**Build verification:** `dotnet build tessera.slnx` → **20/20 проектов, 0 errors, 0 warnings**
+### Текущая build + test status
+- **`dotnet build tessera.slnx -c Debug`** → **22 проекта, 0 errors, 0 warnings**
+- **`dotnet test Tessera.Shared.Unit`** → **13/13 passing** (primitives — TimeRange/Page/Result/Error/etc.)
+- **`dotnet test Tessera.Providers.Victoria.Unit`** → **34/34 passing** (NDJSON, span tree, mappings)
+- **Modules + Host + Architecture + Integration unit tests** — **blocked by .NET 10.0.110 testhost bug** (`lib/net10.0/` paths not loadable). Runs when SDK поднимается до 10.0.200+. Environment-specific issue, не code. Отслеживается в `.agents/STATE.md` Open questions.
 
 **Pitfalls resolved (не повторять):**
 - `Microsoft.Build.NoTargets` SDK не резолвится без версии → используем `Microsoft.NET.Sdk` (plexor pattern)
 - Все `.csproj` ProjectReference-пути проверены; глубина для tests — 4 уровня (`..\..\..\..\src\...`), для host — 3 уровня (`..\..\..\src\...`), для shared — 2 уровня (`..\..\src\...`), для modules — 2 уровня (`..\..\src\...`)
+- TOML provider требует `Microsoft.Extensions.Configuration` (не `.File`) для `FileConfigurationProvider` base class
+- Tomlyn v2 namespace — `Tomlyn.Model.TomlTable/TomlArray` + `Tomlyn.TomlSerializer.Deserialize<TomlTable>(string)`
+- Mapperly source generator требует `IncludeAssets` (без `PrivateAssets`) в `Directory.Build.props` чтобы генератор кода видел `[Mapper]` атрибуты в дочерних проектах
+- Microsoft.AspNetCore.OpenApi source generator привязан к проекту, где вызывается `AddOpenApi()` — добавлять `PrivateAssets="all"` на PackageReference в Web.csproj чтобы Host не получил её через transitive ProjectReference
+- `[Tags([...])]` — collection initializer в атрибуте (C# 12 collection expressions), НЕ `Tags = "..."` (те-string не работает в .NET 10 attribute syntax для `[Tags]`)
+- IIS-style `[FromServices]` в controllers, primary ctor для non-DI классов, `[MapPropertyFromSource]` для Mapperly в `TracesMapping` (VM property `Trace` → response shape)
 
 ### Порт pool (1990-2120)
 - **1990** — Tessera.Host backend
@@ -95,149 +140,127 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - Commit format: `[.stbl](<feat/...>): <subject>` — это `.stbl` convention
 - Org profile: `pure B&W · monospace only`
 
-## Что осталось сделать
+## Что осталось сделать (MVP-01 final, MVP-02 deferred)
 
-### Backend — наполнить модули
-**Shared (по приоритету):**
-1. `Tessera.Shared.Kernel` — реальные типы (`Tenant`, `TraceId`, `SpanId`, `LogLevel`, `TimeRange`, `Page<T>`) + `Result<T>` + exception types
-2. `Tessera.Shared.Http` — Refit-интерфейсы клиента к VT/VL/VM + `HttpClient` registration с Polly retries
-3. `Tessera.Shared.Validation` — адаптеры `IValidateOptions<T>` для всех options classes
-4. `Tessera.Shared.Telemetry` — `DotCaseLogRecordProcessor` + resource attributes
-5. `Tessera.Shared.OpenApi` — Scalar UI wiring
+### Phase 4 — Architecture tests + integration (NOT STARTED)
+1. **`Tessera.ArchitectureTests`** — NetArchTest rules:
+   - `NoModuleReferencesProviders` — modules → `src/providers/*` is banned (Grafana datasource model)
+   - `NoCrossModuleReferences` — `Tessera.Modules.X` → `Tessera.Modules.Y` is banned (cross-module through shared abstractions only)
+   - `NoHostReferencesFromModules` — modules → `Tessera.Host` is banned (composition root boundary)
+   - `FolderCap` — максимум 5 проектов в `src/shared/` (текущий cap = 5 достигнут)
+   - `FolderMaxFiles` — максимум 3 .cs файлов в одной folder в `src/`
+   - `DomainHasNoFrameworkReferences` — `Tessera.Shared.Kernel` не должен reference ASP.NET Core / EF Core / HttpClient
+   - **Blocked by .NET 10.0.110 testhost bug** — rule code пишется сразу, run когда SDK ≥ 10.0.200
 
-**Modules (vertical slices, каждый = `core/` + `extended/` если >5 файлов):**
-6. `Tessera.Modules.Traces` — `/api/traces*` endpoints + Refit → VictoriaTraces + 1-2 unit теста
-7. `Tessera.Modules.Logs` — `/api/logs*` endpoints + Refit → VictoriaLogs (LogsQL passthrough)
-8. `Tessera.Modules.Discovery` — `/api/services` (объединяет VT services + VL streams)
-9. `Tessera.Modules.Health` — `/api/health` + per-Victoria probes
-10. `Tessera.Modules.Dashboards` — `/api/dashboards*` (CRUD на JSON files)
+2. **Test integration infrastructure** — Testcontainers VT/VL/VM + `WebApplicationFactory<Program>` для E2E в MVP-01. **Blocked** тем же SDK-багом + нужен работающий Victoria single-binary container.
 
-**Host:**
-11. `Tessera.Host/Program.cs` — composition root: TOML config + auth middleware + DI registration + endpoint mapping
-12. Health endpoint с per-Victoria probes
-13. Admin bearer token middleware (`TESSERA_ADMIN_TOKEN` env)
+### Phase 5 — E2E verify + handoff к MVP-02
+1. **Локальный E2E** — поднять Victoria single-container (`victoriametrics/victoria-stack:v0.x.y`), запустить backend (`dotnet run --project src/host/Tessera.Host`), curl-ать все endpoints, верифицировать ProblemDetails format, OpenAPI doc на `/openapi/v1.json`, Scalar UI на `/scalar/v1`. **ВНИМАНИЕ**: агент-runtime-safety запрещает запуск `dotnet run`. Это делает **пользователь**.
 
-### Frontend — оставшиеся страницы
-- **Trace detail page** (`/traces/$traceId`) — Waterfall + log panel + span detail
-- **Settings page** — Victoria endpoints config, theme toggle, language switcher (mock пока)
-- **Dashboard editor** — JSON schema implementation + panel renderers (trace_list/log_view/metric_chart/markdown/service_map/flame_graph)
+2. **Doc refresh** (Phase 5):
+   - `.agents/HANDOFF.md` — финальное состояние (Phase 5).
+   - `.agents/docs/architecture.md` — уточнить wire-format секцию (UTC unix ms, ProviderException → ProblemDetails, admin bearer optional).
+   - `.agents/docs/security/auth-model.md` — уточнить admin endpoints (нет в MVP-01, `[Authorize(Policy="admin")]` в MVP-02+).
+   - `.agents/docs/operations/{install,configure}.md` — TOML config doc + `TESSERA_ADMIN_TOKEN` env var.
 
-### FE pipeline (MVP-02, plexor model)
-- **Deferred to MVP-02** — MVP-01 is backend-only (per owner direction 2026-07-19). FE integration postponed until backend stable.
-- **When MVP-02 starts:** design-first OpenAPI contract (`contracts/tessera.openapi.yaml`) + kubb codegen workspace (`web/tooling/codegen/`, 7 plugins: TS/Client/Zod/ReactQuery/Faker/MSW/custom-filter) + MSW mock layer + `VITE_USE_MOCKS` toggle. Replaces existing hand-written `mock-data.ts` + `client.ts`.
-- **Existing FE state during MVP-01:** 4 pages (traces/logs/services/dashboards) run on hand-written mock data fallback in `web/apps/console/src/shared/api/{types,mock-data,client}.ts`. Works in dev (`bun --filter '@tessera/console' dev`) without backend. **No FE code touched in MVP-01.**
+3. **Container publish + CI (Phase 5+ stretch)** — Dockerfile multi-stage (build + runtime ALPINE), GitHub Actions build gate, docker-compose стек с VT/VL/VM.
 
-### Тесты
-- **Integration tests** — Testcontainers Victoria (`GenericContainer` для `victoriametrics/victoria-traces:v0.X.X` и др.), `WebApplicationFactory<Program>` для backend
-- **Component tests** для оставшихся APM компонентов (Waterfall, LogEntry, TraceId)
-
-### Operations
-- **Сборка Docker image** — multi-stage Dockerfile (build + runtime)
-- **CI** — GitHub Actions (build gate per .stbl conventions)
-- **Docker compose** — `tessera + vt + vl + vm` стек для self-hosted
-
-### Планирование
-- **PLAN.md** — файл с task-by-task acceptance criteria (scaffold через `soly_workflow new tessera-mvp`)
-- **Phases:** MVP (4 модуля + работающие endpoints) → stretch (dashboards, metrics, service map) → out (SLO, alerts, multi-tenant auth)
+### Frontend — отложено в MVP-02
+- **MVP-02 model** — design-first OpenAPI contract (`contracts/tessera.openapi.yaml`) → kubb codegen workspace (7 plugins: TS/Client/Zod/ReactQuery/Faker/MSW/custom-filter) → MSW mock layer → `VITE_USE_MOCKS` toggle. Заменяет существующий hand-written `mock-data.ts` + `client.ts` mock fallback.
+- **Trace detail page** (`/traces/$traceId`) — Waterfall + log panel + span detail (real backend integration).
+- **Settings page** — TOML config UI for Victoria endpoints, theme toggle, language switcher.
+- **Dashboard editor** — JSON schema implementation + panel renderers (`trace_list/log_view/metric_chart/markdown/service_map/flame_graph`).
 
 ## Ключевые решения (locked)
 
 | Decision | Choice | Date | Source |
 |----------|--------|------|--------|
-| Multi-tenancy | single-tenant, config-time | 2026-07-19 | `.agents/docs/architecture/multi-tenancy.md` |
+| Multi-tenancy | single-tenant, config-time (hardcoded `0`) | 2026-07-19 | `.agents/docs/architecture/multi-tenancy.md` |
 | Log format | dot.case at export, PascalCase in source | 2026-07-19 | `.agents/docs/architecture/log-format.md` |
-| Config format | TOML only (no appsettings.json) | 2026-07-19 | `.agents/docs/architecture/config-format.md` |
+| Config format | TOML only (no appsettings.json); `tessera.toml` + optional `tessera.local.toml`; env-var prefix `TESSERA_*`; secrets via `env:VAR` / `file:/path` inline prefixes | 2026-07-19 | `.agents/docs/architecture/config-format.md` |
+| Wire format | UTC unix milliseconds (`long`, named `*UnixMs`) across HTTP boundary; `DateTimeOffset` internally; `TimeProvider` injected, never `DateTime.UtcNow` | 2026-07-19 | `~/.agents/rules/csharp/time-and-wire-format.md` |
+| Error format | RFC 9457 ProblemDetails (status, title, detail, type, code extension); typed `ProviderException` → `IExceptionHandler` → ProblemDetails; no `Result<T>` at HTTP boundary | 2026-07-19 | `~/.agents/rules/csharp/problem-details.md`, `error-mapping.md` |
 | Storage | SQLite + JSON files (no Postgres) | 2026-07-19 | `.agents/docs/operations/storage.md` |
-| Auth model | guest (anon) + admin bearer; OIDC/LDAP stretch | 2026-07-19 | `.agents/docs/security/auth-model.md` |
+| Auth model | guest (anon) + admin bearer optional in MVP-01 (handler returns NoResult when `TESSERA_ADMIN_TOKEN` unset; admin endpoints reject 401); OIDC/LDAP stretch MVP-02+ | 2026-07-19 | `.agents/docs/security/auth-model.md` |
 | Dashboard schema | custom JSON, versioned, Grafana-inspired | 2026-07-19 | `.agents/docs/dashboard-schema.md` |
-| Port pool | 1990-2120 (Tessera-specific) | 2026-07-19 | `.agents/rules/coding/project-ports.md` |
+| Port pool | 1990-2120 (Tessera-specific; backend 1990, Vite 1991) | 2026-07-19 | `.agents/rules/coding/project-ports.md` |
 | Accent color | deep red (NOT blue like plexor) | 2026-07-19 | `.agents/docs/ui/design-system.md` § 0 |
 | Localization | English + Russian (plexor pattern) | 2026-07-19 | `web/apps/console/src/shared/lib/i18n/` |
 | Asset sync | git submodule at `assets/stbl/` | 2026-07-19 | `.agents/docs/ecosystem.md` |
 | Brand mark | 5-tile scatter (4 black + 1 red) | 2026-07-19 | `assets/mark-tessera.svg` |
 | Build SDK | `Microsoft.NET.Sdk` (NOT `Microsoft.Build.NoTargets`) | 2026-07-19 | `src/host/Tessera.Build.Tools/Tessera.Build.Tools.csproj` |
 | Module structure | `core/` + `extended/` if >5 files (NetArchTest enforced) | 2026-07-19 | `.agents/rules/coding/module-structure-5-cap.md` |
-| Backend SDK | .NET 10 (10.0.109+, latestFeature rollForward) | 2026-07-19 | `global.json` |
+| Backend SDK | .NET 10 (10.0.110+, latestFeature rollForward) | 2026-07-19 | `global.json` |
 | Strategic positioning | Grafana-analogue APM (multi-provider), NOT Victoria UI | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
-| Provider layer | New top-level `src/providers/` (Grafana datasource model) | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
-| Provider abstraction | Built in MVP-01 (interfaces in Shared.Kernel, Victoria impl in Providers) | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
-| MVP-01 module scope | 4 modules: Traces + Logs + Discovery + Health | 2026-07-19 | `.agents/HANDOFF.md` § Что осталось сделать |
+| Provider layer | Top-level `src/providers/` (Grafana datasource model); providers wired only in `Tessera.Host` composition root | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
+| Provider abstraction | Built in MVP-01 (interfaces in `Shared.Kernel`, concrete impls in `Providers.<Name>`) | 2026-07-19 | project-layers.md |
+| MVP-01 module scope | 4 modules: Traces + Logs + Discovery + Health (routes prefixed `/api/v1/`) | 2026-07-19 | api-design.md (controllers) |
+| Controller pattern | `[ApiController] : ControllerBase` (NOT minimal API); primary-ctor DI; `IExceptionHandler` global; `AddApplicationPart` для discovery | 2026-07-19 | api-design.md |
+| Host project role | composition root only — только `Program.cs` + config шаблоны; нет бизнес-логики; все infrastructure в shared projects (Web/Authentication/Kernel) | 2026-07-19 | commit `29485dc` |
+| Mapperly | Riok.Mapperly 4.3.1 для entity → DTO mappings; `[Mapper(RequiredMappingStrategy = Target)]`; DTOs init-only property records (NOT positional records) | 2026-07-19 | `~/.agents/rules/csharp/mapping.md` |
+| Compose model | Each shared project has its own `*InstallerExtensions` static class (`AddTesseraConfiguration`, `AddTesseraWebInfrastructure`, `AddTesseraAdminAuthentication`); host reads as flat composition chain | 2026-07-19 | di-installer.md |
 
-## Структура репо (для навигации)
+## Структура репо (навигация в текущем state)
 
 ```
 tessera/
 ├── README.md                              public README (с .by-stbl lockup)
-├── global.json                            .NET SDK pin (10.0.109, latestFeature)
-├── Directory.Build.props                  C# strict mode (warnings-as-errors, analyzers, MinVer)
+├── global.json                            .NET SDK pin (10.0.110, latestFeature)
+├── Directory.Build.props                  C# strict mode (warnings-as-errors, analyzers, MinVer, Mapperly)
 ├── Directory.Packages.props               central package versions (CPM disabled)
 ├── tessera.slnx                           solution file (plexor-style Folder hierarchy)
-├── assets/                                brand assets (lockup/og/mark/favicon)
-│   ├── lockup-tessera.svg                 "tessera by .stbl"
-│   ├── og-tessera.svg                     OG card 1200×630
-│   ├── mark-tessera.svg                   canonical 80×80 mark (white bg)
-│   ├── mark-tessera-transparent.svg       80×80 transparent, theme-aware
-│   ├── favicon.svg                        32×32 transparent + theme-aware
-│   ├── by-stbl.css                        .stbl org profile CSS
-│   └── stbl/                              SUBMODULE (.stbl brand assets)
+├── assets/                                brand assets (lockup/og/mark/favicon) — git submodule `assets/stbl/`
 ├── .agents/
 │   ├── HANDOFF.md                         ← THIS FILE
-│   ├── docs/                              17 doc файлов (architecture, modules, ops, etc.)
-│   └── rules/                             20 rule файлов (C# conventions, project structure)
+│   ├── STATE.md                           current progress log + recent commits + open questions
+│   ├── docs/                              20 doc файлов (architecture, modules, ops, etc.)
+│   └── rules/                             20+ rule файлов (C# conventions, project structure, api-design)
 ├── src/                                   BACKEND (.NET 10)
 │   ├── host/
-│   │   ├── Tessera.Host/                  ASP.NET Core controllers + DI composition root
-│   │   │   ├── Program.cs                 returns version JSON
-│   │   │   └── Tessera.Host.csproj
-│   │   └── Tessera.Build.Tools/           MSBuild SDK + .targets
-│   │       ├── Tessera.Build.Tools.csproj
-│   │       └── Tessera.Build.Tools.targets (placeholder)
+│   │   ├── Tessera.Host/                  composition root only (Program.cs + config templates)
+│   │   │   ├── Program.cs                 declarative AddTesseraConfiguration + AddTesseraWebInfrastructure +
+│   │   │   │                              AddTesseraAdminAuthentication + AddXxxModule() chain + AddVictoriaProvider
+│   │   │   ├── tessera.toml.example       TOML config template (committed)
+│   │   │   ├── tessera.local.toml.example override template (committed)
+│   │   │   ├── .gitignore                 ignores real tessera.toml / tessera.local.toml
+│   │   │   └── Tessera.Host.csproj        только ProjectReferences + analyzer-suppressions (no package-level concerns)
+│   │   └── Tessera.Build.Tools/           MSBuild SDK + VerifyFormatOnBuild target
 │   ├── shared/
-│   │   ├── Tessera.Shared.Kernel/         contracts/abstractions (empty)
-│   │   ├── Tessera.Shared.Http/           Refit client + Polly (empty)
-│   │   ├── Tessera.Shared.Telemetry/      OpenTelemetry + log format (empty)
-│   │   ├── Tessera.Shared.OpenApi/        Scalar/OpenAPI wiring (empty)
-│   │   └── Tessera.Shared.Validation/     options validators (empty)
+│   │   ├── Tessera.Shared.Kernel/         domain primitives + provider interfaces + Api/TesseraJsonOptions +
+│   │   │                                 Configuration/{Paths,Source,Options}
+│   │   ├── Tessera.Shared.Http/           RefitExtensions + BearerTokenHandler + HttpClientAuthOptions
+│   │   ├── Tessera.Shared.Web/            TesseraExceptionHandler + ProblemDetailsResponsesTransformer +
+│   │   │                                 WebInstallerExtensions (AddTesseraWebInfrastructure + UseTesseraOpenApi)
+│   │   ├── Tessera.Shared.Authentication/ AdminBearerHandler + AdminBearerOptions + AdminBearerConstants +
+│   │   │                                 AdminBearerCryptography + AuthenticationInstallerExtensions
+│   │   └── Tessera.Shared.Validation/     shell, no content yet (для Phase 5+ options validators)
 │   ├── modules/
-│   │   ├── Tessera.Modules.Traces/        traces endpoints (empty)
-│   │   ├── Tessera.Modules.Logs/          logs endpoints (empty)
-│   │   ├── Tessera.Modules.Discovery/     services + streams discovery (empty)
-│   │   └── Tessera.Modules.Health/        per-Victoria probes (empty)
-│   └── providers/                         NEW layer (MVP-01)
-│       └── Tessera.Providers.Victoria/    Victoria client + DTO mapping (to scaffold)
+│   │   ├── Tessera.Modules.Traces/        Controllers/TracesController + Mapping/TracesMapper + Errors/TracesErrors
+│   │   ├── Tessera.Modules.Logs/          Controllers/LogsController + Errors/LogsErrors
+│   │   ├── Tessera.Modules.Discovery/     Controllers/DiscoveryController
+│   │   └── Tessera.Modules.Health/        Controllers/HealthController + Mapping/HealthMapper + Errors/HealthErrors
+│   └── providers/
+│       └── Tessera.Providers.Victoria/    ITrace/Log/Discovery/HealthProvider impls + DTOs + NDJSON parsing +
+│                                         span tree reconstruction + VictoriaServiceCollectionExtensions
 ├── tests/                                 BACKEND tests
 │   ├── unit/
 │   │   ├── core/
-│   │   │   ├── Tessera.ArchitectureTests/ NetArchTest rules
-│   │   │   ├── Tessera.Host.UnitTests/    Host unit tests
-│   │   │   └── Tessera.Shared.Unit/       Shared unit tests
+│   │   │   ├── Tessera.ArchitectureTests/ NetArchTest rules (Phase 4 — blocked by SDK testhost bug)
+│   │   │   ├── Tessera.Host.UnitTests/    Host unit tests (blocked)
+│   │   │   └── Tessera.Shared.Unit/       Shared unit tests — 13/13 passing
 │   │   └── modules/
-│   │       ├── Tessera.Modules.Traces.Unit/
-│   │       ├── Tessera.Modules.Logs.Unit/
-│   │       ├── Tessera.Modules.Discovery.Unit/
-│   │       └── Tessera.Modules.Health.Unit/
+│   │       ├── Tessera.Modules.Traces.Unit/    (blocked)
+│   │       ├── Tessera.Modules.Logs.Unit/      (blocked)
+│   │       ├── Tessera.Modules.Discovery.Unit/ (blocked)
+│   │       └── Tessera.Modules.Health.Unit/    (blocked)
+│   ├── unit/providers/
+│   │   └── Tessera.Providers.Victoria.Unit/    34/34 passing
 │   └── integration/
-│       ├── Tessera.Host.Integration/      WebApplicationFactory tests
-│       └── Tessera.Victoria.Integration/  Testcontainers Victoria
-└── web/                                   frontend monorepo (bun workspaces)
+│       ├── Tessera.Host.Integration/      WebApplicationFactory tests (Phase 4 — blocked)
+│       └── Tessera.Victoria.Integration/  Testcontainers Victoria (Phase 4 — blocked)
+└── web/                                   frontend monorepo (bun workspaces) — MVP-02 deferred
     ├── apps/console/                      @tessera/console (Vite + React)
-    │   ├── src/
-    │   │   ├── main.tsx                   entry
-    │   │   ├── router.tsx                 code-based TanStack Router
-    │   │   ├── shared/
-    │   │   │   ├── api/                   types + mock-data + client
-    │   │   │   ├── lib/                   utils, hooks, i18n, preferences
-    │   │   │   └── ui/
-    │   │   │       ├── apm/               9 APM-specific components
-    │   │   │       ├── app-shell/         topnav + sidebar + page-template
-    │   │   │       ├── primitives/        84 shadcn primitives
-    │   │   │       └── data-table/        5 TanStack Table components
-    │   │   └── features/                  page components
-    │   │       ├── traces/traces-page.tsx
-    │   │       ├── logs/logs-page.tsx
-    │   │       ├── services/services-page.tsx
-    │   │       └── dashboards/dashboards-page.tsx
-    │   └── tests/                         26 unit tests
+    │   └── src/{shared/{api,lib,ui},features}
     ├── playbook/                          static HTML visual catalog (open in browser)
     ├── tooling/eslint-config/             @tessera/eslint-config workspace package
     └── package.json                       bun workspaces config
@@ -256,93 +279,95 @@ tessera/
 
 ## Run dev / see UI
 
-⚠️ **Агент-runtime-safety запрещает запуск `vite dev`** (long-lived dev server).
+⚠️ **Агент-runtime-safety запрещает запуск `vite dev` / `dotnet run`** (long-lived processes — могут убить runtime самого агента). Запускать имеет право **только пользователь в собственном терминале**.
 
-**Чтобы посмотреть UI в браузере:**
-1. Открой `web/playbook/index.html` двойным кликом (статическая visual catalog — топбар, сайдбар, все APM компоненты)
-2. Или локально: `cd web && bun install && bun --filter '@tessera/console' dev` (займёт ~10s на install, потом dev server на :1991)
+**Чтобы посмотреть UI в браузере (пользователь делает):**
+1. Открой `web/playbook/index.html` двойным кликом (статическая visual catalog — топбар, сайдбар, все APM компоненты, mock data)
+2. Или `cd web && bun install && bun --filter '@tessera/console' dev` (vite dev server на :1991)
 3. **С mock data:** `vite dev` работает без backend (API client fallback)
 4. **С real backend:** установи env `VITE_API_BASE_URL=http://localhost:1990` перед `vite dev`
 
-**Чтобы запустить тесты:**
+**Чтобы запустить backend (пользователь делает):**
 ```sh
-cd web && bun --filter '@tessera/console' test
-# 26 tests passing (duration, log-level, time-format)
+dotnet run --project src/host/Tessera.Host
+# Слушает на :1990. Создаёт `tessera.toml` рядом с бинарником, или берёт из /etc/tessera/, или XDG, или cwd.
+# Endpoints после старта:
+#   GET http://localhost:1990/                              → version banner JSON
+#   GET http://localhost:1990/api/v1/health                 → composite provider health (200/503)
+#   GET http://localhost:1990/api/v1/services              → service inventory (200)
+#   GET http://localhost:1990/api/v1/traces?service=...     → trace search (200)
+#   GET http://localhost:1990/api/v1/traces/{id}            → trace detail + correlated logs (200/404)
+#   GET http://localhost:1990/api/v1/logs?traceId=...       → logs by trace id (200/400)
+#   GET http://localhost:1990/openapi/v1.json               → OpenAPI 3.0 doc (for FE codegen)
+#   GET http://localhost:1990/scalar/v1                     → Scalar UI for human exploration
 ```
 
-**Backend build (после заполнения модулей):**
-```sh
-dotnet build tessera.slnx -c Debug
-# 20/20 projects, 0 errors, 0 warnings
-dotnet test tessera.slnx -c Debug --no-build
-```
+## Следующие шаги (рекомендованный порядок, MVP-01 final)
 
-## Следующие шаги (рекомендованный порядок, MVP-01)
+**Phase 4 — Architecture tests + integration (current focus):**
+1. **`Tessera.ArchitectureTests`** — пиши rules сейчас (заблокировано testhost-багом). 7 правил (см. §Что осталось сделать выше).
+2. **Testcontainers setup** (Phase 5, зависит от шага 1) — `victoriametrics/victoria-stack` single-binary container для `Tessera.Victoria.Integration`.
+3. **Local end-to-end verify** (Phase 5) — пользователь запускает `dotnet run`, агент через curl-агенты НЕ запускает (runtime-safety).
 
-Стратегия: сначала foundation (shared kernel + provider abstraction + Victoria provider), потом modules поверх.
-
-1. **PLAN.md** — scaffold `soly_workflow new tessera-mvp`, flesh out via `discuss` + `plan` (task-by-task acceptance criteria)
-2. **`Tessera.Shared.Kernel`** — domain types (`Trace`, `Span`, `LogEntry`, `Service`, `TimeRange`, `Page<T>`, `Result<T>`) + **provider interfaces** (`ITraceProvider`, `ILogProvider`, `IMetricsProvider`, `IDiscoveryProvider`, `IHealthProvider`)
-3. **`Tessera.Providers.Victoria`** — Victoria Refit clients (VT/VL/VM) + DTO mapping домен ↔ Jaeger/LogsQL/Prometheus + `AddVictoriaProvider(...)` extension
-4. **`Tessera.Shared.Http`** — Refit base + Polly + OTel HTTP plumbing (используется Victoria provider)
-5. **`Tessera.Modules.Health`** — simplest module, consume `IHealthProvider` (DI verification)
-6. **`Tessera.Modules.Traces`** — `/api/traces*`, consume `ITraceProvider`
-7. **`Tessera.Modules.Logs`** — `/api/logs*`, consume `ILogProvider`
-8. **`Tessera.Modules.Discovery`** — `/api/services`, consume `IDiscoveryProvider`
-9. **`Tessera.Host/Program.cs`** — composition root: TOML config + auth + DI (`AddVictoriaProvider`) + endpoint mapping
-10. **Integration tests** — Testcontainers + WebApplicationFactory
-11. **Trace detail page** + **Settings page** (UI)
-12. **Dashboard editor** (stretch)
-13. **Docker build** + **CI**
-14. **Publish to github.com/dot-stbl/tessera** — transfer ownership (когда ready)
+**Phase 5 — Doc refresh + container publish:**
+4. **Обновить** `.agents/docs/architecture.md` (wire-format секция — UTC unix ms, ProviderException → ProblemDetails mapping, admin bearer optional).
+5. **Обновить** `.agents/docs/security/auth-model.md` (admin endpoints — нет в MVP-01; admin scheme registered unconditionally so future `[Authorize(Policy="admin")]` works без host changes).
+6. **Обновить** `.agents/docs/operations/{install,configure}.md` — TOML config example (`TesseraHostExtensions` + secrets prefixes).
+7. **Container publish (stretch)** — Dockerfile multi-stage (build SDK 10 + runtime alpine), GitHub Actions.
+8. **MVP-02 handoff** — когда backend stable, передать в cubb codegen workspace (FE integration — см. §Frontend deferred выше).
 
 ## Команды
 
 ```sh
-# === FRONTEND ===
-# install
-cd web && bun install
-
-# tests
-bun --filter '@tessera/console' test
-
-# typecheck
-bun --filter '@tessera/console' typecheck
-
-# build
-bun --filter '@tessera/console' build
-
 # === BACKEND ===
-# build (full solution)
 cd C:/Users/bradw/source/stbl/tessera
-dotnet build tessera.slnx -c Debug
 
-# test (после заполнения модулей)
+# format (запустить ПЕРЕД каждым build — VerifyFormatOnBuild target полагается)
+dotnet format tessera.slnx --severity hidden
+
+# canonical build (компиляция + analyzers + format-gate за один прогон)
+dotnet build tessera.slnx -c Debug
+# expected: 22 проекта, 0 errors, 0 warnings
+
+# unit tests (на рабочих проектах; остальные заблокированы testhost-багом .NET 10.0.110)
+dotnet test tests/unit/core/Tessera.Shared.Unit/Tessera.Shared.Unit.csproj --no-build --nologo        # 13/13
+dotnet test tests/unit/providers/Tessera.Providers.Victoria.Unit --no-build --nologo                  # 34/34
+
+# full test (только когда testhost-баг починят, SDK ≥ 10.0.200)
 dotnet test tessera.slnx -c Debug --no-build
 
 # отдельный проект
 dotnet build src/shared/Tessera.Shared.Kernel/Tessera.Shared.Kernel.csproj
 
+# === FRONTEND ===
+cd web
+bun install                                  # one-time
+bun --filter '@tessera/console' test         # 26 unit tests passing
+bun --filter '@tessera/console' typecheck    # tsc --noEmit
+bun --filter '@tessera/console' build        # production build → apps/console/dist
+bun --filter '@tessera/console' lint         # eslint --max-warnings 0
+
 # === BRAND ===
-# submodule update
-git submodule update --remote assets/stbl
+git submodule update --remote assets/stbl    # pull latest .stbl org assets
 
 # === GIT ===
-# commit format
-git commit -m "[.stbl](feat/<area>): <subject>"
+git commit -m "[.stbl](feat/<area>): <subject>" -- обязательно feat/ префикс
+# `feat/meta` для rules/CI/build/format, `feat/docs` для доки, прочие area по слою.
 ```
 
 ## Если ты новый агент
 
-1. Прочитай `.agents/HANDOFF.md` (этот файл) целиком
-2. Прочитай `.agents/docs/architecture.md` для overview
-3. Прочитай `.agents/docs/ecosystem.md` для `.stbl` контекста
-4. Прочитай `.agents/rules/coding/code-shape.md` + `async-and-tasks.md` + `anti-patterns.md` для C# conventions
-5. Прочитай `.agents/rules/process/build-verification.md` для build gate
-6. Прочитай `.agents/rules/coding/module-structure-5-cap.md` — понимать ограничения `core/`/`extended/` split
-7. **Соблюдай rules** при написании любого кода. Self-audit перед commit (см. `worker-audit.md`)
-8. **Не запускай** `vite dev` / `dotnet run` / любые long-lived processes (см. `agent-runtime-safety.md`)
+1. Прочитай `.agents/HANDOFF.md` (этот файл) целиком — current state + decisions + repo navigation
+2. Прочитай `.agents/STATE.md` — decision log + open questions + recent commits
+3. Прочитай `.agents/docs/architecture.md` для overview решений
+4. Прочитай `.agents/rules/coding/{code-shape,async-and-tasks,anti-patterns,naming-and-types,constructors-and-fields}.md` — C# conventions (project-local дополняют ~/.agents/rules/csharp/)
+5. Прочитай `.agents/rules/coding/{project-layers,project-deps-and-tests,module-structure-5-cap}.md` — layer isolation (host/shared/modules/providers)
+6. Прочитай `.agents/rules/coding/api-design.md` — controllers pattern (как Plexor)
+7. Прочитай `.agents/rules/process/{build-verification,worker-audit}.md` — build gate + self-audit перед commit
+8. Прочитай `~/.agents/rules/process/commit-format.md` — commit format
+9. **Соблюдай rules** при написании любого кода. Self-audit `worker-audit.md` перед commit.
+10. **Не запускай** `vite dev` / `dotnet run` / любые long-lived processes (см. `agent-runtime-safety.md`). Curl к localhost — OK если сервер уже запущен пользователем.
 
 ---
 
-Tessera state at HANDOFF date: **19 commits**, 20 rules, 17 docs, 26 frontend tests passing, 1 submodule, full frontend scaffold with mock data, **backend skeleton (20 .NET projects) builds clean**, modules empty (нужно наполнять).
+Tessera state at HANDOFF date (2026-07-19): **~30 commits**, 20+ rules, 20+ docs, 1 submodule; **MVP-01 Phase 0/1/2/3 DONE**, Phase 4/5 in progress (architecture tests + integration). Frontend scaffold работает с mock data (MVP-02 deferred). Backend functional: 4 controllers consume 4 provider interfaces, ProblemDetails pipeline + admin bearer optional + TOML config + OpenAPI doc/Scalar UI. **22 .NET projects build clean** (0 errors, 0 warnings); **47/47 unit tests passing** в Tessera.Shared.Unit + Tessera.Providers.Victoria.Unit. Modules/Host/Architecture/Integration tests **blocked** by .NET 10.0.110 SDK testhost bug (env-specific, separate issue), runnable on SDK ≥ 10.0.200.

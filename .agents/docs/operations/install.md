@@ -19,15 +19,16 @@ docker run -d \
   ghcr.io/<org>/tessera:latest
 ```
 
-Port **1990** is the Tessera.Host backend port (see `coding/project-ports.md`). Override via `TESSERA_SERVER__PORT` env var.
+Port **1990** is the Tessera.Host backend port (see `coding/project-ports.md`). Override via `TESSERA__SERVER__PORT` env var.
 
 **Volumes:**
 - `/var/lib/tessera` — SQLite db + dashboards JSON (persistent)
-- `/etc/tessera` — config (read-only mount is fine if config is in image)
+- `/etc/tessera` — config (`tessera.toml` + optional `tessera.local.toml`, read-only mount is fine)
 
-**Environment variables:**
-- `TESSERA_ADMIN_TOKEN` — admin bearer token (required)
-- `TESSERA_VICTORIA_TOKEN` — Victoria stack bearer token (required)
+**Environment variables (all optional in MVP-01):**
+- `TESSERA_ADMIN_TOKEN` — admin bearer token (optional in MVP-01; absent → admin endpoints reject 401, host starts cleanly)
+- `TESSERA_VICTORIA_TOKEN` — Victoria stack bearer token (used by `Tessera.Providers.Victoria` Refit clients)
+- `TESSERA__SERVER__PORT` — override default backend port (1990). ASP.NET Core convention: `__` (double underscore) = section nesting.
 
 ### Docker Compose (with Victoria stack)
 
@@ -81,8 +82,9 @@ services:
     volumes:
       - tessera-data:/var/lib/tessera
       - ./tessera.toml:/etc/tessera/tessera.toml:ro
+      - ./tessera.local.toml:/etc/tessera/tessera.local.toml:ro  # optional
     environment:
-      TESSERA_ADMIN_TOKEN: "${TESSERA_ADMIN_TOKEN:?admin token required}"
+      TESSERA_ADMIN_TOKEN: "${TESSERA_ADMIN_TOKEN:-}"        # optional in MVP-01
       TESSERA_VICTORIA_TOKEN: "${TESSERA_VICTORIA_TOKEN:-}"
     restart: unless-stopped
 
@@ -93,7 +95,7 @@ volumes:
   tessera-data:
 ```
 
-`tessera.toml`:
+`tessera.toml` (templates committed to `src/host/Tessera.Host/tessera.toml.example`):
 
 ```toml
 version = "1"
@@ -107,24 +109,42 @@ tenant = "0"
 
 [victoria.traces]
 url = "http://vt:10428"
+# token = "env:TESSERA_VICTORIA_TOKEN"   # resolved via SecretReference
 
 [victoria.logs]
 url = "http://vl:9428"
+# token = "env:TESSERA_VICTORIA_TOKEN"
 
 [victoria.metrics]
 url = "http://vm:8429"
+# token = "env:TESSERA_VICTORIA_TOKEN"
 
 [storage]
 data_dir = "/var/lib/tessera"
-
-[auth]
-guest_enabled = true
-admin_token_source = "env:TESSERA_ADMIN_TOKEN"
 
 [telemetry]
 service_name = "tessera"
 log_level = "info"
 ```
+
+`tessera.local.toml` (env-specific overrides; gitignored, NOT example):
+
+```toml
+# Deployment-specific overrides — never committed.
+[victoria.traces]
+token = "file:/run/secrets/tessera/victoria-token"
+
+[victoria.logs]
+token = "file:/run/secrets/tessera/victoria-token"
+```
+
+Secret prefix (`env:VAR` / `file:/path`) is parsed by
+`Tessera.Shared.Kernel.Configuration.Paths.SecretReference.Resolve` at first
+read — see `../architecture/config-format.md` §3.
+
+**MVP-01 has no admin endpoints, so `TESSERA_ADMIN_TOKEN` is optional.** When
+Phase 5+ adds admin endpoints, set the env var to a `openssl rand -hex 32`
+token. The handler returns `NoResult()` when unset so host always starts.
 
 ## Bare-metal systemd
 
@@ -172,9 +192,8 @@ Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=30s
 
-# Environment
-Environment=TESSERA_ADMIN_TOKEN_FILE=/etc/tessera/secrets/admin-token
-Environment=TESSERA_VICTORIA_TOKEN_FILE=/etc/tessera/secrets/victoria-token
+# Environment — load token from sidecar file via TESSERA_*_FILE env,
+# or directly inline (admin token optional in MVP-01).
 EnvironmentFile=-/etc/tessera/tessera.env
 
 # Sandboxing
@@ -195,6 +214,17 @@ SyslogIdentifier=tessera
 [Install]
 WantedBy=multi-user.target
 ```
+
+`/etc/tessera/tessera.env`:
+
+```bash
+TESSERA_ADMIN_TOKEN=<64-char hex>
+TESSERA_VICTORIA_TOKEN=<victoria-stack-token>
+```
+
+Configuration files:
+- `/etc/tessera/tessera.toml` — base config (committed to git)
+- `/etc/tessera/tessera.local.toml` — env-specific overrides (gitignored, optional)
 
 ### Enable and start
 
