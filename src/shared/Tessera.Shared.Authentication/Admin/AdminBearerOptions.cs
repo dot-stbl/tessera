@@ -20,5 +20,5 @@ public sealed class AdminBearerOptions : AuthenticationSchemeOptions
     ///     <see cref="System.Security.Cryptography.CryptographicOperations.FixedTimeEquals" />
     ///     to prevent timing-attack token recovery.
     /// </summary>
-    public string? AdminToken { get; set; }
+    public string? AdminToken { get; init; }
 }

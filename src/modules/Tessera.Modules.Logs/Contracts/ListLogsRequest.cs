@@ -26,13 +26,23 @@ public sealed class ListLogsRequest
     /// <summary>
     ///     Project this request into a <see cref="LogQuery" /> the
     ///     <see cref="ILogProvider" /> can consume. Returns null when
-    ///     <see cref="TraceId" /> is missing — MVP-01 requires a trace id.
+    ///     <see cref="TraceId" /> is missing — MVP-01 requires a trace id;
+    ///     the controller's <c>is not { } query</c> check on the return
+    ///     value is the gate that surfaces a 400 ProblemDetails body.
     /// </summary>
     public LogQuery? ToLogQuery()
     {
-        var parsedTraceId = TraceId is null
-            ? null
-            : new Tessera.Shared.Kernel.Identifiers.TraceId(TraceId);
-        return new LogQuery(parsedTraceId, Stream, StartUnixMs, EndUnixMs, null, Limit);
+        if (TraceId is null)
+        {
+            return null;
+        }
+
+        return new LogQuery(
+            new Tessera.Shared.Kernel.Identifiers.TraceId(TraceId),
+            Stream,
+            StartUnixMs,
+            EndUnixMs,
+            null,
+            Limit);
     }
 }

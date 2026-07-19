@@ -62,24 +62,16 @@ public sealed class LogsControllerTests
     }
 
     /// <summary>
-    ///     MVP-01 documented behaviour: <see cref="LogsController" /> requires
-    ///     <c>traceId</c>. The current implementation forwards the request to
-    ///     <see cref="ILogProvider" /> regardless of whether
-    ///     <see cref="Tessera.Modules.Logs.Contracts.ListLogsRequest.TraceId" />
-    ///     is supplied — the controller doesn't validate it. The MVP-02 path
-    ///     will be to make <see cref="Tessera.Modules.Logs.Contracts.ListLogsRequest.ToLogQuery" />
-    ///     return <c>null</c> when TraceId is missing, which the controller
-    ///     already guards against with an <c>is not { } query</c> check.
-    ///     This test pins the MVP-01 behaviour: controller delegates the
-    ///     decision to the provider, which has to enforce it (or 200 OK with
-    ///     every log in the time range for the wrong request).
+    ///     When <c>traceId</c> is missing the controller throws
+    ///     <see cref="ProviderException" /> with
+    ///     <see cref="LogsErrors.TraceIdRequired" />. Host IExceptionHandler
+    ///     maps to a 400 ProblemDetails body — MVP-01 documented behaviour per
+    ///     architecture.md §Wire format. The provider is NOT called.
     /// </summary>
     [Fact]
-    public async Task ListAsync_WithoutTraceId_ForwardsToProviderForBackendDecision()
+    public async Task ListAsync_WithoutTraceId_ThrowsProviderExceptionWithRequiredCode()
     {
         var provider = Substitute.For<ILogProvider>();
-        provider.QueryAsync(Arg.Any<LogQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Page<LogEntry>(Array.Empty<LogEntry>(), null, false));
         var request = new ListLogsRequest
         {
             TraceId = null,
@@ -88,13 +80,15 @@ public sealed class LogsControllerTests
         };
         var controller = new LogsController(provider);
 
-        var actionResult = await controller.ListAsync(request);
+        var exception = await Assert.ThrowsAsync<ProviderException>(
+            () => controller.ListAsync(request));
 
-        Assert.IsType<OkObjectResult>(actionResult.Result);
-        await provider.Received(1).QueryAsync(
-            Arg.Is<LogQuery>(q => q.TraceId == null && q.StartUnixMs == 0L && q.EndUnixMs == 100L),
-            Arg.Any<CancellationToken>());
+        Assert.Equal(LogsErrors.TraceIdRequired, exception.Code);
+        Assert.Contains("traceId", exception.Message);
+        await provider.DidNotReceive().QueryAsync(
+            Arg.Any<LogQuery>(), Arg.Any<CancellationToken>());
     }
+}
 
     /// <summary>
     ///     The cancellation token flows to <see cref="ILogProvider.QueryAsync" />
@@ -120,6 +114,4 @@ public sealed class LogsControllerTests
 
         await provider.Received(1).QueryAsync(Arg.Any<LogQuery>(), cts.Token);
     }
-
-    private static readonly string[] NoServices = [];
 }

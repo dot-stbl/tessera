@@ -60,11 +60,14 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
 # Bring in the rest of the source now that restore is cached.
 COPY . .
 
-# Publish the host with `dotnet publish` (self-contained=false so the
-# runtime image supplies the shared framework). /p:UseAppHost=false
-# strips the apphost shim that .NET defaults in — we only need the
-# .dll in the runtime image. Trimmed + ReadyToRun so the cold start is
-# warm (faster first request at the cost of a slightly bigger image).
+# Publish the host with `dotnet publish`. self-contained=false so
+# the runtime image supplies the shared framework (alpine runtime
+# layer). UseAppHost=false strips the apphost shim that .NET defaults
+# in — we only need the .dll in the runtime image. PublishReadyToRun=true
+# warm-compiles tier-0 code for faster cold start at the cost of a
+# slightly bigger image; PublishTrimmed=false keeps the
+# Microsoft.AspNetCore.OpenApi source generator output (which would
+# otherwise need additional trim-analysis XML annotations).
 RUN --mount=type=cache,target=/root/.nuget/packages \
     dotnet publish src/host/Tessera.Host/Tessera.Host.csproj \
         --configuration Release \
@@ -108,6 +111,12 @@ ENV \
     TZ=UTC
 
 EXPOSE 1990
+
+# Install wget (not in the default mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+# image — fresh-eye review caught this when container started reporting
+# "unhealthy" forever despite the process being up). alpine's busybox
+# ships `wget` via the `wget` package separately from the base image.
+RUN apk add --no-cache wget
 
 # Health probe: the host exposes GET /api/v1/health (composite across
 # wired providers). Use `--fail` so curl exits non-zero on any 5xx
