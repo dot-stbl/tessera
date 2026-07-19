@@ -24,7 +24,9 @@ namespace Tessera.Modules.Traces.Controllers;
 ///         </item>
 ///     </list>
 ///     404 surface path: <see cref="ProviderNotFoundException" /> with
-///     <see cref="TracesErrors.TraceNotFound" /> code.
+///     <see cref="TracesErrors.TraceNotFound" /> code (non-2xx responses
+///     are documented globally by the host's
+///     <c>ProblemDetailsResponsesTransformer</c>).
 /// </summary>
 [ApiController]
 [Route(ApiRoutes.Traces)]
@@ -63,7 +65,6 @@ public sealed class TracesController(
     [HttpGet(ApiRoutes.Trace)]
     [EndpointSummary("Trace detail with correlated logs (single response)")]
     [ProducesResponseType<GetTraceResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GetTraceResponse>> GetAsync(
         [FromRoute] string traceId,
         CancellationToken cancellationToken = default)

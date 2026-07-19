@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Configuration;
-using Tomlyn;
 using Tomlyn.Model;
 
 namespace Tessera.Shared.Kernel.Configuration;
@@ -17,7 +16,8 @@ namespace Tessera.Shared.Kernel.Configuration;
 ///     <c>VictoriaOptions</c> binding works regardless of TOML case conventions.
 ///     Unknown value types fall through to <c>value?.ToString()</c> — covers
 ///     strings, numbers, booleans, datetimes; complex types (TomlTable,
-///     TomlArray) are handled by recursive flattening.
+///     TomlArray) are handled by recursive flattening in
+///     <see cref="TomlTableFlattener" />.
 /// </remarks>
 public sealed class TomlConfigurationProvider : FileConfigurationProvider
 {
@@ -42,43 +42,12 @@ public sealed class TomlConfigurationProvider : FileConfigurationProvider
             return;
         }
 
-        var model = TomlSerializer.Deserialize<TomlTable>(tomlText);
+        var model = Tomlyn.TomlSerializer.Deserialize<TomlTable>(tomlText);
         if (model is not null)
         {
-            FlattenTable(model, prefix: string.Empty, data);
+            TomlTableFlattener.FlattenTable(model, prefix: string.Empty, data);
         }
 
         Data = data;
-    }
-
-    private static void FlattenTable(TomlTable table, string prefix, Dictionary<string, string?> data)
-    {
-        foreach (var (key, value) in table)
-        {
-            var path = string.IsNullOrEmpty(prefix) ? key : prefix + ":" + key;
-            FlattenValue(value, path, data);
-        }
-    }
-
-    private static void FlattenValue(object? value, string path, Dictionary<string, string?> data)
-    {
-        switch (value)
-        {
-            case TomlTable nested:
-                FlattenTable(nested, path, data);
-                break;
-
-            case TomlArray array:
-                for (var i = 0; i < array.Count; i++)
-                {
-                    FlattenValue(array[i], path + ":" + i, data);
-                }
-
-                break;
-
-            default:
-                data[path] = value?.ToString();
-                break;
-        }
     }
 }

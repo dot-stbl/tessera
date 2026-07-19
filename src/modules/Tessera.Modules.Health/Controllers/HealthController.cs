@@ -12,7 +12,9 @@ namespace Tessera.Modules.Health.Controllers;
 /// <summary>
 ///     Composite health endpoint — delegates to <see cref="IHealthProvider" />
 ///     (wired in <c>Tessera.Host</c> composition root). Returns 200 when the
-///     aggregate status is <see cref="HealthStatus.Healthy" />, 503 otherwise.
+///     aggregate status is <see cref="HealthStatus.Healthy" />, and a
+///     ProblemDetails non-2xx (502) otherwise. Non-2xx responses are
+///     documented globally by the host's <c>ProblemDetailsResponsesTransformer</c>.
 /// </summary>
 [ApiController]
 [Route(ApiRoutes.Health)]
@@ -21,14 +23,16 @@ public sealed class HealthController(IHealthProvider provider, IHealthMapper map
 {
     /// <summary>
     ///     Probe all wired providers and return the composite status. Returns
-    ///     200 when Healthy, 503 otherwise — the body shape is unchanged
-    ///     between the two so FE consumers can inspect <c>status</c> regardless.
+    ///     200 with the report body when the aggregate is <see cref="HealthStatus.Healthy" />;
+    ///     on degraded / unhealthy it throws <see cref="ProviderException" />
+    ///     with <see cref="HealthErrors.ProviderUnreachable" /> and the host's
+    ///     <c>IExceptionHandler</c> writes a 502 ProblemDetails body — the
+    ///     controller body shape is single-valued by design so FE consumers
+    ///     inspect <c>status</c> unconditionally on error.
     /// </summary>
     [HttpGet]
     [EndpointSummary("Composite health status across all wired providers")]
     [ProducesResponseType<HealthResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<HealthResponse>(StatusCodes.Status503ServiceUnavailable)]
-    [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<HealthResponse>> GetAsync(CancellationToken cancellationToken = default)
     {
         var report = await provider.CheckAsync(cancellationToken);

@@ -26,12 +26,12 @@ public sealed class LogsController(ILogProvider provider) : ControllerBase
     ///     missing — the global <c>IExceptionHandler</c> maps that to a 400
     ///     ProblemDetails body. MVC's built-in model-binding 400 (malformed
     ///     <c>traceId</c>, etc.) is unrelated and stays on the default
-    ///     ValidationProblem path.
+    ///     ValidationProblem path. Non-2xx responses are documented globally
+    ///     by the host's <c>ProblemDetailsResponsesTransformer</c>.
     /// </summary>
     [HttpGet]
     [EndpointSummary("List logs by trace id (MVP-01). Ad-hoc LogsQL — MVP-02.")]
     [ProducesResponseType<Page<LogEntry>>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Page<LogEntry>>> ListAsync(
         [FromQuery] ListLogsRequest request,
         CancellationToken cancellationToken = default)

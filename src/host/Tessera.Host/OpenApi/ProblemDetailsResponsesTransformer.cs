@@ -19,12 +19,6 @@ namespace Tessera.Host.OpenApi;
 /// </remarks>
 public sealed class ProblemDetailsResponsesTransformer : IOpenApiOperationTransformer
 {
-    /// <summary>
-    ///     Schema for the <c>application/problem+json</c> media type — describes
-    ///     the RFC 9457 body shape (type / title / status / detail / instance / code).
-    ///     Properties are <c>null</c>-tolerant so the static initializer compiles
-    ///     under nullable-reference-types analyzers.
-    /// </summary>
     private static readonly OpenApiMediaType ProblemJsonMediaType = new()
     {
         Schema = new OpenApiSchema
@@ -37,26 +31,13 @@ public sealed class ProblemDetailsResponsesTransformer : IOpenApiOperationTransf
     /// <inheritdoc />
     public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
-        AddResponse(operation, "400", "Bad Request: request validation failed (model binding or FluentValidation).");
-        AddResponse(operation, "404", "Not Found: the requested resource does not exist.");
-        AddResponse(operation, "409", "Conflict: the request collides with the current state of the target resource.");
-        AddResponse(operation, "500", "Internal Server Error: an unexpected server-side failure occurred.");
-        AddResponse(operation, "502", "Bad Gateway: upstream provider unavailable.");
-        AddResponse(operation, "503", "Service Unavailable: degraded state (e.g. one or more providers unreachable).");
-        AddResponse(operation, "504", "Gateway Timeout: upstream provider exceeded its timeout budget.");
+        ProblemDetailsResponseShims.AddResponse(operation, "400", "Bad Request: request validation failed (model binding or FluentValidation).");
+        ProblemDetailsResponseShims.AddResponse(operation, "404", "Not Found: the requested resource does not exist.");
+        ProblemDetailsResponseShims.AddResponse(operation, "409", "Conflict: the request collides with the current state of the target resource.");
+        ProblemDetailsResponseShims.AddResponse(operation, "500", "Internal Server Error: an unexpected server-side failure occurred.");
+        ProblemDetailsResponseShims.AddResponse(operation, "502", "Bad Gateway: upstream provider unavailable.");
+        ProblemDetailsResponseShims.AddResponse(operation, "503", "Service Unavailable: degraded state (e.g. one or more providers unreachable).");
+        ProblemDetailsResponseShims.AddResponse(operation, "504", "Gateway Timeout: upstream provider exceeded its timeout budget.");
         return Task.CompletedTask;
-    }
-
-    private static void AddResponse(OpenApiOperation operation, string statusCode, string description)
-    {
-        operation.Responses ??= new OpenApiResponses();
-        operation.Responses.TryAdd(statusCode, new OpenApiResponse
-        {
-            Description = description,
-            Content = new Dictionary<string, OpenApiMediaType>
-            {
-                ["application/problem+json"] = ProblemJsonMediaType,
-            },
-        });
     }
 }

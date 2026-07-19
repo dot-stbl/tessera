@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 
@@ -12,8 +11,8 @@ namespace Tessera.Host.Auth;
 ///     Authentication handler for the admin-bearer scheme. Single-factor:
 ///     compares the <c>Authorization: Bearer {token}</c> header value to the
 ///     expected token from <see cref="AdminBearerOptions.AdminToken" /> using
-///     <see cref="CryptographicOperations.FixedTimeEquals" /> so the comparison
-///     timing is independent of how many bytes match.
+///     <see cref="System.Security.Cryptography.CryptographicOperations.FixedTimeEquals" />
+///     so the comparison timing is independent of how many bytes match.
 /// </summary>
 /// <remarks>
 ///     When <see cref="AdminBearerOptions.AdminToken" /> is null (env var
@@ -30,10 +29,6 @@ public sealed class AdminBearerHandler(
     UrlEncoder encoder)
     : AuthenticationHandler<AdminBearerOptions>(options, loggerFactory, encoder)
 {
-    private const string SchemeName = "admin";
-    private const string AuthorizationHeader = "Authorization";
-    private const string BearerPrefix = "Bearer ";
-
     /// <inheritdoc />
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -43,19 +38,19 @@ public sealed class AdminBearerHandler(
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        if (!Request.Headers.TryGetValue(AuthorizationHeader, out var raw))
+        if (!Request.Headers.TryGetValue(AdminBearerConstants.AuthorizationHeader, out var raw))
         {
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
         var headerValue = raw.ToString();
-        if (!headerValue.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
+        if (!headerValue.StartsWith(AdminBearerConstants.BearerPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(AuthenticateResult.Fail("Invalid scheme."));
         }
 
-        var presented = headerValue[BearerPrefix.Length..].Trim();
-        if (!FixedTimeEquals(Encoding.UTF8.GetBytes(presented), Encoding.UTF8.GetBytes(expected)))
+        var presented = headerValue[AdminBearerConstants.BearerPrefix.Length..].Trim();
+        if (!AdminBearerCryptography.FixedTimeEquals(Encoding.UTF8.GetBytes(presented), Encoding.UTF8.GetBytes(expected)))
         {
             return Task.FromResult(AuthenticateResult.Fail("Invalid token."));
         }
@@ -65,26 +60,10 @@ public sealed class AdminBearerHandler(
             new Claim(ClaimTypes.Name, "admin"),
             new Claim(ClaimTypes.Role, "admin"),
         ],
-        SchemeName);
+        AdminBearerConstants.SchemeName);
 
         var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, SchemeName);
+        var ticket = new AuthenticationTicket(principal, AdminBearerConstants.SchemeName);
         return Task.FromResult(AuthenticateResult.Success(ticket));
-    }
-
-    /// <summary>
-    ///     Length-equalizing constant-time byte comparison. Pads the shorter
-    ///     input to the longer so the loop runs the same number of iterations
-    ///     regardless of where the bytes first differ — closes the timing
-    ///     side channel on token length.
-    /// </summary>
-    private static bool FixedTimeEquals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
-    {
-        if (left.Length != right.Length)
-        {
-            return false;
-        }
-
-        return CryptographicOperations.FixedTimeEquals(left, right);
     }
 }

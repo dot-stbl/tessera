@@ -27,7 +27,7 @@ public sealed class TesseraExceptionHandler(ILogger<TesseraExceptionHandler> log
             return false;
         }
 
-        var statusCode = MapStatus(providerException);
+        var statusCode = TesseraExceptionHandlerHelpers.MapStatus(providerException);
 
         var problem = new ProblemDetails
         {
@@ -55,15 +55,5 @@ public sealed class TesseraExceptionHandler(ILogger<TesseraExceptionHandler> log
             TesseraJsonOptions.Instance,
             cancellationToken);
         return true;
-    }
-
-    private static int MapStatus(ProviderException exception)
-    {
-        return exception switch
-        {
-            ProviderNotFoundException => StatusCodes.Status404NotFound,
-            ProviderTimeoutException => StatusCodes.Status504GatewayTimeout,
-            _ => StatusCodes.Status502BadGateway,
-        };
     }
 }
