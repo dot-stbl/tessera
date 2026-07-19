@@ -5,6 +5,7 @@ using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
+using Tessera.Providers.Victoria.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,13 +48,16 @@ builder.Services.AddExceptionHandler<TesseraExceptionHandler>();
 // Module DI
 // --------------------------------------------------------------------
 // Each AddXxxModule registers the module's Mapperly mapper + any per-module
-// services. Concrete IHealthProvider / ITraceProvider / ILogProvider /
-// IDiscoveryProvider implementations land later via AddVictoriaProvider.
+// services. AddVictoriaProvider (below) wires the concrete IHealthProvider /
+// ITraceProvider / ILogProvider / IDiscoveryProvider implementations from
+// Tessera.Providers.Victoria — modules stay provider-agnostic (PROJECT-DEP-AND-TESTS.MD
+// provider isolation rule).
 builder.Services
     .AddHealthModule()
     .AddDiscoveryModule()
     .AddTracesModule()
-    .AddLogsModule();
+    .AddLogsModule()
+    .AddVictoriaProvider(builder.Configuration);
 
 var app = builder.Build();
 

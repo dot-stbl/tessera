@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\modules\Tessera.Modules.Logs\Tessera.Modules.Logs.csproj"/>
     <ProjectReference Include="..\..\modules\Tessera.Modules.Discovery\Tessera.Modules.Discovery.csproj"/>
     <ProjectReference Include="..\..\modules\Tessera.Modules.Health\Tessera.Modules.Health.csproj"/>
+    <ProjectReference Include="..\..\providers\Tessera.Providers.Victoria\Tessera.Providers.Victoria.csproj"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Remove="Meziantou.Analyzer"/>
