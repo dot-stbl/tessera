@@ -122,6 +122,13 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - **Settings page** — Victoria endpoints config, theme toggle, language switcher (mock пока)
 - **Dashboard editor** — JSON schema implementation + panel renderers (trace_list/log_view/metric_chart/markdown/service_map/flame_graph)
 
+### FE pipeline (MVP-01, plexor model)
+- **Design-first OpenAPI contract** — `contracts/tessera.openapi.yaml` (hand-authored, source of truth for MVP-01 endpoints)
+- **kubb codegen workspace** — `web/tooling/codegen/` runs kubb 4.x (7 plugins: TS / Client / Zod / React Query / Faker / MSW / custom Filter) to generate `web/apps/console/src/shared/api/src/`
+- **MSW mock layer** — `web/apps/console/src/shared/api/mocks/{browser,handlers}.ts` composed from kubb-generated per-operation handlers + hand-curated sample traces/logs
+- **Toggle** — `VITE_USE_MOCKS=true` runs MSW worker, `false` (default) hits real `Tessera.Host`
+- **Replacement** — hand-written `mock-data.ts` + `client.ts` deleted; features import only from `@/shared/api` (public barrel)
+
 ### Тесты
 - **Integration tests** — Testcontainers Victoria (`GenericContainer` для `victoriametrics/victoria-traces:v0.X.X` и др.), `WebApplicationFactory<Program>` для backend
 - **Component tests** для оставшихся APM компонентов (Waterfall, LogEntry, TraceId)
