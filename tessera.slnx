@@ -48,6 +48,14 @@
         <Project Path="src/modules/Tessera.Modules.Health/Tessera.Modules.Health.csproj" />
     </Folder>
 
+    <!-- ============ Providers (Grafana datasource model) ================== -->
+    <!-- /src/providers/<Name>/ — concrete data source backends            -->
+    <!-- (MVP-01: Tessera.Providers.Victoria)                              -->
+    <Folder Name="/src/providers/" />
+    <Folder Name="/src/providers/Tessera.Providers.Victoria/">
+        <Project Path="src/providers/Tessera.Providers.Victoria/Tessera.Providers.Victoria.csproj" />
+    </Folder>
+
     <!-- ============ Host (entry point) ==================================== -->
     <Folder Name="/src/host/">
         <Project Path="src/host/Tessera.Host/Tessera.Host.csproj" />
