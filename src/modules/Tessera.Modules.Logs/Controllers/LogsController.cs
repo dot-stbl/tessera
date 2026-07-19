@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Tessera.Modules.Logs.Contracts;
+using Tessera.Modules.Logs.Errors;
 using Tessera.Shared.Kernel.Api;
 using Tessera.Shared.Kernel.Domain.Logs;
+using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Kernel.Pagination;
 using Tessera.Shared.Kernel.Providers.Logs;
 
@@ -14,19 +16,20 @@ namespace Tessera.Modules.Logs.Controllers;
 /// </summary>
 [ApiController]
 [Route(ApiRoutes.Logs)]
+[Tags(["logs"])]
 public sealed class LogsController(ILogProvider provider) : ControllerBase
 {
     /// <summary>
-    ///     Single-element array re-used on every 400 response so the validation
-    ///     error dictionary doesn't allocate per request (CA1861).
-    /// </summary>
-    private static readonly string[] TraceIdRequiredMessage =
-        ["traceId is required for MVP-01 log queries."];
-
-    /// <summary>
-    ///     List logs by trace id. Returns 400 when <c>traceId</c> is missing.
+    ///     List logs by trace id. Throws
+    ///     <see cref="ProviderException" /> with
+    ///     <see cref="LogsErrors.TraceIdRequired" /> when <c>traceId</c> is
+    ///     missing — the global <c>IExceptionHandler</c> maps that to a 400
+    ///     ProblemDetails body. MVC's built-in model-binding 400 (malformed
+    ///     <c>traceId</c>, etc.) is unrelated and stays on the default
+    ///     ValidationProblem path.
     /// </summary>
     [HttpGet]
+    [EndpointSummary("List logs by trace id (MVP-01). Ad-hoc LogsQL — MVP-02.")]
     [ProducesResponseType<Page<LogEntry>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Page<LogEntry>>> ListAsync(
@@ -35,8 +38,9 @@ public sealed class LogsController(ILogProvider provider) : ControllerBase
     {
         if (request.ToLogQuery() is not { } query)
         {
-            ModelState.AddModelError("traceId", TraceIdRequiredMessage[0]);
-            return ValidationProblem(ModelState);
+            throw new ProviderException(
+                LogsErrors.TraceIdRequired,
+                "traceId is required for MVP-01 log queries.");
         }
 
         var page = await provider.QueryAsync(query, cancellationToken);
