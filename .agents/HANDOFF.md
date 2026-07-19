@@ -122,12 +122,10 @@ Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Б
 - **Settings page** — Victoria endpoints config, theme toggle, language switcher (mock пока)
 - **Dashboard editor** — JSON schema implementation + panel renderers (trace_list/log_view/metric_chart/markdown/service_map/flame_graph)
 
-### FE pipeline (MVP-01, plexor model)
-- **Design-first OpenAPI contract** — `contracts/tessera.openapi.yaml` (hand-authored, source of truth for MVP-01 endpoints)
-- **kubb codegen workspace** — `web/tooling/codegen/` runs kubb 4.x (7 plugins: TS / Client / Zod / React Query / Faker / MSW / custom Filter) to generate `web/apps/console/src/shared/api/src/`
-- **MSW mock layer** — `web/apps/console/src/shared/api/mocks/{browser,handlers}.ts` composed from kubb-generated per-operation handlers + hand-curated sample traces/logs
-- **Toggle** — `VITE_USE_MOCKS=true` runs MSW worker, `false` (default) hits real `Tessera.Host`
-- **Replacement** — hand-written `mock-data.ts` + `client.ts` deleted; features import only from `@/shared/api` (public barrel)
+### FE pipeline (MVP-02, plexor model)
+- **Deferred to MVP-02** — MVP-01 is backend-only (per owner direction 2026-07-19). FE integration postponed until backend stable.
+- **When MVP-02 starts:** design-first OpenAPI contract (`contracts/tessera.openapi.yaml`) + kubb codegen workspace (`web/tooling/codegen/`, 7 plugins: TS/Client/Zod/ReactQuery/Faker/MSW/custom-filter) + MSW mock layer + `VITE_USE_MOCKS` toggle. Replaces existing hand-written `mock-data.ts` + `client.ts`.
+- **Existing FE state during MVP-01:** 4 pages (traces/logs/services/dashboards) run on hand-written mock data fallback in `web/apps/console/src/shared/api/{types,mock-data,client}.ts`. Works in dev (`bun --filter '@tessera/console' dev`) without backend. **No FE code touched in MVP-01.**
 
 ### Тесты
 - **Integration tests** — Testcontainers Victoria (`GenericContainer` для `victoriametrics/victoria-traces:v0.X.X` и др.), `WebApplicationFactory<Program>` для backend

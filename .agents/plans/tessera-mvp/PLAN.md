@@ -1,24 +1,27 @@
 # Plan: tessera-mvp
 
-> Tessera MVP-01 — end-to-end backend + trace/log correlation UX. Drops Metrics
-> entirely from MVP-01 scope (deferred to MVP-02+). Focus: Traces + Logs +
-> Discovery + Health with Kibana-Observability-style trace/log correlation as
-> the headline UX feature. Provider abstraction is mandatory (Victoria is first
-> provider; future phases add Tempo/Jaeger/Loki without module refactor).
+> Tessera MVP-01 — **backend-only**. Drops Metrics entirely from MVP-01
+> (deferred to MVP-02+). Focus: Traces + Logs + Discovery + Health modules
+> behind a provider abstraction (Victoria is first provider; future phases
+> add Tempo/Jaeger/Loki without module refactor). Trace/log correlation
+> (Kibana Observability style) shipped via backend response shape.
+>
+> Frontend integration (plexor-pattern kubb/MSW, trace-detail UI,
+> settings page) explicitly **deferred to MVP-02** per owner direction
+> 2026-07-19 ("без моков, сразу бек нормальный делаем, а потом ui уже").
 >
 > Strategic context: `.agents/HANDOFF.md` § Strategic positioning +
 > `.agents/STATE.md` Decisions.
 
 ## Goal
 
-End-to-end working Tessera MVP-01: backend serves real VictoriaTraces +
-VictoriaLogs data through 4 modules (Traces, Logs, Discovery, Health) behind
-a provider abstraction; **frontend uses plexor SPA pattern — design-first
-OpenAPI contract (`contracts/tessera.openapi.yaml`) + kubb codegen
-(`web/tooling/codegen/`) + MSW via `VITE_USE_MOCKS`** — trace-detail page
-shows waterfall + correlated logs side-by-side like Kibana Observability.
-MVP-01 deliberately omits Metrics, Dashboards, and Service Map — those are
-MVP-02+.
+End-to-end working **backend-only** Tessera MVP-01: serves real VictoriaTraces
++ VictoriaLogs data through 4 modules (Traces, Logs, Discovery, Health) behind
+a provider abstraction. Testable via Testcontainers + manual curl verification
+against real Victoria. Existing `web/apps/console/` frontend stays on its
+hand-written mock-data fallback (works in mock mode today; not touched during
+MVP-01). MVP-01 deliberately omits Metrics, Dashboards, Service Map, and UI
+redesign — all are MVP-02+.
 
 ---
 
@@ -356,144 +359,57 @@ Each module = endpoints + handlers + DI extension + unit tests. Modules referenc
 
 ---
 
-### Phase 5 — Frontend integration (plexor SPA pattern)
+### Phase 5 — E2E verification + handoff (backend-only)
 
-**T5.0** Author `contracts/tessera.openapi.yaml` (design-first MVP-01 contract)
-- 5 endpoints for MVP-01:
-  - `GET /api/traces` — list traces (query: service, operation, start, end, minDurationMs, maxDurationMs, cursor, limit)
-  - `GET /api/traces/{traceId}` — trace detail (response includes `correlatedLogs: LogEntry[]` — Kibana Observability shape)
-  - `GET /api/logs` — query logs (query: trace_id, start, end, limit)
-  - `GET /api/services` — service inventory
-  - `GET /api/health` — composite health
-- Schemas: `TraceSummary`, `TraceDetail`, `Span`, `LogEntry`, `Service`, `ProviderHealthReport`, request/response envelopes
-- Errors per RFC 7807 ProblemDetails
-- File: `contracts/tessera.openapi.yaml`
-- Acceptance: file is valid OpenAPI 3.0/3.1, parsable by kubb, generates types/schemas without errors
+**T5.1** Document VT + VL local setup (docker-compose or `docker run`)
+- `deploy/docker/docker-compose.dev.yml` or HANDOFF.md instructions
+- VT on `:10428`, VL on `:9428` (standard Victoria ports, out of tessera pool per `project-ports.md`)
+- Volume mounts for data persistence
 
-**T5.1** Set up `web/tooling/codegen/` workspace package (plexor pattern)
-- Mirror plexor: `web/tooling/codegen/{kubb.config.ts, kubb-plugin-filter/, package.json}`
-- kubb 4.x with 7 plugins: TS, Client (fetch), Zod, React Query, Faker, MSW, custom Filter
-- Initially custom Filter is passthrough (no-op); specific filters added as needed
-- Input: `contracts/tessera.openapi.yaml` (design-first)
-- Output: `web/apps/console/src/shared/api/src/`
-- Bun workspace entry in `web/package.json`
-- File: `web/tooling/codegen/{kubb.config.ts, kubb-plugin-filter/, package.json}`
-- Acceptance: `bun install` succeeds, kubb plugin builds
-
-**T5.2** Generate API layer + replace hand-written
-- Run `bun run generate` from `web/tooling/codegen/`
-- Generates `web/apps/console/src/shared/api/src/{types,client,hooks,schemas,fixtures,msw,filters}`
-- Delete hand-written: `web/apps/console/src/shared/api/{types.ts, mock-data.ts, client.ts}` (replaced by generated)
-- Create public barrel `web/apps/console/src/shared/api/index.ts` (re-export from `./src`)
-- File: `web/apps/console/src/shared/api/`
-- Acceptance: kubb generates without errors, barrel imports clean, features import from `@/shared/api`
-
-**T5.3** Author MSW mocks
-- `web/apps/console/src/shared/api/mocks/browser.ts` — MSW worker setup (`setupWorker(...handlers)`, `http.all('*', passthrough)` for non-API routes)
-- `web/apps/console/src/shared/api/mocks/handlers.ts` — composed from kubb-generated per-operation handlers (`listTracesHandler`, `getTraceHandler`, `listLogsHandler`, `listServicesHandler`, `getHealthHandler`) + hand-curated sample traces/logs (deterministic via `faker.seed`)
-- File: `web/apps/console/src/shared/api/mocks/{browser,handlers}.ts`
-- Acceptance: MSW handlers intercept fetches correctly when worker starts
-
-**T5.4** Wire `enableMocking()` in `main.tsx`
-- Async function checks `import.meta.env.VITE_USE_MOCKS`
-- When `true` → start MSW worker before first render
-- When `false` (default) → real fetch to backend
-- File: `web/apps/console/src/main.tsx`
-- Acceptance: `VITE_USE_MOCKS=true` shows mock data; `=false` (or unset) attempts real fetch
-
-**T5.5** Trace detail page — generated React Query hooks
-- Route `/traces/$traceId`
-- Uses kubb-generated `useGetTrace(traceId)` hook
-- Renders waterfall + log panel side-by-side (existing `waterfall` + `log-entry` components)
-- File: `web/apps/console/src/features/traces/trace-detail-page.tsx`
-
-**T5.6** Click correlation: log → focus span
-- Click log entry → scroll waterfall to corresponding span + highlight
-- File: `web/apps/console/src/features/traces/trace-detail-page.tsx`
-
-**T5.7** Click correlation: span → filter logs
-- Click span in waterfall → filter logs panel to that `spanId` only
-- File: `web/apps/console/src/features/traces/trace-detail-page.tsx`
-
-**T5.8** Traces list page — refactor to generated hooks
-- Replace hand-written mock data import with `useListTraces(filters)` hook
-- File: `web/apps/console/src/features/traces/traces-page.tsx`
-
-**T5.9** Logs page — refactor to generated hooks
-- Replace mock data with `useListLogs(query)` hook
-- File: `web/apps/console/src/features/logs/logs-page.tsx`
-
-**T5.10** Services page — refactor to generated hooks
-- Replace mock data with `useListServices()` hook
-- File: `web/apps/console/src/features/services/services-page.tsx`
-
-**T5.11** Settings page — read-only `tessera.toml` display + theme/language toggle
-- New route `/settings`
-- Show `tessera.toml` values (port, Victoria URLs, tenant) — display only
-- Theme toggle (uses existing `lib/preferences`)
-- Language switcher (uses existing `lib/i18n`)
-- File: `web/apps/console/src/features/settings/settings-page.tsx`
-
-**T5.12** Phase 5 verification
-- `cd web && bun --filter '@tessera/console' gate` exit 0
-- `cd web && bun --filter '@tessera/console' build` exit 0
-- `bun run generate` in `web/tooling/codegen/` produces no errors
-- Acceptance: FE builds + tests green
-
-**Commits during Phase 5:**
-- `[.stbl](feat/fe/contract): author design-first OpenAPI contract`
-- `[.stbl](feat/fe/codegen): kubb workspace + generated API layer`
-- `[.stbl](feat/fe/mocks): MSW handlers from generated factories`
-- `[.stbl](feat/fe/mocks): enable mocking toggle via VITE_USE_MOCKS`
-- `[.stbl](feat/fe/traces): trace detail page with generated hooks + log correlation`
-- `[.stbl](feat/fe/traces): click correlation log↔span`
-- `[.stbl](feat/fe/refactor): traces/logs/services pages use generated hooks`
-- `[.stbl](feat/fe/settings): settings page (read-only + theme/language)`
-
----
-
-### Phase 6 — E2E verification + handoff
-
-**T6.1** Document VT + VL local setup
-- Add `docker run` commands for VT/VL to HANDOFF.md
-- Include volume mounts for data persistence
-
-**T6.2** Document `Tessera.Host` run
+**T5.2** Document `Tessera.Host` run + `tessera.toml`
 - `dotnet run --project src/host/Tessera.Host` command
-- `tessera.toml` example
+- Example `tessera.toml` with VT/VL URLs + tenant + admin token placeholder
+- Log output expectations
 
-**T6.3** Manual E2E test procedure
-- Checklist: launch VT/VL → start Tessera.Host → start `bun dev` → navigate console → see real traces + correlated logs
+**T5.3** Manual E2E test procedure (curl-based)
+- Checklist:
+  - Launch VT/VL via `docker run`
+  - Start `Tessera.Host` (`dotnet run`)
+  - `curl GET /api/health` → 200 with composite health
+  - `curl GET /api/services` → list of services from VT+VL
+  - Ingest sample trace via VT
+  - `curl GET /api/traces/{traceId}` → verify `{ trace, correlatedLogs }` shape
+  - Ingest sample log via VL with matching `trace_id`
+  - `curl GET /api/logs?trace_id=...` → returns log; verify `trace_id` matches
 
-**T6.4** Update `.agents/HANDOFF.md`
-- Refresh "Что сделано" section
-- Mark MVP-01 done in status line
-- List MVP-02 scope
+**T5.4** Update `.agents/HANDOFF.md`
+- Refresh "Что сделано" section (backend complete)
+- Mark MVP-01 (backend) done in status line
+- List MVP-02 scope: frontend integration (plexor-pattern kubb/MSW, trace-detail UI with log correlation, settings page)
 
-**T6.5** Final verification
-- `dotnet build tessera.slnx -c Debug` exit 0, 0/0
+**T5.5** Final verification (the build gate)
+- `dotnet build tessera.slnx -c Debug` exit 0, **0 errors, 0 warnings**
 - `dotnet test tessera.slnx -c Debug --no-build` exit 0
-- `cd web && bun run gate` exit 0
-- E2E smoke: launch stack, navigate console, see traces + logs
+- `cd web && bun --filter '@tessera/console' gate` exit 0 (existing FE untouched, still builds)
+- E2E smoke: launch stack, curl endpoints, verify response shapes match documented contracts
 
-**Commit at end of Phase 6:** `[.stbl](feat/docs): refresh handoff after MVP-01`
+**Commit at end of Phase 5:** `[.stbl](feat/docs): refresh handoff after MVP-01 backend complete`
 
 ---
 
 ## Acceptance
 
-**Definition of done — MVP-01:**
+**Definition of done — MVP-01 (backend-only):**
 
 1. **Build gate green:** `dotnet build tessera.slnx -c Debug` exit 0, **0 errors, 0 warnings**.
 2. **Backend tests green:** `dotnet test tessera.slnx -c Debug --no-build` exit 0.
-3. **Frontend tests green:** `cd web && bun run gate` exit 0.
+3. **Existing FE builds unchanged:** `cd web && bun --filter '@tessera/console' gate` exit 0 (no FE code touched in MVP-01).
 4. **Provider isolation:** Architecture test `NoModuleReferencesProviders()` passes — `Tessera.Modules.*` cannot have `<ProjectReference>` on `Tessera.Providers.*`.
 5. **Victoria provider complete:** `Tessera.Providers.Victoria` implements all 4 provider interfaces (`ITraceProvider`, `ILogProvider`, `IDiscoveryProvider`, `IHealthProvider`).
-6. **Trace+log correlation:** `GET /api/traces/{traceId}` returns `{ trace: TraceDetail, correlatedLogs: LogEntry[] }` in single response (Kibana Observability style).
-7. **Host composition:** `Tessera.Host` runs on port 1990; OpenAPI at `/openapi/v1.json`; Scalar UI at `/scalar/v1`.
-8. **Frontend UX:** Trace detail page renders waterfall + log panel side-by-side; logs clickable to focus span; spans clickable to filter logs. Uses kubb-generated React Query hooks; MSW fallback via `VITE_USE_MOCKS=true`.
-9. **E2E smoke:** With local VT + VL running, `dotnet run` + `bun dev` shows real traces + correlated logs in console.
-10. **Architecture docs current:** `.agents/HANDOFF.md` + `.agents/STATE.md` reflect MVP-01 completion.
+6. **Trace + log correlation:** `GET /api/traces/{traceId}` returns `{ trace: TraceDetail, correlatedLogs: LogEntry[] }` in single response (Kibana Observability style).
+7. **Host composition:** `Tessera.Host` runs on port 1990; OpenAPI at `/openapi/v1.json`; Scalar UI at `/scalar/v1` (developer can browse API contracts in browser even without FE consumer).
+8. **E2E smoke (backend):** With local VT + VL running via Testcontainers or `docker run`, all 5 endpoints (`/api/health`, `/api/services`, `/api/traces`, `/api/traces/{traceId}`, `/api/logs?trace_id=...`) return correct responses; logs returned in trace-detail response share `traceId`.
+9. **Architecture docs current:** `.agents/HANDOFF.md` + `.agents/STATE.md` reflect MVP-01 (backend) completion; MVP-02 scope clearly listed.
 
 ---
 
@@ -502,23 +418,25 @@ Each module = endpoints + handlers + DI extension + unit tests. Modules referenc
 - **Metrics module** — `IMetricsProvider`, VM client, frontend metrics views, RED dashboards. Deferred entirely per owner direction 2026-07-19.
 - **Dashboards module** + dashboard editor UI (HANDOFF stretch).
 - **Service Map module** + service dependency graph UI (HANDOFF stretch).
-- **Production deployment** — Dockerfile, GitHub Actions CI, docker-compose stack.
+- **Production deployment** — Dockerfile, GitHub Actions CI, docker-compose stack for `tessera + vt + vl`.
 - **Multi-tenant auth** — OIDC, LDAP, per-tenant data isolation.
+- **Frontend rewrite (plexor pattern)** — design-first OpenAPI contract + kubb codegen + MSW + replace hand-written `mock-data.ts`/`client.ts` with generated client + trace-detail page with log correlation + settings page.
 - **Full Testcontainers integration suite** — MVP-01 has canary tests (T4.6-T4.8); comprehensive suite deferred.
 - **Auth RBAC / per-endpoint policies** — admin bearer is MVP-01 minimal; middleware is permissive for reads.
 - **Full Victoria feature parity** — Victoria provider covers what's used by MVP-01 endpoints; stretch endpoints may not be exhaustive.
-- **Dashboard editor / settings write-back / alert rules UI.**
+- **CORS** — not needed in MVP-01 (no FE consumer); deferred to MVP-02 when FE arrives.
 - **Frontend Performance optimizations** — large trace list virtualization, pagination cursor UI.
+- **Settings write-back / dashboard editor / alert rules UI.**
 
 ---
 
-## Open questions (resolve during Phase 0 / discuss)
+## Open questions (defaults OK, can refine during execution)
 
 1. **Auth model granularity** — is admin bearer required for ANY MVP-01 endpoint, or are all MVP-01 reads guest-accessible?
    - **Default:** all MVP-01 endpoints are reads → guest-only; admin bearer wired in middleware but not enforced (logs presence). Future writes will gate on admin.
 
 2. **Trace detail response shape** — flat `correlatedLogs: LogEntry[]` vs grouped-by-span `correlatedLogs: Record<SpanId, LogEntry[]>`?
-   - **Default:** flat array with `spanId` field per entry; client groups / filters as needed. Keeps provider boundary clean.
+   - **Default:** flat array with `spanId` field per entry; client groups/filters as needed. Keeps provider boundary clean.
 
 3. **TOML schema** — single `tessera.toml` vs split `tessera.toml` + `tessera.local.toml`?
    - **Default:** single file, env-var overrides only (`TESSERA_VICTORIA__TRACES__URL` etc.).
@@ -526,17 +444,16 @@ Each module = endpoints + handlers + DI extension + unit tests. Modules referenc
 4. **`Tessera.Providers.Victoria` package references** — does it pull Refit directly, or only via `Tessera.Shared.Http` extension?
    - **Default:** pulls Refit directly (it's a concrete client impl, not a shared abstraction). `Tessera.Shared.Http` provides the wiring pattern + DelegatingHandlers, not the package.
 
-## Resolved during Phase 0 / discuss
+## Resolved during discuss (2026-07-19)
 
-Decisions confirmed interactively with owner before Phase 0 implementation. Plexor SPA pattern (T5) adopted from plexor repo after owner hint.
+Decisions confirmed interactively with owner before Phase 0 implementation:
 
 - **Log correlation strategy** → N+1 fetch in `GetTraceHandler`. Parallel `Task.WhenAll` of `ITraceProvider.GetByIdAsync` + `ILogProvider.ListByTraceAsync`. Clean provider abstraction, ~10-50ms latency cost acceptable for MVP-01.
 - **Span tree reconstruction** → server-side in `Tessera.Modules.Traces.GetTraceHandler`. Flat spans in, nested tree out. Saves bandwidth (1KB vs 100KB for large traces).
 - **OTel exporter destination** → console exporter only for MVP-01. OTLP/gRPC added in MVP-02.
 - **Health on Victoria unreachable** → start degraded. `/api/health` returns 503 until Victoria responds, then auto-recovers.
-- **CORS policy** → permissive in `Development`, restrictive in `Production` (allowed origins from `tessera.toml`).
-- **Frontend mock fallback** → MSW service worker via `VITE_USE_MOCKS=true` (plexor model). Hand-written `mock-data.ts` deleted.
-- **Frontend API client** → kubb codegen from design-first `contracts/tessera.openapi.yaml` (plexor model). Hand-written `client.ts` deleted.
+- **CORS policy** → not relevant for MVP-01 (no FE consumer). When MVP-02 starts: permissive in `Development`, restrictive in `Production` (allowed origins from `tessera.toml`).
+- **MVP-01 is backend-only** → frontend integration (plexor kubb/MSW, trace-detail page, settings) explicitly deferred to MVP-02 per owner direction 2026-07-19 ("без моков, сразу бек нормальный делаем, а потом ui уже"). No frontend kubb/codegen work in MVP-01.
 
 ---
 
@@ -546,6 +463,6 @@ Decisions confirmed interactively with owner before Phase 0 implementation. Plex
 - **Metrics deferred entirely** — owner direction 2026-07-19. Do NOT scaffold `IMetricsProvider` or VM client in MVP-01. VictoriaMetrics package NOT added to `Directory.Packages.props` for MVP-01.
 - **Span tree reconstruction lives in `Tessera.Modules.Traces` handler** (not in provider) — providers return flat spans, modules reconstruct tree. Matches Grafana model.
 - **Log correlation is fetch-on-demand in the trace detail handler** — `ITraceProvider.GetByIdAsync` returns trace, handler separately calls `ILogProvider.ListByTraceAsync(traceId, range)`, combines in response. No cross-provider coupling inside providers.
-- **FE pipeline = plexor model** — design-first OpenAPI contract (`contracts/tessera.openapi.yaml`) is source of truth for MVP-01. `web/tooling/codegen/` workspace runs kubb to generate types/client/hooks/schemas/fixtures/msw. FE consumes via React Query hooks; MSW intercepts via `VITE_USE_MOCKS=true`. When `Tessera.Host` emits real OpenAPI to `artifacts/openapi.json`, switch kubb input from contract to artifacts — screens stay untouched.
-- **All work happens on branch `tessera-mvp`.** PLAN.md is committed first (per workflow); subsequent task commits follow `[.stbl](feat/...): subject` per `commit-format.md`.
+- **MVP-01 = backend-only** — frontend integration (plexor kubb/MSW, trace-detail page with log correlation, settings page) deferred to MVP-02 per owner direction 2026-07-19. Existing FE in `web/apps/console/` (hand-written mock-data fallback in `shared/api/{types,mock-data,client}.ts`) stays unchanged during MVP-01 — it works in mock mode today and does not block backend work. When MVP-02 starts, FE will adopt plexor pattern: design-first OpenAPI + kubb codegen + MSW.
+- **All work happens on branch `tessera-mvp`.** Subsequent task commits follow `[.stbl](feat/...): subject` per `commit-format.md`.
 - **Commits small and atomic.** Each task = one commit (or one PR-ready batch when grouped). Build gate (`dotnet build tessera.slnx -c Debug` → 0/0) runs before every commit per `build-verification.md`.
