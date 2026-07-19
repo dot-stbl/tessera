@@ -19,19 +19,55 @@
 
 ---
 
+## Provider abstraction (2026-07-19)
+
+Modules **do not** own Refit clients directly. They consume provider
+**interfaces** from `Tessera.Shared.Kernel`:
+
+- `ITraceProvider` — search + get-by-id
+- `ILogProvider` — query + list-by-trace
+- `IDiscoveryProvider` — list services
+- `IHealthProvider` — health check
+
+Concrete provider implementations live in `src/providers/Tessera.Providers.<Name>/`.
+**MVP-01:** `Tessera.Providers.Victoria` implements all 4 interfaces using
+Refit clients to VT/VL (VM wired but unused — Metrics module deferred).
+Victoria-specific Refit interfaces + Jaeger/LogsQL DTO mapping live in
+the provider, not in modules.
+
+Wiring happens in `Tessera.Host/Program.cs` via `AddVictoriaProvider(...)`.
+
+This means:
+- **Module is backend-agnostic** — tests use NSubstitute mocks for
+  `ITraceProvider`, no VT container needed for unit tests.
+- **Adding a second backend (Tempo/Jaeger/Loki in MVP-02+)** = new
+  `Tessera.Providers.<Name>` project implementing the same interfaces.
+  Zero changes to modules.
+- **Architecture test `Tessera.ArchitectureTests.NoModuleReferencesProviders`**
+  enforces isolation — modules cannot have `<ProjectReference>` on
+  `Tessera.Providers.*`.
+
+---
+
 ## Tessera.Modules.Traces
 
 ### Responsibility
 
-Fetch and expose trace data from VictoriaTraces via Jaeger-compatible API.
+Fetch and expose trace data via the `ITraceProvider` abstraction. Backend-
+agnostic — `Tessera.Providers.Victoria` provides the concrete impl for
+MVP-01; future providers (Tempo, Jaeger) plug in without changes.
 
 ### Owns
 
-- `IVictoriaTracesClient` — Refit interface to vtselect
-- Models: `Trace`, `Span`, `TraceSummary`, `SpanReference`
-- Handlers: `GetTraceHandler`, `ListTracesHandler`
+- Handlers: `ListTracesHandler`, `GetTraceHandler` (with span tree reconstruction + log correlation via `ILogProvider`)
 - Endpoint group: `MapTracesEndpoints`
-- Options: `VictoriaTracesOptions`
+- HTTP models (DTOs): `TraceSummary`, `TraceDetail`, `ListTracesRequest`, `ListTracesResponse`
+- DI: `AddTracesModule(IServiceCollection)`
+
+### Consumes
+
+- `ITraceProvider` — trace search + get-by-id (from `Tessera.Shared.Kernel`)
+- `ILogProvider` — log correlation in `GetTraceHandler` (separate call, NOT inside `ITraceProvider`)
 
 ### Public surface (HTTP)
 
@@ -149,15 +185,20 @@ Fetch and expose trace data from VictoriaTraces via Jaeger-compatible API.
 
 ### Responsibility
 
-Fetch and expose logs from VictoriaLogs, correlated by trace_id.
+Fetch and expose logs via the `ILogProvider` abstraction. Backend-agnostic
+— Victoria LogsQL is the MVP-01 backend; future providers (Loki) plug in
+without changes.
 
 ### Owns
 
-- `IVictoriaLogsClient` — Refit interface to vlselect
-- Models: `LogEntry`, `LogQueryRequest`, `LogQueryResponse`
-- Handlers: `ListLogsByTraceHandler`, `ListLogsHandler` (stretch: ad-hoc query)
+- Handlers: `ListLogsByTraceHandler`, `ListLogsHandler` (stretch: arbitrary LogsQL passthrough)
 - Endpoint group: `MapLogsEndpoints`
-- Options: `VictoriaLogsOptions`
+- HTTP models (DTOs): `LogEntryDto`, `ListLogsRequest`, `LogsResponse`
+- DI: `AddLogsModule(IServiceCollection)`
+
+### Consumes
+
+- `ILogProvider` — log query + list-by-trace (from `Tessera.Shared.Kernel`)
 
 ### Public surface (HTTP)
 
@@ -240,14 +281,20 @@ var response = await client.QueryAsync(query, limit, start: startStr, end: endSt
 
 ### Responsibility
 
-Aggregate service inventory from VT, enrich with operation lists and stats.
+Aggregate service inventory via the `IDiscoveryProvider` abstraction.
+MVP-01 backend merges VT services + VL `_stream` values; future providers
+plug in.
 
 ### Owns
 
-- `IVictoriaDiscoveryClient` — internal interface wrapping VT service/operation queries
-- Handlers: `GetServicesHandler`, `GetServiceHandler`
+- Handlers: `ListServicesHandler`, `GetServiceHandler`
 - Endpoint group: `MapDiscoveryEndpoints`
-- Models: `ServiceSummary`, `OperationSummary`
+- HTTP models (DTOs): `ServiceSummary`, `OperationSummary`
+- DI: `AddDiscoveryModule(IServiceCollection)`
+
+### Consumes
+
+- `IDiscoveryProvider` — service inventory (from `Tessera.Shared.Kernel`)
 
 ### Public surface (HTTP)
 
@@ -315,14 +362,20 @@ Span counts derived from a separate `/select/jaeger/api/traces` aggregation
 
 ### Responsibility
 
-Check connectivity to each Victoria backend, return per-backend status.
+Composite health check via the `IHealthProvider` abstraction. Aggregates
+per-provider status (Healthy/Degraded/Unhealthy) into a single endpoint
+response. MVP-01: starts in degraded state if Victoria is unreachable,
+recovers automatically when probes succeed.
 
 ### Owns
 
-- `IVictoriaHealthProbe` — internal interface for each backend
-- Handlers: `GetHealthHandler`
+- Handler: `HealthHandler` (aggregates `IHealthProvider.CheckAsync` results)
 - Endpoint group: `MapHealthEndpoints`
-- Probes: `VictoriaTracesHealthProbe`, `VictoriaLogsHealthProbe`, `VictoriaMetricsHealthProbe`
+- DI: `AddHealthModule(IServiceCollection)`
+
+### Consumes
+
+- `IHealthProvider` — per-provider health probe (from `Tessera.Shared.Kernel`)
 
 ### Public surface (HTTP)
 
