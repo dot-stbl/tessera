@@ -9,5 +9,6 @@
     <PackageReference Include="Shouldly" Version="4.3.*"/>
     <PackageReference Include="Bogus" Version="35.6.*"/>
     <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
 </Project>

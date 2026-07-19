@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
 
   <Import Project="Tessera.Build.Tools.targets"/>

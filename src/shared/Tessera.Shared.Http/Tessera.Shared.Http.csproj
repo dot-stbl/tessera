@@ -6,5 +6,6 @@
     <PackageReference Include="Refit" Version="7.0.*"/>
     <PackageReference Include="Refit.HttpClientFactory" Version="7.0.*"/>
     <PackageReference Remove="Meziantou.Analyzer"/>
+    <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
 </Project>

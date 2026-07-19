@@ -21,9 +21,6 @@ public static class VictoriaServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
-
         services.AddOptions<VictoriaOptions>()
             .Bind(configuration.GetSection("victoria"))
             .ValidateOnStart();
