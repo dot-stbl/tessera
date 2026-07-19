@@ -13,27 +13,59 @@ always: true
 ## 1. Layer dependencies — правило: ссылки только вниз
 
 ```
-host/         ─┐
-                ├──→  modules/  ─→  shared/
-                ─┘                ─→  (ничего)
+shared/        ←  leaf (только nuget, никаких project refs)
 
-shared/        ─×  modules/      (нельзя)
-shared/        ─×  host/         (нельзя)
-modules/       ─×  друг на друга (нельзя)
+modules/       ─→  shared/        (consume provider interfaces)
+providers/     ─→  shared/        (implement provider interfaces)
+
+host/          ─→  modules/       ─┐
+                ─→  providers/     ─┼─→  shared/
+                ─→  shared/         ─┘
+
+shared/        ─×  modules/      (запрещено)
+shared/        ─×  host/         (запрещено)
+shared/        ─×  providers/    (запрещено)
+modules/       ─×  providers/    (запрещено — модуль знает только интерфейсы из shared)
+modules/       ─×  host/         (запрещено)
+modules/       ─×  друг на друга (запрещено)
+providers/     ─×  modules/      (запрещено)
+providers/     ─×  host/         (запрещено)
+providers/     ─×  друг на друга (запрещено)
 ```
 
 ### Конкретные разрешённые ссылки
 
 | Слой | Может ссылаться на |
 |------|-------------------|
-| `host/Tessera.Host` | `modules/*`, `shared/*` |
+| `host/Tessera.Host` | `modules/*`, `providers/*`, `shared/*` (composition root wires everything) |
 | `host/Tessera.Build.Tools` | ничего (MSBuild-only) |
 | `shared/Tessera.Shared.*` | ничего (только nuget) |
-| `modules/Tessera.Modules.Traces` | `shared/*` (**НЕ** другие modules) |
-| `modules/Tessera.Modules.Logs` | `shared/*` (**НЕ** другие modules) |
-| `modules/Tessera.Modules.Discovery` | `shared/*` + `modules/Tessera.Modules.Traces`/`Logs` через **shared** интерфейсы |
-| `modules/Tessera.Modules.Health` | `shared/*` |
+| `modules/Tessera.Modules.Traces` | `shared/*` (**НЕ** `providers/*`, **НЕ** другие modules) |
+| `modules/Tessera.Modules.Logs` | `shared/*` (**НЕ** `providers/*`, **НЕ** другие modules) |
+| `modules/Tessera.Modules.Discovery` | `shared/*` (**НЕ** `providers/*`, **НЕ** другие modules) |
+| `modules/Tessera.Modules.Health` | `shared/*` (**НЕ** `providers/*`, **НЕ** другие modules) |
+| `providers/Tessera.Providers.Victoria` | `shared/*` only (**НЕ** `modules/*`, **НЕ** `host/`) |
 | `tests/*` | любое из `src/` |
+
+### Provider isolation (Grafana datasource model)
+
+**Hard rule:** `Tessera.Modules.*` **НЕ МОЖЕТ** иметь `<ProjectReference>` на
+`Tessera.Providers.*`. Модули потребляют **только интерфейсы** из
+`Tessera.Shared.Kernel` (`ITraceProvider`, `ILogProvider`,
+`IDiscoveryProvider`, `IHealthProvider`). Конкретная реализация
+(например `VictoriaTraceProvider`) подключается в DI **только** в
+`Tessera.Host/Program.cs` через `AddVictoriaProvider(...)`.
+
+Зачем:
+- **Testability** — модули тестируются с mock-провайдерами без поднятия
+  VT/VL контейнеров.
+- **Provider abstraction** — добавление Tempo/Jaeger/Loki в MVP-02+ = новый
+  `Tessera.Providers.<Name>` без изменения модулей.
+- **No accidental coupling** — модуль не может случайно вызвать
+  Victoria-specific метод, не покрытый интерфейсом.
+
+Проверяется автоматически в `tests/unit/core/Tessera.ArchitectureTests/`
+через NetArchTest (правило `NoModuleReferencesProviders`).
 
 ### Cross-module communication
 
