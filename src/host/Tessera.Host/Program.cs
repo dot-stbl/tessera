@@ -1,13 +1,26 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json.Serialization;
+using Tessera.Host.Auth;
 using Tessera.Host.Errors;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
 using Tessera.Providers.Victoria.DependencyInjection;
+using Tessera.Shared.Kernel.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --------------------------------------------------------------------
+// Configuration
+// --------------------------------------------------------------------
+// AddTesseraConfiguration must run before any other configuration source so
+// defaults in code remain the lowest-precedence layer. TesseraConfigPaths
+// resolves the main `tessera.toml` per the 4-level lookup (TESSERA_CONFIG
+// env > /etc/tessera > XDG > cwd), then chains the optional
+// `tessera.local.toml` override in the same directory.
+builder.Configuration.AddTesseraConfiguration();
 
 // --------------------------------------------------------------------
 // Controllers + JSON
@@ -45,6 +58,24 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TesseraExceptionHandler>();
 
 // --------------------------------------------------------------------
+// Authentication (admin bearer — optional in MVP-01)
+// --------------------------------------------------------------------
+// Admin scheme is registered unconditionally so admin endpoints (Phase 5+)
+// can decorate themselves with [Authorize(Policy = "admin")] and not need
+// host changes. The handler reads the token from TESSERA_ADMIN_TOKEN env var;
+// if the env var is unset the handler returns NoResult() for every request,
+// so admin endpoints reject with 401 and the host still starts cleanly.
+// This matches the MVP-01 "admin bearer optional" decision.
+builder.Services
+    .AddAuthentication("admin")
+    .AddScheme<AdminBearerOptions, AdminBearerHandler>("admin", options =>
+    {
+        options.AdminToken = builder.Configuration["TESSERA_ADMIN_TOKEN"]
+            ?? Environment.GetEnvironmentVariable("TESSERA_ADMIN_TOKEN");
+    });
+builder.Services.AddAuthorization();
+
+// --------------------------------------------------------------------
 // Module DI
 // --------------------------------------------------------------------
 // Each AddXxxModule registers the module's Mapperly mapper + any per-module
@@ -71,6 +102,9 @@ var app = builder.Build();
 // no body (404 from route-constraint miss, 405 method-not-allowed, etc.).
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/",
     () => Results.Ok(new
