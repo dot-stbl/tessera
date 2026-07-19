@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Scalar.AspNetCore;
 using System.Text.Json.Serialization;
 using Tessera.Host.Auth;
 using Tessera.Host.Errors;
+using Tessera.Host.OpenApi;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
@@ -56,6 +58,19 @@ builder.Services
 // ProviderTimeoutException and writes a ProblemDetails body.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TesseraExceptionHandler>();
+
+// --------------------------------------------------------------------
+// OpenAPI doc + ProblemDetails transformer + Scalar UI
+// --------------------------------------------------------------------
+// AddOpenApi wires Microsoft.AspNetCore.OpenApi source-generated document
+// provider. The ProblemDetailsResponsesTransformer injects the canonical
+// RFC 9457 response shapes (400/404/409/500/502/503/504) onto every
+// operation so the wire format and the OpenAPI doc stay in lock-step
+// without per-endpoint [ProducesResponseType<ProblemDetails>] attributes.
+// Scalar.AspNetCore 2.16 auto-discovers the OpenAPI doc registered above;
+// MapScalarApiReference() mounts the API reference UI at /scalar/v1.
+builder.Services.AddOpenApi(options =>
+    options.AddOperationTransformer<ProblemDetailsResponsesTransformer>());
 
 // --------------------------------------------------------------------
 // Authentication (admin bearer — optional in MVP-01)
@@ -114,6 +129,8 @@ app.MapGet("/",
         docs = "See .agents/docs/architecture.md",
     }));
 
+app.MapOpenApi();
+app.MapScalarApiReference();
 app.MapControllers();
 
 app.Run();
