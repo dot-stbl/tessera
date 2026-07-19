@@ -16,10 +16,10 @@ public sealed class VictoriaHealthProvider : IHealthProvider
         Task.FromResult(new ProviderHealthReport("victoria-logs", HealthStatus.Healthy));
 
     /// <inheritdoc />
-    public async Task<ProviderHealthReport> CheckAsync(CancellationToken ct)
+    public async Task<ProviderHealthReport> CheckAsync(CancellationToken cancellationToken)
     {
-        var tracesTask = VictoriaHealthProbeHelpers.ProbeTracesAsync(ct);
-        var logsTask = VictoriaHealthProbeHelpers.ProbeLogsAsync(ct);
+        var tracesTask = VictoriaHealthProbeHelpers.ProbeTracesAsync(cancellationToken);
+        var logsTask = VictoriaHealthProbeHelpers.ProbeLogsAsync(cancellationToken);
         await Task.WhenAll(tracesTask, logsTask);
 
         var traces = await tracesTask;

@@ -16,7 +16,7 @@ namespace Tessera.Providers.Victoria.Implementation;
 public sealed class VictoriaTraceProvider(IVictoriaTracesClient client, VictoriaOptions options) : ITraceProvider
 {
     /// <inheritdoc />
-    public async Task<Page<TraceSummary>> SearchAsync(TraceSearchQuery query, CancellationToken ct)
+    public async Task<Page<TraceSummary>> SearchAsync(TraceSearchQuery query, CancellationToken cancellationToken)
     {
         var response = await client.SearchTracesAsync(
             options.Tenant,
@@ -28,15 +28,15 @@ public sealed class VictoriaTraceProvider(IVictoriaTracesClient client, Victoria
             minDuration: VictoriaTraceMapper.FormatDuration(query.MinDurationMs),
             maxDuration: VictoriaTraceMapper.FormatDuration(query.MaxDurationMs),
             limit: query.Limit,
-            ct);
+            cancellationToken);
 
         return VictoriaTraceMapper.ToSummaryPage(response.Data);
     }
 
     /// <inheritdoc />
-    public async Task<TraceDetail?> GetByIdAsync(TraceId traceId, CancellationToken ct)
+    public async Task<TraceDetail?> GetByIdAsync(TraceId traceId, CancellationToken cancellationToken)
     {
-        var response = await client.GetTraceAsync(options.Tenant, traceId.Value, ct);
+        var response = await client.GetTraceAsync(options.Tenant, traceId.Value, cancellationToken);
         return response.Data.Count == 0 ? null : VictoriaTraceMapper.ToDetail(response.Data[0]);
     }
 }

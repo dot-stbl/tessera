@@ -11,5 +11,5 @@ public interface IDiscoveryProvider
     /// <summary>
     ///     List all known services with aggregated metrics (span counts, error counts, operations).
     /// </summary>
-    public Task<IReadOnlyList<ServiceSummary>> ListServicesAsync(CancellationToken ct);
+    public Task<IReadOnlyList<ServiceSummary>> ListServicesAsync(CancellationToken cancellationToken);
 }

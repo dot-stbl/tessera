@@ -17,7 +17,7 @@ namespace Tessera.Providers.Victoria.Implementation;
 public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOptions options) : ILogProvider
 {
     /// <inheritdoc />
-    public async Task<Page<LogEntry>> QueryAsync(LogQuery query, CancellationToken ct)
+    public async Task<Page<LogEntry>> QueryAsync(LogQuery query, CancellationToken cancellationToken)
     {
         var logsql = VictoriaLogMapper.BuildLogsQuery(query);
 
@@ -27,11 +27,11 @@ public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOpti
             query.Limit,
             query.StartUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.StartUnixMs.Value),
             query.EndUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.EndUnixMs.Value),
-            ct);
+            cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        var body = await response.Content.ReadAsStringAsync(ct);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return VictoriaLogMapper.AsPage(VictoriaLogMapper.ParseNdjson(body, query.TraceId));
     }
 
@@ -39,10 +39,10 @@ public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOpti
     public async Task<IReadOnlyList<LogEntry>> ListByTraceAsync(
         TraceId traceId,
         TimeRange range,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         var query = new LogQuery(traceId, null, range.StartUnixMs, range.EndUnixMs, null, 500);
-        var page = await QueryAsync(query, ct);
+        var page = await QueryAsync(query, cancellationToken);
         return page.Items;
     }
 }

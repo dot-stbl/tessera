@@ -58,11 +58,11 @@ internal static class VictoriaDiscoveryMapper
     public static async Task<IReadOnlyList<string>> TryListTraceServicesAsync(
         IVictoriaTracesClient client,
         string tenant,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         try
         {
-            var response = await client.GetServicesAsync(tenant, ct);
+            var response = await client.GetServicesAsync(tenant, cancellationToken);
             return response.Data;
         }
         catch
@@ -79,14 +79,14 @@ internal static class VictoriaDiscoveryMapper
     public static async Task<IReadOnlyList<string>> TryListLogStreamsAsync(
         IVictoriaLogsClient client,
         string tenant,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         try
         {
-            using var response = await client.QueryAsync(tenant, "*", 1000, null, null, ct);
+            using var response = await client.QueryAsync(tenant, "*", 1000, null, null, cancellationToken);
             return !response.IsSuccessStatusCode
                 ? []
-                : ExtractDistinctStreams(await response.Content.ReadAsStringAsync(ct));
+                : ExtractDistinctStreams(await response.Content.ReadAsStringAsync(cancellationToken));
         }
         catch
         {

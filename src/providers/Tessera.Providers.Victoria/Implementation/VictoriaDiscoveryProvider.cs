@@ -18,10 +18,10 @@ public sealed class VictoriaDiscoveryProvider(
     VictoriaOptions options) : IDiscoveryProvider
 {
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ServiceSummary>> ListServicesAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<ServiceSummary>> ListServicesAsync(CancellationToken cancellationToken)
     {
-        var traceServices = await VictoriaDiscoveryMapper.TryListTraceServicesAsync(tracesClient, options.Tenant, ct);
-        var logStreams = await VictoriaDiscoveryMapper.TryListLogStreamsAsync(logsClient, options.Tenant, ct);
+        var traceServices = await VictoriaDiscoveryMapper.TryListTraceServicesAsync(tracesClient, options.Tenant, cancellationToken);
+        var logStreams = await VictoriaDiscoveryMapper.TryListLogStreamsAsync(logsClient, options.Tenant, cancellationToken);
 
         return VictoriaDiscoveryMapper.ToServiceList(traceServices, logStreams);
     }

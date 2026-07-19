@@ -13,12 +13,12 @@ public interface ILogProvider
     /// <summary>
     ///     Query logs by filter. Returns a cursor-paginated page.
     /// </summary>
-    public Task<Page<LogEntry>> QueryAsync(LogQuery query, CancellationToken ct);
+    public Task<Page<LogEntry>> QueryAsync(LogQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     ///     List all logs correlated with a specific trace within a time range.
     ///     Used by <c>GetTraceHandler</c> to embed correlated logs in the
     ///     trace detail response (Kibana Observability style).
     /// </summary>
-    public Task<IReadOnlyList<LogEntry>> ListByTraceAsync(TraceId traceId, TimeRange range, CancellationToken ct);
+    public Task<IReadOnlyList<LogEntry>> ListByTraceAsync(TraceId traceId, TimeRange range, CancellationToken cancellationToken);
 }

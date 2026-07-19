@@ -22,5 +22,5 @@ public interface IVictoriaLogsClient
         [Query] int? limit,
         [Query] string? start,
         [Query] string? end,
-        CancellationToken ct);
+        CancellationToken cancellationToken);
 }

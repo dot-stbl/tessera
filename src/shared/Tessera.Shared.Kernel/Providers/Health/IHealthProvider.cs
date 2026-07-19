@@ -9,5 +9,5 @@ public interface IHealthProvider
     /// <summary>
     ///     Probe the backend. Returns status + optional detail message.
     /// </summary>
-    public Task<ProviderHealthReport> CheckAsync(CancellationToken ct);
+    public Task<ProviderHealthReport> CheckAsync(CancellationToken cancellationToken);
 }

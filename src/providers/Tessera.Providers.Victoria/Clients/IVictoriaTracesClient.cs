@@ -17,7 +17,7 @@ public interface IVictoriaTracesClient
     [Get("/select/{tenant}/jaeger/api/services")]
     public Task<JaegerResponse<string>> GetServicesAsync(
         string tenant,
-        CancellationToken ct);
+        CancellationToken cancellationToken);
 
     /// <summary>
     ///     <c>GET /select/{tenant}/jaeger/api/services/{service}/operations</c> —
@@ -27,7 +27,7 @@ public interface IVictoriaTracesClient
     public Task<JaegerResponse<string>> GetOperationsAsync(
         string tenant,
         string service,
-        CancellationToken ct);
+        CancellationToken cancellationToken);
 
     /// <summary>
     ///     <c>GET /select/{tenant}/jaeger/api/traces</c> — search traces by filters.
@@ -45,7 +45,7 @@ public interface IVictoriaTracesClient
         [Query] string? minDuration,
         [Query] string? maxDuration,
         [Query] int? limit,
-        CancellationToken ct);
+        CancellationToken cancellationToken);
 
     /// <summary>
     ///     <c>GET /select/{tenant}/jaeger/api/traces/{traceId}</c> — full trace by ID
@@ -55,5 +55,5 @@ public interface IVictoriaTracesClient
     public Task<JaegerResponse<JaegerTrace>> GetTraceAsync(
         string tenant,
         string traceId,
-        CancellationToken ct);
+        CancellationToken cancellationToken);
 }

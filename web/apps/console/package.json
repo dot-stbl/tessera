@@ -10,7 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "playbook:dev": "ladle serve",
+    "playbook:build": "ladle build --outDir dist-playbook",
+    "playbook:preview": "ladle preview"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-beta.7",
@@ -52,6 +55,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@ladle/react": "^5.1.1",
     "@tailwindcss/vite": "^4.3.2",
     "@testing-library/dom": "^10.4.0",
     "@tanstack/router-cli": "^1.167.18",

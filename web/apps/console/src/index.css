@@ -4,14 +4,20 @@
 @import '@fontsource-variable/onest';
 
 /* Tailwind 4 content sources. By default Tailwind auto-detects from the
- * Vite module graph; Ladle's Vite root is its own bundled app dir, so
- * `@source` directives below tell Tailwind to also scan our actual
- * component trees (console + playbook stories). */
+ * Vite module graph. We add explicit `@source` rules so Ladle stories
+ * (which live under `.ladle/stories/`) are also scanned — Ladle's Vite
+ * root is its own bundled app dir, so they would otherwise be missed. */
 @source './**/*.{ts,tsx}';
-@source '../../playbook/src/**/*.{ts,tsx}';
-@source '../../playbook/src/**/*.mdx';
+@source './.ladle/stories/**/*.{ts,tsx,mdx}';
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * Dark mode variant. Listens to BOTH:
+ *   - `.dark` class on any ancestor (used by next-themes / shadcn convention)
+ *   - `[data-theme="dark"]` on any ancestor (used by Ladle theme toggle)
+ * This way the same index.css works in both the console SPA and the Ladle
+ * playground without each call site needing its own dark-mode plumbing.
+ */
+@custom-variant dark (&:is(.dark *, [data-theme="dark"] *, [data-theme="dark"]));
 
 /* =========================================================================
  * Tessera Design System — tokens.
@@ -116,7 +122,8 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-.dark {
+.dark,
+[data-theme="dark"] {
   --background: oklch(17% 0.012 250);
   --card: oklch(21% 0.014 250);
   --popover: oklch(21% 0.014 250);

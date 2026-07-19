@@ -14,11 +14,11 @@ public interface ITraceProvider
     /// <summary>
     ///     Search traces by query parameters. Returns a cursor-paginated page.
     /// </summary>
-    public Task<Page<TraceSummary>> SearchAsync(TraceSearchQuery query, CancellationToken ct);
+    public Task<Page<TraceSummary>> SearchAsync(TraceSearchQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Fetch a full trace by ID, including the reconstructed span tree.
     ///     Returns null when the trace is not found.
     /// </summary>
-    public Task<TraceDetail?> GetByIdAsync(TraceId traceId, CancellationToken ct);
+    public Task<TraceDetail?> GetByIdAsync(TraceId traceId, CancellationToken cancellationToken);
 }

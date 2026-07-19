@@ -16,9 +16,9 @@ internal static class VictoriaHealthProbeHelpers
     ///     the real implementation will wire into <c>IVictoriaTracesClient</c>
     ///     via a GET /health endpoint.
     /// </summary>
-    public static Task<ProviderHealthReport> ProbeTracesAsync(CancellationToken ct)
+    public static Task<ProviderHealthReport> ProbeTracesAsync(CancellationToken cancellationToken)
     {
-        ct.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult(new ProviderHealthReport("victoria-traces", HealthStatus.Healthy));
     }
 
@@ -27,9 +27,9 @@ internal static class VictoriaHealthProbeHelpers
     ///     <see cref="ProviderHealthReport" /> with the per-provider name
     ///     and status. MVP-01 placeholder returns Healthy unconditionally.
     /// </summary>
-    public static Task<ProviderHealthReport> ProbeLogsAsync(CancellationToken ct)
+    public static Task<ProviderHealthReport> ProbeLogsAsync(CancellationToken cancellationToken)
     {
-        ct.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult(new ProviderHealthReport("victoria-logs", HealthStatus.Healthy));
     }
 }
