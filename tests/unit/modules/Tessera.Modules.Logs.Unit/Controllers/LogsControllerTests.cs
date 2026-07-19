@@ -88,7 +88,6 @@ public sealed class LogsControllerTests
         await provider.DidNotReceive().QueryAsync(
             Arg.Any<LogQuery>(), Arg.Any<CancellationToken>());
     }
-}
 
     /// <summary>
     ///     The cancellation token flows to <see cref="ILogProvider.QueryAsync" />
