@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api/client';
+import type { ServiceSummary } from '@/shared/api/types';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { cn } from '@/shared/lib/utils';
@@ -48,7 +49,7 @@ export function ServicesPage() {
   );
 }
 
-function ServiceCard({ service }: { service: import('@/shared/api/types').ServiceSummary }) {
+function ServiceCard({ service }: { service: ServiceSummary }) {
   const errorRate = service.spanCount > 0 ? (service.errorCount / service.spanCount) * 100 : 0;
 
   return (
