@@ -6,18 +6,21 @@ MVP-01 — backend-only (Traces + Logs + Discovery + Health + Victoria provider 
 ## Status
 **Phase 1 (Backend foundation) — DONE.**
 **Phase 2 (4 backend modules as controllers) — DONE** (7 commits, see commit log)
-**Phase 3 (Host composition root + v1 prefix + ProblemDetails + Victoria wiring) — in progress**
+**Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI) — DONE** (4 commits this session)
+**Phase 4 (architecture tests + Testcontainers integration) — NOT STARTED**
+**Phase 5 (E2E verify + handoff) — NOT STARTED**
 
 ## Progress
 - **Phase 0** (rules + provider scaffold) — DONE
 - **Phase 1** (shared primitives + provider impls) — DONE (19 commits)
 - **Phase 2** (4 backend modules as controllers with Mapperly mappers) — DONE (7 commits, see commit log below)
-- **Phase 3** (Host composition root + ApiVersion v1 + ProblemDetails + AddVictoriaProvider) — IN PROGRESS (this commit)
+- **Phase 3** (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE (4 commits: `9711702` provider, `3615a00` bearer/example, `1238c3f` OpenAPI; plus 4 module commits from earlier)
 - **Phase 4** (architecture tests + Testcontainers integration) — NOT STARTED
 - **Phase 5** (E2E verify + handoff) — NOT STARTED
 
 Phase 1 deliverable: 22-project solution builds clean, 34/34 unit tests passing.
 Phase 2 deliverable: HealthController, DiscoveryController, TracesController (with ILogProvider log correlation), LogsController — all wired via Tessera.Host AddXxxModule() chain.
+Phase 3 deliverable: Tessera.Host has full composition root — TOML config (main + local override + secret prefixes), admin bearer scheme (optional), ProblemDetails global pipeline, OpenAPI doc with ProblemDetails responses injected via transformer, Scalar UI mounted at /scalar/v1, AddVictoriaProvider wiring all 4 provider interfaces.
 
 ## Working agreement
 - Owner confirms strategic decisions (architectural forks) before code work begins
@@ -42,15 +45,18 @@ Phase 2 deliverable: HealthController, DiscoveryController, TracesController (wi
 | 2026-07-19 | No Shouldly/NSubstitute/Bogus in MVP-01 tests; plain xUnit `Assert.*` + hand-written doubles | Transitive deps (Castle.Core, DiffEngine, Newtonsoft.Json) have net10 incompat. Reintroduce when fixed. |
 | 2026-07-19 | Extract project-neutral C#/process rules to global `~/.agents/rules/` | Plexor + tessera share same core C# rules. Project-specific bits (theme names, ports, slnx layout) stay in each project's `.agents/rules/`. Verified location: pi-soly loads from `~/.agents/rules/` (NOT `~/.pi/agent/rules/` which I tried first by mistake). |
 | 2026-07-19 | Backend switched from minimal API to controllers (Plexor-aligned) | Tessera originally proposed minimal API for "lighter, faster, MVP scope"; Plexor uses controllers. Phase 2 modules built as `[ApiController] : ControllerBase` instead of `MapXxxEndpoints` extensions. AddApplicationPart pattern in Tessera.Host wires per-module controllers without direct type references. Routes prefixed `/api/v1/` (single source `Tessera.Shared.Kernel.Api.ApiRoutes`). Per-module `Errors/<Module>Errors.cs` static class with dot.case code constants passed to `ProviderException.Code`. `IExceptionHandler` (TesseraExceptionHandler) + `AddProblemDetails()` + `UseExceptionHandler()`/`UseStatusCodePages()` global pipeline — no per-endpoint try/catch, no `Result<T>` on HTTP boundary. JSON wire format: `JsonStringEnumConverter` for enum-as-string. Mapperly source generator (Riok.Mapperly 4.3.1) for entity → DTO projections in `Mapping/`. All rules in `.agents/rules/coding/api-design.md` rewritten; `CLAUDE.md` line 92, `AGENTS.md`, `README.md`, `.agents/docs/{architecture,scope}.md`, `.agents/docs/security/auth-model.md`, `.agents/HANDOFF.md` updated to match. |
+| 2026-07-19 | TOML config (replacing appsettings.json) | Tessera.Shared.Kernel.Configuration: `TomlConfigurationProvider` (FileConfigurationProvider override flattening TomlTable → IConfiguration keys via `Tomlyn 2.x.TomlSerializer.Deserialize<TomlTable>`); `TesseraConfigPaths.ResolveMainPath` (4-level lookup: `TESSERA_CONFIG` env > `/etc/tessera/tessera.toml` > `$XDG_CONFIG_HOME/tessera/tessera.toml` > `./tessera.toml`); `ResolveLocalOverridePath` (always `tessera.local.toml` in same dir as main); `SecretReference.Resolve` parses `env:VAR_NAME` and `file:/path` prefixes. `AddTesseraConfiguration` extension on both `IConfigurationBuilder` and `HostApplicationBuilder` wires main + local override files in that precedence order. `tessera.toml` and `tessera.local.toml` are gitignored; `*.example` files committed as templates. |
+| 2026-07-19 | Admin bearer auth optional in MVP-01 | `AdminBearerHandler : AuthenticationHandler<AdminBearerOptions>` registers the "admin" scheme unconditionally (so future `[Authorize(Policy = "admin")]` annotations work without host changes). When `TESSERA_ADMIN_TOKEN` env var is unset, handler returns `AuthenticateResult.NoResult()` for every request — admin endpoints reject with 401, host starts cleanly. Token comparison uses `CryptographicOperations.FixedTimeEquals` after a length pre-check (length mismatch short-circuits without leaking the position of the first differing byte via timing). `AuthenticationSchemeOptions.AdminToken` is nullable. |
+| 2026-07-19 | OpenAPI doc via Microsoft.AspNetCore.OpenApi + Scalar UI | `AddOpenApi(o => o.AddOperationTransformer<ProblemDetailsResponsesTransformer>())` wires the source-gen document provider; `ProblemDetailsResponsesTransformer : IOpenApiOperationTransformer` injects 400/404/409/500/502/503/504 ProblemDetails responses onto every operation via `Responses.TryAdd` (explicit per-action `[ProducesResponseType<ProblemDetails>]` wins). `app.MapOpenApi()` exposes `/openapi/v1.json` for FE codegen; `app.MapScalarApiReference()` mounts `/scalar/v1` UI for human exploration. Scalar.AspNetCore 2.16 auto-discovers the AddOpenApi document — no separate `AddScalar()` service registration needed (the API was simplified in 2.x). |
 
 ## Tech stack status
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Tessera.Shared.Kernel** | ✅ DONE | Domain primitives (Tenant, TraceId, SpanId, TimeRange, LogLevel, Page<T>, Result<T>, Error), domain models (Trace, Span, LogEntry, ServiceSummary), 4 provider interfaces + support types, ProviderException hierarchy. All in category subfolders (max 3 files/folder). `Api/` namespace holds `ApiRoutes` (single URL source, `ApiVersion = "v1"`) and `TesseraJsonOptions` (singleton ProblemDetails serialization). |
+| **Tessera.Shared.Kernel** | ✅ DONE | Domain primitives (Tenant, TraceId, SpanId, TimeRange, LogLevel, Page<T>, Result<T>, Error), domain models (Trace, Span, LogEntry, ServiceSummary), 4 provider interfaces + support types, ProviderException hierarchy. All in category subfolders (max 3 files/folder). `Api/` namespace holds `ApiRoutes` (single URL source, `ApiVersion = "v1"`) and `TesseraJsonOptions` (singleton ProblemDetails serialization). `Configuration/` namespace holds TOML provider, path resolution (`TesseraConfigPaths`), secret-reference parser (`SecretReference`), `ServerOptions` (host/port). |
 | **Tessera.Shared.Http** | ✅ DONE | `RefitExtensions.AddTesseraRefitClient<T>`, `BearerTokenHandler`, `HttpClientAuthOptions`. Polly standard resilience wired through `Microsoft.Extensions.Http.Resilience` 10.8.0. |
 | **Tessera.Providers.Victoria** | ✅ DONE | 4 provider implementations (Trace/Log/Discovery/Health), Jaeger + LogsQL DTOs, NDJSON parsing, span tree reconstruction (flat list), `VictoriaServiceCollectionExtensions.AddVictoriaProvider()` DI extension. 34/34 unit tests passing. |
-| **Tessera.Host** | 🟡 IN PROGRESS | Composition root wired with `AddControllers().AddApplicationPart(...)` × 4 modules, `AddXxxModule()` chain. Upcoming: `AddOpenApi + AddProblemDetails + AddExceptionHandler<TesseraExceptionHandler>` + `UseExceptionHandler/UseStatusCodePages` + `AddVictoriaProvider(builder.Configuration)`. |
+| **Tessera.Host** | ✅ DONE | Full composition root: `AddTesseraConfiguration()` (TOML main + local override), `AddControllers().AddApplicationPart(...)` × 4 modules + `JsonStringEnumConverter`, `AddProblemDetails() + AddExceptionHandler<TesseraExceptionHandler>()`, `AddAuthentication("admin")` + `AddAuthorization()` (optional bearer, TESSERA_ADMIN_TOKEN env var), `AddXxxModule()` chain, `AddVictoriaProvider(builder.Configuration)`. Runtime pipeline: `UseExceptionHandler/UseStatusCodePages/Authentication/Authorization`. Endpoint mapping: `MapOpenApi()` + `MapScalarApiReference()` + `MapControllers()`. Sample config files `tessera.toml.example` + `tessera.local.toml.example` committed; real `tessera.toml`/`tessera.local.toml` gitignored. |
 | **4 Tessera.Modules.*** | ✅ DONE | HealthController, DiscoveryController, TracesController (with `ITraceProvider` + `ILogProvider` correlation), LogsController — `[ApiController] : ControllerBase`, wired via `AddXxxModule()`, Mapperly mappers, per-module `Errors/<Module>Errors.cs`. |
 | **Architecture tests** | ❌ NOT STARTED | Tessera.ArchitectureTests project empty. |
 | **Testcontainers integration** | ❌ NOT STARTED | Tessera.Host.Integration + Tessera.Victoria.Integration empty. |
@@ -83,6 +89,14 @@ All passing for tessera `src/`:
 
 ## Recent commits
 
+Phase 3 (host composition + TOML + auth + OpenAPI):
+```
+1238c3f [.stbl](feat/host): OpenAPI doc + ProblemDetailsResponsesTransformer + Scalar UI
+3615a00 [.stbl](feat/host): wire AddTesseraConfiguration + admin bearer (optional) + tessera.toml.example
+9711702 [.stbl](feat/kernel): TOML config support (provider + multi-file + secrets + ServerOptions)
+f44eb9a [.stbl](feat/tests): drop unused Bogus + NSubstitute + Shouldly from module test projects
+```
+
 Phase 2 (controllers migration):
 ```
 8b31a03 [.stbl](feat/host): wire module controllers via AddApplicationPart
@@ -107,15 +121,21 @@ f82dccc [.stbl](feat/shared-kernel): add 4 provider interfaces + support types
 18ed55b [.stbl](feat/shared-kernel): add domain models (Trace, Span, LogEntry, Service)
 ```
 
-## Open questions for Phase 3-5
+## Open questions for Phase 4-5
 
-- TOML config location precedence (cwd vs /etc/tessera/ vs env TESSERA_CONFIG)?
-- Admin bearer auth model: middleware or endpoint filter?
 - CORS policy: permissive in dev only, strict in prod?
-- Module test project failure mode: testhost can't find NuGet packages with `lib/net10.0/` paths (env-specific, separate task) — known issue from Phase 2, deferred
-- Endpoint `/api/v1` prefix? — **RESOLVED 2026-07-19: `ApiRoutes.Base = "api/v1"` baked in from MVP-01**
-- Tessera.Host wiring: one `AddTracesModule()` per module? — **RESOLVED: Add<Module>Module() chain in DI + AddApplicationPart for controllers**
+- Tessera.ArchitectureTests (NetArchTest rules): no-module-references-providers, no-cross-module-refs, 5-project-folder-cap
+- Tessera.Host.Integration + Tessera.Victoria.Integration: Testcontainers VT/VL, WebApplicationFactory end-to-end
+- Tessera.Modules.*.Unit testhost fix (env-specific, .NET 10.0.110 SDK bug — fixed in 10.0.200+)
+- Doc refresh: `.agents/HANDOFF.md` (still mentions minimal API stubs), `.agents/docs/architecture.md` (wire-format section), `.agents/docs/security/auth-model.md` (admin endpoints — none in MVP-01)
+
+## Resolved (2026-07-19)
+
+- TOML config location precedence: **TESSERA_CONFIG env > /etc/tessera > XDG > cwd/tessera.toml; tessera.local.toml override**
+- Admin bearer auth model: **optional in MVP-01 — handler returns NoResult when env unset, host starts cleanly**
+- Endpoint `/api/v1` prefix: **baked in from MVP-01 via `ApiRoutes.Base`**
+- Tessera.Host wiring pattern: **`AddXxxModule()` chain in DI + `AddApplicationPart(...)` × 4 for controllers + `AddVictoriaProvider(builder.Configuration)` last**
 
 ## Next step
 
-Phase 3 commit `feat/host: wire ProblemDetails + IExceptionHandler + AddOpenApi + AddVictoriaProvider`. Then re-evaluate tests (Tessera.Modules.*.Unit blocked by env testhost issue — separate task).
+Phase 4: Tessera.ArchitectureTests with NetArchTest rules. Blocked by .NET 10 testhost bug (env-specific); rules written, run when SDK fixes land.
