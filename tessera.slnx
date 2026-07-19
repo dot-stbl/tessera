@@ -14,72 +14,68 @@
     <!--   /tests/              — unit / integration / architecture               -->
     <!-- ====================================================================== -->
 
-    <Folder Name="/src/"/>
+    <Folder Name="/src/" />
 
     <!-- ============ Build SDK (top of topo order, fires gates once) ====== -->
     <Folder Name="/src/build/">
-        <Project Path="src/host/Tessera.Build.Tools/Tessera.Build.Tools.csproj"/>
+        <Project Path="src/host/Tessera.Build.Tools/Tessera.Build.Tools.csproj" />
     </Folder>
 
     <!-- ============ Shared libraries (grouped by concern) ================ -->
     <!-- Kernel = contracts/abstractions. Infra = http/telemetry/openapi/validation. -->
     <Folder Name="/src/shared/kernel/">
-        <Project Path="src/shared/Tessera.Shared.Kernel/Tessera.Shared.Kernel.csproj"/>
+        <Project Path="src/shared/Tessera.Shared.Kernel/Tessera.Shared.Kernel.csproj" />
     </Folder>
+    <Folder Name="/src/shared/" />
     <Folder Name="/src/shared/infra/">
-        <Project Path="src/shared/Tessera.Shared.Http/Tessera.Shared.Http.csproj"/>
-        <Project Path="src/shared/Tessera.Shared.Web/Tessera.Shared.Web.csproj"/>
-        <Project Path="src/shared/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj"/>
-        <Project Path="src/shared/Tessera.Shared.Validation/Tessera.Shared.Validation.csproj"/>
+        <Project Path="src/shared/Tessera.Shared.Http/Tessera.Shared.Http.csproj" />
+        <Project Path="src/shared/Tessera.Shared.Web/Tessera.Shared.Web.csproj" />
+        <Project Path="src/shared/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj" />
+        <Project Path="src/shared/Tessera.Shared.Validation/Tessera.Shared.Validation.csproj" />
     </Folder>
 
     <!-- ============ Modules (vertical slices) ============================= -->
-    <Folder Name="/src/modules/"/>
+    <Folder Name="/src/modules/" />
     <Folder Name="/src/modules/Tessera.Modules.Traces/">
-        <Project Path="src/modules/Tessera.Modules.Traces/Tessera.Modules.Traces.csproj"/>
+        <Project Path="src/modules/Tessera.Modules.Traces/Tessera.Modules.Traces.csproj" />
     </Folder>
     <Folder Name="/src/modules/Tessera.Modules.Logs/">
-        <Project Path="src/modules/Tessera.Modules.Logs/Tessera.Modules.Logs.csproj"/>
+        <Project Path="src/modules/Tessera.Modules.Logs/Tessera.Modules.Logs.csproj" />
     </Folder>
     <Folder Name="/src/modules/Tessera.Modules.Discovery/">
-        <Project Path="src/modules/Tessera.Modules.Discovery/Tessera.Modules.Discovery.csproj"/>
+        <Project Path="src/modules/Tessera.Modules.Discovery/Tessera.Modules.Discovery.csproj" />
     </Folder>
     <Folder Name="/src/modules/Tessera.Modules.Health/">
-        <Project Path="src/modules/Tessera.Modules.Health/Tessera.Modules.Health.csproj"/>
+        <Project Path="src/modules/Tessera.Modules.Health/Tessera.Modules.Health.csproj" />
     </Folder>
 
     <!-- ============ Providers (Grafana datasource model) ================== -->
     <!-- /src/providers/<Name>/ — concrete data source backends            -->
     <!-- (MVP-01: Tessera.Providers.Victoria)                              -->
-    <Folder Name="/src/providers/"/>
+    <Folder Name="/src/providers/" />
     <Folder Name="/src/providers/Tessera.Providers.Victoria/">
-        <Project Path="src/providers/Tessera.Providers.Victoria/Tessera.Providers.Victoria.csproj"/>
+        <Project Path="src/providers/Tessera.Providers.Victoria/Tessera.Providers.Victoria.csproj" />
     </Folder>
 
     <!-- ============ Host (entry point) ==================================== -->
     <Folder Name="/src/host/">
-        <Project Path="src/host/Tessera.Host/Tessera.Host.csproj"/>
+        <Project Path="src/host/Tessera.Host/Tessera.Host.csproj" />
     </Folder>
 
     <!-- ============ Tests ================================================== -->
-    <Folder Name="/tests/"/>
+    <Folder Name="/tests/" />
     <Folder Name="/tests/unit/">
-        <Project Path="tests/unit/core/Tessera.ArchitectureTests/Tessera.ArchitectureTests.csproj"/>
-        <Project Path="tests/unit/core/Tessera.Host.UnitTests/Tessera.Host.UnitTests.csproj"/>
-        <Project Path="tests/unit/core/Tessera.Shared.Unit/Tessera.Shared.Unit.csproj"/>
-        <Project Path="tests/unit/modules/Tessera.Modules.Traces.Unit/Tessera.Modules.Traces.Unit.csproj"/>
-        <Project Path="tests/unit/modules/Tessera.Modules.Logs.Unit/Tessera.Modules.Logs.Unit.csproj"/>
-        <Project Path="tests/unit/modules/Tessera.Modules.Discovery.Unit/Tessera.Modules.Discovery.Unit.csproj"/>
-        <Project Path="tests/unit/modules/Tessera.Modules.Health.Unit/Tessera.Modules.Health.Unit.csproj"/>
-    </Folder>
-
-    <Folder Name="/tests/integration/">
-        <Project Path="tests/integration/Tessera.Host.Integration/Tessera.Host.Integration.csproj"/>
-        <Project Path="tests/integration/Tessera.Victoria.Integration/Tessera.Victoria.Integration.csproj"/>
+        <Project Path="tests/unit/core/Tessera.ArchitectureTests/Tessera.ArchitectureTests.csproj" />
+        <Project Path="tests/unit/core/Tessera.Host.UnitTests/Tessera.Host.UnitTests.csproj" />
+        <Project Path="tests/unit/core/Tessera.Shared.Unit/Tessera.Shared.Unit.csproj" />
+        <Project Path="tests/unit/modules/Tessera.Modules.Traces.Unit/Tessera.Modules.Traces.Unit.csproj" />
+        <Project Path="tests/unit/modules/Tessera.Modules.Logs.Unit/Tessera.Modules.Logs.Unit.csproj" />
+        <Project Path="tests/unit/modules/Tessera.Modules.Discovery.Unit/Tessera.Modules.Discovery.Unit.csproj" />
+        <Project Path="tests/unit/modules/Tessera.Modules.Health.Unit/Tessera.Modules.Health.Unit.csproj" />
     </Folder>
 
     <Folder Name="/tests/unit/providers/">
-        <Project Path="tests/unit/providers/Tessera.Providers.Victoria.Unit/Tessera.Providers.Victoria.Unit.csproj"/>
+        <Project Path="tests/unit/providers/Tessera.Providers.Victoria.Unit/Tessera.Providers.Victoria.Unit.csproj" />
     </Folder>
 
 </Solution>

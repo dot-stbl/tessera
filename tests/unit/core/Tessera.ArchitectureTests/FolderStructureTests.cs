@@ -14,8 +14,27 @@ namespace Tessera.ArchitectureTests;
 /// </summary>
 public sealed class FolderStructureTests
 {
-    private static readonly string SrcRoot =
-        System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src");
+    private static readonly string SrcRoot = ResolveSrcRoot();
+
+    /// <summary>
+    ///     Locate the repository's <c>src/</c> directory by walking up from
+    ///     this test assembly's location. The standard base-directory walk is
+    ///     <c>bin/Debug/net10.0 → bin/Debug → bin → Tessera.ArchitectureTests
+    ///     → core → unit → tests → repo-root</c>, hence six <c>..</c>.
+    /// </summary>
+    private static string ResolveSrcRoot()
+    {
+        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+        for (var i = 0; i < 7 && dir is not null; i++)
+        {
+            dir = dir.Parent;
+        }
+
+        return dir is null
+            ? throw new System.IO.DirectoryNotFoundException(
+                "src/ not reachable from " + AppContext.BaseDirectory)
+            : System.IO.Path.Combine(dir.FullName, "src");
+    }
 
     /// <summary>
     ///     <c>src/shared/</c> holds leaf, layer-agnostic projects. The 5-project
@@ -27,9 +46,9 @@ public sealed class FolderStructureTests
     [Fact]
     public void SharedProjects_DoNotExceedFiveProjectCap()
     {
-        var sharedDir = System.IO.Path.Combine(SrcRoot, "shared");
         var projectFiles = System.IO.Directory
-            .EnumerateFiles(sharedDir, "Tessera.Shared.*.csproj", System.IO.SearchOption.TopDirectoryOnly)
+            .EnumerateFiles(SrcRoot, "Tessera.Shared.*.csproj", System.IO.SearchOption.AllDirectories)
+            .Where(p => p.StartsWith(System.IO.Path.Combine(SrcRoot, "shared"), StringComparison.Ordinal))
             .ToArray();
 
         Assert.True(projectFiles.Length <= 5,
@@ -37,8 +56,8 @@ public sealed class FolderStructureTests
             $"Projects: {string.Join(", ", projectFiles.Select(System.IO.Path.GetFileName))}. " +
             $"Per module-structure-5-cap.md, nest a new project into shared/core/ or shared/extended/.");
 
-        // Sanity: also assert the cap is enforced AFTER adding new projects
-        // by requiring the exact expected count for MVP-01 (5 currently).
+        // Sanity: cap enforced AFTER adding new projects by requiring the
+        // exact expected count for MVP-01 (5 currently).
         Assert.Equal(5, projectFiles.Length);
     }
 
@@ -53,9 +72,9 @@ public sealed class FolderStructureTests
     [Fact]
     public void ModuleProjects_StayBelowFiveProjectCap()
     {
-        var modulesDir = System.IO.Path.Combine(SrcRoot, "modules");
         var projectFiles = System.IO.Directory
-            .EnumerateFiles(modulesDir, "Tessera.Modules.*.csproj", System.IO.SearchOption.TopDirectoryOnly)
+            .EnumerateFiles(SrcRoot, "Tessera.Modules.*.csproj", System.IO.SearchOption.AllDirectories)
+            .Where(p => p.StartsWith(System.IO.Path.Combine(SrcRoot, "modules"), StringComparison.Ordinal))
             .ToArray();
 
         Assert.True(projectFiles.Length < 5,
