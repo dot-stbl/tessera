@@ -1,5 +1,6 @@
 import type { GlobalProvider } from '@ladle/react';
 import '@/index.css';
+import '@/shared/lib/i18n';
 
 /**
  * Ladle global provider.
