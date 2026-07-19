@@ -34,10 +34,10 @@ public static class TracesEndpoint
     private static async Task<Ok<TraceSummary[]>> ListTracesAsync(
         [AsParameters] ListTracesRequest request,
         ITraceProvider provider,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         var query = request.ToTraceSearchQuery();
-        var page = await provider.SearchAsync(query, ct);
+        var page = await provider.SearchAsync(query, cancellationToken);
         return TypedResults.Ok(TraceEndpointMapper.ToSummaries(page));
     }
 }
@@ -112,11 +112,11 @@ private static async Task<Results<Ok<TraceDetail>, NotFound, ProblemHttpResult>>
     string traceId,
     ITraceProvider provider,
     TraceEndpointMapper mapper,
-    CancellationToken ct)
+    CancellationToken cancellationToken)
 {
     try
     {
-        var detail = await provider.GetByIdAsync(new TraceId(traceId), ct);
+        var detail = await provider.GetByIdAsync(new TraceId(traceId), cancellationToken);
         return detail is null
             ? TypedResults.NotFound()
             : TypedResults.Ok(mapper.ToDetail(detail));

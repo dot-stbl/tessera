@@ -121,8 +121,10 @@ Tessera.Providers.<Name>          → ок (Grafana datasource model)
 создаёт** физическую папку — она должна быть на диске **до** `sln add`.
 
 **Шаблоны:** `classlib` для большинства; `webapi` для `Tessera.Host`;
-`xunit` для тестов. Test framework фиксируется **один** на solution
-(xUnit + hand-written doubles, no Shouldly/NSubstitute/Bogus — see `testing-stack-and-pyramid.md` for the MVP-01 reality).
+`xunit` для тестов. Test framework — **один** на solution: **xUnit v2**
+(`xunit` + `xunit.runner.visualstudio`, VSTest). Mocking — NSubstitute;
+Shouldly/Bogus подключены в части тест-csproj. Точный стек и открытый вопрос
+про assertion-style (Assert vs Shouldly) — в `testing-stack-and-pyramid.md`.
 
 **Folder cap:** перед созданием нового проекта — проверь что в целевой папке
 < 5 `.csproj`. Если 5 — **nest** папку (см. `module-structure-5-cap.md`).
