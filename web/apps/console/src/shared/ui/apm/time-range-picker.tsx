@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { type DateRange } from 'react-day-picker';
 import { Check, KeyboardArrowDown } from '@nine-thirty-five/material-symbols-react/rounded/700';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/primitives/button';
+import { Calendar } from '@/shared/ui/primitives/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/primitives/popover';
 
 export interface TimeRange {
@@ -46,13 +48,31 @@ export function defaultTimeRange(now: number = Date.now()): TimeRangeValue {
   return presetRangeValue(TIME_RANGE_PRESETS[1], now);
 }
 
-const INPUT_CLASS =
-  'h-7 rounded-md border border-input bg-input/20 px-2 font-mono text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30';
+const TIME_INPUT_CLASS =
+  'h-7 w-full rounded-md border border-input bg-input/20 px-2 font-mono text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30';
 
-function toLocalInputValue(ms: number): string {
+const HHMM = /^(\d{1,2}):(\d{2})$/;
+
+function toHhmm(ms: number): string {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function parseHhmm(value: string): { h: number; m: number } | null {
+  const match = HHMM.exec(value.trim());
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (h > 23 || m > 59) return null;
+  return { h, m };
+}
+
+/** Combine a calendar day with an HH:MM time into a unix-ms timestamp. */
+function combine(day: Date, time: { h: number; m: number }): number {
+  const d = new Date(day);
+  d.setHours(time.h, time.m, 0, 0);
+  return d.getTime();
 }
 
 export interface TimeRangePickerProps {
@@ -62,9 +82,11 @@ export interface TimeRangePickerProps {
 }
 
 /**
- * Global time-range control (Grafana / Kibana style): relative presets +
- * a custom absolute range. Controlled — the parent holds `value` and a preset
- * resolves to a concrete `range` (anchored at selection time) on change.
+ * Global time-range control (Grafana / Kibana style): relative presets + a
+ * custom absolute range built from an on-brand range Calendar plus HH:MM time
+ * fields (react-day-picker is date-only, so time lives in its own inputs).
+ * Controlled — the parent holds `value`; a preset resolves to a concrete
+ * `range` anchored at selection time.
  *
  * Usage:
  *   const [range, setRange] = useState(defaultTimeRange());
@@ -72,8 +94,16 @@ export interface TimeRangePickerProps {
  */
 export function TimeRangePicker({ value, onChange, className }: TimeRangePickerProps) {
   const [open, setOpen] = useState(false);
-  const [from, setFrom] = useState(() => toLocalInputValue(value.range.startUnixMs));
-  const [to, setTo] = useState(() => toLocalInputValue(value.range.endUnixMs));
+  const [days, setDays] = useState<DateRange | undefined>(() => ({
+    from: new Date(value.range.startUnixMs),
+    to: new Date(value.range.endUnixMs),
+  }));
+  const [fromTime, setFromTime] = useState(() => toHhmm(value.range.startUnixMs));
+  const [toTime, setToTime] = useState(() => toHhmm(value.range.endUnixMs));
+
+  const parsedFrom = parseHhmm(fromTime);
+  const parsedTo = parseHhmm(toTime);
+  const canApply = !!days?.from && !!days?.to && !!parsedFrom && !!parsedTo;
 
   const selectPreset = (preset: TimeRangePreset) => {
     onChange(presetRangeValue(preset));
@@ -81,9 +111,10 @@ export function TimeRangePicker({ value, onChange, className }: TimeRangePickerP
   };
 
   const applyCustom = () => {
-    const startUnixMs = new Date(from).getTime();
-    const endUnixMs = new Date(to).getTime();
-    if (Number.isNaN(startUnixMs) || Number.isNaN(endUnixMs) || startUnixMs >= endUnixMs) return;
+    if (!days?.from || !days?.to || !parsedFrom || !parsedTo) return;
+    const startUnixMs = combine(days.from, parsedFrom);
+    const endUnixMs = combine(days.to, parsedTo);
+    if (startUnixMs >= endUnixMs) return;
     onChange({ label: 'Custom range', range: { startUnixMs, endUnixMs } });
     setOpen(false);
   };
@@ -115,32 +146,42 @@ export function TimeRangePicker({ value, onChange, className }: TimeRangePickerP
           })}
         </div>
         <div className="border-t border-border p-2.5">
-          <p className="mb-1.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <p className="mb-1 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
             Custom range
           </p>
-          <div className="flex flex-col gap-2">
+          <Calendar
+            mode="range"
+            selected={days}
+            onSelect={(next) => setDays(next)}
+            className="p-0"
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-[10px] text-muted-foreground">
               From
               <input
-                type="datetime-local"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className={INPUT_CLASS}
+                value={fromTime}
+                onChange={(e) => setFromTime(e.target.value)}
+                placeholder="HH:MM"
+                inputMode="numeric"
+                aria-invalid={!parsedFrom || undefined}
+                className={TIME_INPUT_CLASS}
               />
             </label>
             <label className="flex flex-col gap-1 text-[10px] text-muted-foreground">
               To
               <input
-                type="datetime-local"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className={INPUT_CLASS}
+                value={toTime}
+                onChange={(e) => setToTime(e.target.value)}
+                placeholder="HH:MM"
+                inputMode="numeric"
+                aria-invalid={!parsedTo || undefined}
+                className={TIME_INPUT_CLASS}
               />
             </label>
-            <Button size="sm" onClick={applyCustom} className="mt-0.5">
-              Apply
-            </Button>
           </div>
+          <Button size="sm" onClick={applyCustom} disabled={!canApply} className="mt-2 w-full">
+            Apply
+          </Button>
         </div>
       </PopoverContent>
     </Popover>
