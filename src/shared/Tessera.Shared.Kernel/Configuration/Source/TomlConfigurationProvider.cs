@@ -1,0 +1,84 @@
+using Microsoft.Extensions.Configuration;
+using Tomlyn;
+using Tomlyn.Model;
+
+namespace Tessera.Shared.Kernel.Configuration;
+
+/// <summary>
+///     <see cref="FileConfigurationProvider" /> that parses a TOML file via
+///     Tomlyn and flattens the resulting <see cref="TomlTable" /> into the
+///     <c>section:key</c> shape ASP.NET Core <see cref="IConfiguration" />
+///     expects. Nested tables become colons (e.g. <c>[victoria.traces]</c>
+///     table → <c>victoria:traces:*</c> keys); arrays become indexed
+///     (<c>array.0</c>, <c>array.1</c>, ...).
+/// </summary>
+/// <remarks>
+///     Keys are emitted case-insensitively (OrdinalIgnoreCase) so
+///     <c>VictoriaOptions</c> binding works regardless of TOML case conventions.
+///     Unknown value types fall through to <c>value?.ToString()</c> — covers
+///     strings, numbers, booleans, datetimes; complex types (TomlTable,
+///     TomlArray) are handled by recursive flattening.
+/// </remarks>
+public sealed class TomlConfigurationProvider : FileConfigurationProvider
+{
+    /// <summary>
+    ///     Initializes a new instance bound to <paramref name="source" />. The
+    ///     source's <c>Path</c> / <c>Optional</c> / <c>ReloadOnChange</c> flow
+    ///     through the base class.
+    /// </summary>
+    public TomlConfigurationProvider(TomlConfigurationSource source) : base(source)
+    {
+    }
+
+    /// <inheritdoc />
+    public override void Load(Stream stream)
+    {
+        var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        using var reader = new StreamReader(stream);
+        var tomlText = reader.ReadToEnd();
+        if (string.IsNullOrWhiteSpace(tomlText))
+        {
+            Data = data;
+            return;
+        }
+
+        var model = TomlSerializer.Deserialize<TomlTable>(tomlText);
+        if (model is not null)
+        {
+            FlattenTable(model, prefix: string.Empty, data);
+        }
+
+        Data = data;
+    }
+
+    private static void FlattenTable(TomlTable table, string prefix, Dictionary<string, string?> data)
+    {
+        foreach (var (key, value) in table)
+        {
+            var path = string.IsNullOrEmpty(prefix) ? key : prefix + ":" + key;
+            FlattenValue(value, path, data);
+        }
+    }
+
+    private static void FlattenValue(object? value, string path, Dictionary<string, string?> data)
+    {
+        switch (value)
+        {
+            case TomlTable nested:
+                FlattenTable(nested, path, data);
+                break;
+
+            case TomlArray array:
+                for (var i = 0; i < array.Count; i++)
+                {
+                    FlattenValue(array[i], path + ":" + i, data);
+                }
+
+                break;
+
+            default:
+                data[path] = value?.ToString();
+                break;
+        }
+    }
+}
