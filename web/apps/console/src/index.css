@@ -54,6 +54,18 @@
   --border-2: oklch(85% 0.008 240);
   --input: oklch(0.92 0.004 286.32);
 
+  /* ─── Waterfall gridlines + categorical service palette (APM) ───
+   * Service hues live in 190–320 only, clear of the status hues
+   * (green 145 / orange 50 / amber 75 / red 25) so a service colour is
+   * never mistaken for a status. */
+  --grid: oklch(0.55 0.02 260 / 0.14);
+  --svc-1: oklch(0.60 0.12 250);
+  --svc-2: oklch(0.60 0.10 190);
+  --svc-3: oklch(0.58 0.13 300);
+  --svc-4: oklch(0.62 0.10 220);
+  --svc-5: oklch(0.55 0.13 275);
+  --svc-6: oklch(0.60 0.11 320);
+
   /* ─── Accent (Tessera DS — dark red, distinctive from --err) ─── */
   /* Accent is the deep, primary-action red. --err is the brighter, status-only red. */
   --accent: oklch(0.967 0.001 286.375);
@@ -148,6 +160,14 @@
   --border: oklch(30% 0.012 250);
   --border-2: oklch(38% 0.014 250);
   --input: var(--border);
+
+  --grid: oklch(1 0 0 / 0.06);
+  --svc-1: oklch(0.70 0.12 250);
+  --svc-2: oklch(0.72 0.10 190);
+  --svc-3: oklch(0.70 0.13 300);
+  --svc-4: oklch(0.74 0.10 220);
+  --svc-5: oklch(0.68 0.13 275);
+  --svc-6: oklch(0.72 0.11 320);
 
   --primary: oklch(70% 0.20 25);
   --primary-foreground: oklch(17% 0.012 250);
@@ -301,6 +321,32 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* One consistent thin scrollbar everywhere (Firefox). Replaces the
+     * chunky ~17px native Windows scrollbar that reserved width in every
+     * overflow container and read as random gaps. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+  }
+  /* Chromium / Edge / Safari counterpart. */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-2);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-2);
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
   body {
     @apply antialiased bg-background text-foreground;
@@ -385,12 +431,20 @@
 /* ─── Log entry ─── */
 .log-entry {
   border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--lvc, transparent);
   padding: 6px 12px;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-size: 12px;
   line-height: 1.5;
 }
 .log-entry:hover { background: var(--surface-2); }
+/* severity gutter — the left stripe scans faster than reading chips */
+.log-entry-trace { --lvc: var(--level-trace); }
+.log-entry-debug { --lvc: var(--level-debug); }
+.log-entry-info  { --lvc: var(--level-info); }
+.log-entry-warn  { --lvc: var(--level-warn); }
+.log-entry-error { --lvc: var(--level-error); }
+.log-entry-fatal { --lvc: var(--level-fatal); }
 .log-entry-row {
   display: flex;
   align-items: center;
@@ -398,7 +452,7 @@
   flex-wrap: nowrap;
 }
 .log-time { flex-shrink: 0; min-width: 80px; }
-.log-service { color: var(--fg-2); flex-shrink: 0; }
+.log-service { color: var(--fg-2); flex-shrink: 0; min-width: 112px; }
 .log-message { color: var(--foreground); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log-expand {
   background: none;
@@ -423,78 +477,141 @@
 .log-fields dt { color: var(--muted-foreground); font-weight: 500; }
 .log-fields dd { color: var(--foreground); margin: 0; word-break: break-word; }
 
-/* ─── Waterfall (Jaeger-style timeline) ─── */
+/* ─── Waterfall (Jaeger / Kibana APM style) ─── */
 .waterfall {
+  --wf-label: 300px;
+  --wf-dur: 88px;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-size: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
-.waterfall-header,
-.span-row {
+
+/* time axis + tick labels */
+.waterfall-axis {
   display: grid;
-  grid-template-columns: 240px 1fr 80px;
+  grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
   align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-}
-.waterfall-header {
-  background: var(--surface-3);
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted-foreground);
-  border-bottom: 1px solid var(--border);
-}
-.waterfall-body .span-row { border-bottom: 1px solid var(--border); }
-.waterfall-body .span-row:last-child { border-bottom: 0; }
-.span-row { background: var(--background); cursor: default; }
-.span-row[data-clickable] { cursor: pointer; }
-.span-row[data-clickable]:hover { background: var(--surface-2); }
-.span-row-selected { background: var(--accent) !important; color: var(--accent-foreground); }
-.span-row-selected .span-service,
-.span-row-selected .span-name { color: inherit; }
-.span-row-selected .span-duration { color: inherit; opacity: 0.9; }
-.span-label { display: flex; gap: 6px; min-width: 0; overflow: hidden; }
-.span-service { color: var(--muted-foreground); flex-shrink: 0; }
-.span-name { color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.span-track {
-  position: relative;
-  height: 16px;
+  height: 30px;
   background: var(--surface-2);
-  border-radius: 3px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
 }
-.span-bar {
+.waterfall-axis-label {
+  padding-left: 14px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.waterfall-axis-track { position: relative; height: 100%; }
+.waterfall-tick {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--accent);
-  border-radius: 3px;
   display: flex;
   align-items: center;
-  padding-left: 4px;
-  color: var(--accent-foreground);
+  transform: translateX(-50%);
+  padding: 0 3px;
   font-size: 10px;
-  overflow: hidden;
+  color: var(--muted-foreground);
 }
-.span-bar-ok { background: var(--ok); }
-.span-bar-error { background: var(--err); }
-.span-bar-unset { background: var(--muted); }
-.span-bar-error-icon {
-  font-weight: 700;
-  font-size: 11px;
-  margin-right: 2px;
+.waterfall-tick.is-first { transform: none; }
+.waterfall-tick.is-last { transform: translateX(-100%); }
+.waterfall-axis-dur {
+  padding-right: 14px;
+  text-align: right;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.span-duration { color: var(--muted-foreground); font-variant-numeric: tabular-nums; text-align: right; }
 
-/* Span indentation by depth */
-.span-row[data-depth="0"] .span-label { padding-left: 0; }
-.span-row[data-depth="1"] .span-label { padding-left: 16px; }
-.span-row[data-depth="2"] .span-label { padding-left: 32px; }
-.span-row[data-depth="3"] .span-label { padding-left: 48px; }
-.span-row[data-depth="4"] .span-label { padding-left: 64px; }
+.waterfall-empty { padding: 24px 14px; text-align: center; color: var(--muted-foreground); }
+
+.span-row {
+  display: grid;
+  grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
+  align-items: center;
+  height: 30px;
+  background: var(--background);
+  cursor: default;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+}
+.waterfall-body .span-row:last-child { border-bottom: 0; }
+.span-row[data-clickable] { cursor: pointer; }
+.span-row[data-clickable]:hover { background: var(--surface-2); }
+.span-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.span-row-error { background: color-mix(in oklch, var(--err) 6%, var(--card)); }
+.span-row-selected { background: color-mix(in oklch, var(--primary) 9%, var(--card)); }
+.span-row-selected[data-clickable]:hover { background: color-mix(in oklch, var(--primary) 13%, var(--card)); }
+
+.span-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  padding-left: calc(14px + var(--depth, 0) * 15px);
+  padding-right: 12px;
+}
+.span-crit-tick {
+  position: absolute;
+  left: 4px;
+  width: 5px;
+  height: 5px;
+  background: var(--primary);
+  border-radius: 1px;
+  rotate: 45deg;
+  flex: none;
+}
+.span-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--svc, var(--muted-2)); flex: none; }
+.span-service { color: var(--muted-foreground); flex: none; }
+.span-name { color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.span-row-crit .span-name { font-weight: 600; }
+
+.span-track {
+  position: relative;
+  height: 100%;
+  background-image: linear-gradient(to right, var(--grid) 0, var(--grid) 1px, transparent 1px);
+  background-size: 25% 100%;
+}
+.span-bar {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  height: 13px;
+  background: var(--svc, var(--muted-2));
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.06);
+}
+.span-bar-error { background: var(--err); }
+.span-bar-flag {
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  translate: 50% -50%;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  background: var(--err);
+  color: oklch(1 0 0);
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+}
+.span-duration {
+  padding-right: 14px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.span-duration-unit { margin-left: 1px; color: var(--muted-2); font-size: 0.85em; }
+.span-duration.is-slow { color: var(--slow-ink); }
+.span-duration.is-error { color: var(--err-ink); font-weight: 600; }
 
 /* ─── Dashboard grid ─── */
 .dashboard-panel {
@@ -599,6 +716,10 @@
 .app-main {
   grid-area: main;
   overflow-y: auto;
+  /* Reserve the gutter on the single main scroll root so opening a
+   * Select/Dialog/Popover (Base UI locks body scroll + compensates with
+   * padding-right) no longer shifts the whole layout. */
+  scrollbar-gutter: stable;
   background: var(--background);
 }
 

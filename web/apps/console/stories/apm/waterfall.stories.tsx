@@ -12,11 +12,11 @@ export default {
  */
 
 const sampleSpans: WaterfallSpan[] = [
-  { id: 's1', name: 'POST /checkout', service: 'checkout-api', startOffsetMs: 0,    durationMs: 1247, status: 'ok' },
+  { id: 's1', name: 'POST /checkout', service: 'checkout-api', startOffsetMs: 0,    durationMs: 1247, status: 'ok', isCritical: true },
   { id: 's2', name: 'SELECT orders',  service: 'postgres',     startOffsetMs: 12,   durationMs: 50,   depth: 1, status: 'ok' },
   { id: 's3', name: 'SELECT items',   service: 'postgres',     startOffsetMs: 64,   durationMs: 23,   depth: 2, status: 'ok' },
   { id: 's4', name: 'INSERT audit',   service: 'postgres',     startOffsetMs: 90,   durationMs: 12,   depth: 2, status: 'ok' },
-  { id: 's5', name: 'Charge',         service: 'stripe',       startOffsetMs: 95,   durationMs: 1180, depth: 1, status: 'error' },
+  { id: 's5', name: 'Charge',         service: 'stripe',       startOffsetMs: 95,   durationMs: 1180, depth: 1, status: 'error', isCritical: true },
   { id: 's6', name: 'Refund (idempotent)', service: 'stripe',  startOffsetMs: 1180, durationMs: 12,   depth: 2, status: 'unset' },
 ];
 
