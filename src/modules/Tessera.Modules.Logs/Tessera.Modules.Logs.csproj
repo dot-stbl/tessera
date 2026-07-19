@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup/>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
     <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj"/>
     <ProjectReference Include="..\..\shared\Tessera.Shared.Telemetry\Tessera.Shared.Telemetry.csproj"/>
