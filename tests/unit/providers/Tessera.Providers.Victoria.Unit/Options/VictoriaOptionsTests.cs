@@ -37,7 +37,7 @@ public sealed class VictoriaOptionsTests
         {
             TracesUrl = uri,
             Tenant = "5",
-            TimeoutMs = 10_000,
+            TimeoutMs = 10_000
         };
 
         Assert.Equal(uri, options.TracesUrl);

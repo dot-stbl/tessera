@@ -1,7 +1,7 @@
 namespace Tessera.Shared.Kernel.Domain.Services;
 
 /// <summary>
-/// Service inventory summary with aggregated metrics across traces.
+///     Service inventory summary with aggregated metrics across traces.
 /// </summary>
 public sealed record ServiceSummary(
     string Name,

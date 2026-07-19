@@ -1,8 +1,8 @@
-
 using Tessera.Shared.Kernel.Time;
 using Xunit;
 
 namespace Tessera.Shared.Kernel.Tests.Time;
+
 /// <summary>
 ///     Unit tests for <see cref="TimeRange" />.
 /// </summary>

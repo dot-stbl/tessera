@@ -1,7 +1,7 @@
 namespace Tessera.Shared.Kernel.Providers.Traces;
 
 /// <summary>
-/// Parameters for trace search. Maps to GET /api/traces query string.
+///     Parameters for trace search. Maps to GET /api/traces query string.
 /// </summary>
 /// <param name="Service">Filter by service name (substring match).</param>
 /// <param name="Operation">Filter by operation name (substring match).</param>

@@ -1,8 +1,8 @@
 namespace Tessera.Shared.Kernel.Providers.Health;
 
 /// <summary>
-/// Per-provider health status. <c>Tessera.Host</c> aggregates per-provider
-/// reports into a composite endpoint response.
+///     Per-provider health status. <c>Tessera.Host</c> aggregates per-provider
+///     reports into a composite endpoint response.
 /// </summary>
 public enum HealthStatus
 {
@@ -13,5 +13,5 @@ public enum HealthStatus
     Degraded,
 
     /// <summary>Provider is unreachable or returning errors.</summary>
-    Unhealthy,
+    Unhealthy
 }

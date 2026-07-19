@@ -10,7 +10,6 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    "ladle.config.ts",
     "ladle-vite.config.ts"
   ],
   "exclude": ["node_modules", "dist"]

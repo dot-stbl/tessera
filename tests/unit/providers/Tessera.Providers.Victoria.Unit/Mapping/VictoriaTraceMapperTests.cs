@@ -1,17 +1,18 @@
 using Tessera.Providers.Victoria.Dto.Jaeger;
 using Tessera.Providers.Victoria.Dto.Jaeger.Span;
 using Tessera.Providers.Victoria.Dto.Jaeger.Trace;
+using Tessera.Providers.Victoria.Implementation.Mapping;
 using Tessera.Shared.Kernel.Domain.Traces;
 using Xunit;
 
 namespace Tessera.Providers.Victoria.Unit.Mapping;
 
 /// <summary>
-///     Unit tests for the Jaeger → domain mapping in <c>VictoriaTraceProvider</c>.
-///     Invokes the private <c>MapToSummary</c> helper via reflection so we test
-///     the mapping logic without exposing internals.
+///     Unit tests for the Jaeger → domain mapping in <see cref="VictoriaTraceMapper" />.
+///     The mapper is now <c>internal static</c> (top-level, not private to a class)
+///     so we test it directly through its public surface.
 /// </summary>
-public sealed class VictoriaTraceProviderMappingTests
+public sealed class VictoriaTraceMapperTests
 {
     private static readonly string[] ExpectedServices = ["checkout-api"];
 
@@ -20,7 +21,7 @@ public sealed class VictoriaTraceProviderMappingTests
     ///     default service name "unknown" and zero span count.
     /// </summary>
     [Fact]
-    public void MapToSummary_EmptySpans_ReturnsEmptySummary()
+    public void ToSummary_EmptySpans_ReturnsEmptySummary()
     {
         var trace = new JaegerTrace(
             TraceID: "abc123",
@@ -28,7 +29,7 @@ public sealed class VictoriaTraceProviderMappingTests
             Processes: new Dictionary<string, JaegerProcess>(),
             Warnings: null);
 
-        var summary = InvokeMapToSummary(trace);
+        var summary = VictoriaTraceMapper.ToSummary(trace);
 
         Assert.Equal("abc123", summary.TraceId.Value);
         Assert.Equal("unknown", summary.RootService);
@@ -41,7 +42,7 @@ public sealed class VictoriaTraceProviderMappingTests
     ///     A trace with one root span (no references) uses that span as the root.
     /// </summary>
     [Fact]
-    public void MapToSummary_RootSpanWithNoReferences_UsesAsRoot()
+    public void ToSummary_RootSpanWithNoReferences_UsesAsRoot()
     {
         var trace = new JaegerTrace(
             TraceID: "abc",
@@ -61,7 +62,7 @@ public sealed class VictoriaTraceProviderMappingTests
             },
             Warnings: null);
 
-        var summary = InvokeMapToSummary(trace);
+        var summary = VictoriaTraceMapper.ToSummary(trace);
 
         Assert.Equal("checkout-api", summary.RootService);
         Assert.Equal("GET /cart", summary.RootOperation);
@@ -73,7 +74,7 @@ public sealed class VictoriaTraceProviderMappingTests
     ///     An "error=true" tag on a span maps to <see cref="TraceStatus.Error" />.
     /// </summary>
     [Fact]
-    public void MapToSummary_ErrorTag_MapsToError()
+    public void ToSummary_ErrorTag_MapsToError()
     {
         var trace = new JaegerTrace(
             TraceID: "abc",
@@ -90,16 +91,21 @@ public sealed class VictoriaTraceProviderMappingTests
             Processes: new Dictionary<string, JaegerProcess> { ["p1"] = new JaegerProcess("svc", []) },
             Warnings: null);
 
-        var summary = InvokeMapToSummary(trace);
+        var summary = VictoriaTraceMapper.ToSummary(trace);
 
         Assert.Equal(TraceStatus.Error, summary.Status);
     }
 
-    private static TraceSummary InvokeMapToSummary(JaegerTrace trace)
+    /// <summary>
+    ///     FormatDuration renders sub-second as "Nms" and multi-second as "Ns".
+    /// </summary>
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData(500, "500ms")]
+    [InlineData(1000, "1s")]
+    [InlineData(5500, "5s")]
+    public void FormatDuration_ProducesExpectedForm(int? input, string? expected)
     {
-        var method = typeof(Tessera.Providers.Victoria.Implementation.VictoriaTraceProvider)
-            .GetMethod("MapToSummary", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        Assert.NotNull(method);
-        return (TraceSummary)method!.Invoke(null, [trace])!;
+        Assert.Equal(expected, VictoriaTraceMapper.FormatDuration(input));
     }
 }

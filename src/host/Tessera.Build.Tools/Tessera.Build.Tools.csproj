@@ -30,9 +30,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Remove="Meziantou.Analyzer" />
+    <PackageReference Remove="Meziantou.Analyzer"/>
   </ItemGroup>
 
-  <Import Project="Tessera.Build.Tools.targets" />
+  <Import Project="Tessera.Build.Tools.targets"/>
 
 </Project>

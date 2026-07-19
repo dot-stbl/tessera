@@ -1,3 +1,5 @@
+using Tessera.Providers.Victoria.Dto.Jaeger.Span;
+
 namespace Tessera.Providers.Victoria.Dto.Jaeger.Trace;
 
 /// <summary>
@@ -12,6 +14,6 @@ namespace Tessera.Providers.Victoria.Dto.Jaeger.Trace;
 /// <param name="Warnings">Optional backend warnings (null if none).</param>
 public sealed record JaegerTrace(
     string TraceID,
-    IReadOnlyList<Span.JaegerSpan> Spans,
+    IReadOnlyList<JaegerSpan> Spans,
     IReadOnlyDictionary<string, JaegerProcess> Processes,
     object? Warnings);

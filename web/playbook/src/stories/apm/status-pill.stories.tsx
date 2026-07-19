@@ -16,7 +16,7 @@ export const AllVariants: Story = () => (
       <StatusPill variant="ok">OK</StatusPill>
       <StatusPill variant="err">ERROR</StatusPill>
       <StatusPill variant="warn">DEGRADED</StatusPill>
-      <StatusPill variant="slow">SLOW 1.2s</StatusPill>
+      <StatusPill variant="warn" className="pill-slow">SLOW 1.2s</StatusPill>
       <StatusPill variant="idle">UNSET</StatusPill>
       <StatusPill variant="running">RUNNING</StatusPill>
       <StatusPill variant="pending">PENDING</StatusPill>
@@ -30,7 +30,7 @@ export const SizesAndDotless: Story = () => (
     <div className="flex items-center gap-3">
       <StatusPill variant="ok">OK</StatusPill>
       <StatusPill variant="err" hideDot>ERROR</StatusPill>
-      <StatusPill variant="slow" hideDot>1.2s</StatusPill>
+      <StatusPill variant="warn" hideDot>1.2s</StatusPill>
       <StatusPill variant="warn" hideDot>WARN</StatusPill>
     </div>
     <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export const InContext: Story = () => (
       <span>stripe POST /charge → 1247ms</span>
     </div>
     <div className="flex items-center gap-2">
-      <StatusPill variant="slow">SLOW</StatusPill>
+      <StatusPill variant="warn">SLOW</StatusPill>
       <span>postgres SELECT → 4.2s (above 1s threshold)</span>
     </div>
     <div className="flex items-center gap-2">

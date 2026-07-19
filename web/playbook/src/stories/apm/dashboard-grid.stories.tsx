@@ -17,7 +17,18 @@ const makePanel = (
   title: string,
   pos: PanelPosition,
   body: string,
-): Panel => ({ id, title, pos, children: <div className="text-sm text-muted-foreground">{body}</div> });
+): Panel => ({
+  id,
+  pos,
+  children: (
+    <>
+      <div className="dashboard-panel-header">
+        <h3 className="dashboard-panel-title">{title}</h3>
+      </div>
+      <div className="dashboard-panel-body text-sm text-muted-foreground">{body}</div>
+    </>
+  ),
+});
 
 export const SinglePanel: Story = () => (
   <div className="p-6" style={{ height: 360 }}>

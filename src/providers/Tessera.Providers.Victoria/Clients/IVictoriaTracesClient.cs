@@ -3,6 +3,7 @@ using Tessera.Providers.Victoria.Dto.Jaeger;
 using Tessera.Providers.Victoria.Dto.Jaeger.Trace;
 
 namespace Tessera.Providers.Victoria.Clients;
+
 /// <summary>
 ///     Refit client for the Jaeger-compatible API exposed by VictoriaTraces.
 ///     All endpoints are single-tenant (<c>{tenant}</c> path param, MVP value <c>"0"</c>).

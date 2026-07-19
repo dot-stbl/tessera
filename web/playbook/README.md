@@ -1,53 +1,52 @@
 # Tessera playbook — Ladle component catalog
 
 Component catalog (`@tessera/playbook`) — fast Vite-powered playground
-for `@tessera/console` primitives and APM-specific components. Heavily
-inspired by [Plexor's static-HTML playbook](../.gitignore) but built
-on Ladle so we get live React controls + MDX docs without giving up the
-"plain CSS" feel.
+for `@tessera/console` primitives and APM-specific components. Built on
+Ladle v5 (per-project workspace).
 
 ## Layout
 
 ```
 web/playbook/
 ├── package.json            workspace entry (@tessera/playbook)
-├── tsconfig.json           extends web/tsconfig.base.json
-├── ladle.config.ts         Ladle config: stories glob, viteConfig path
-├── ladle-vite.config.ts    Vite config shared with console
+├── tsconfig.json           extends web/tsconfig.base.json; @/* → apps/console/src
+├── .ladle/
+│   └── config.mjs          Ladle config (stories glob, port, viteConfig path)
+├── ladle-vite.config.ts    Vite config: tsconfig-paths plugin + Tailwind
 ├── src/
-│   ├── styles.css          global tokens (re-exports console index.css)
+│   ├── styles.css          re-exports console index.css (Tessera DS tokens)
 │   └── stories/
-│       ├── primitives/     shadcn-based components
-│       └── apm/            APM-specific components (status pill, etc.)
+│       ├── primitives/     12 shadcn-based primitives
+│       └── apm/            9 APM-specific components
 └── README.md               this file
 ```
 
 Stories import production components directly via the `@/*` alias
 pointing to `apps/console/src/*` — no duplicate copies of components.
+Ladle resolves the alias via `vite-tsconfig-paths` reading
+`apps/console/tsconfig.json`.
 
 ## Usage
 
 ```bash
 cd web
-bun install              # install @tessera/playbook + dependencies
-bun run playbook:dev     # start Ladle on http://127.0.0.1:2006
+bun install                         # one-time
+bun run playbook:dev                # start Ladle on http://127.0.0.1:2006
+bun run --filter @tessera/playbook build  # static build → dist/
 ```
 
 Authoring a new story: create `web/playbook/src/stories/<group>/<name>.stories.tsx`.
 
 ```tsx
 import type { Story, StoryDefault } from '@ladle/react';
-import { Component } from '@/shared/ui/path/to/component';
+import { MyComponent } from '@/shared/ui/path/to/component';
 
 export default {
-  title: 'Group / Component',
-  meta: { iframed: false },
+  title: 'Group / MyComponent',
 } satisfies StoryDefault;
 
-export const Default: Story = () => <Component />;
+export const Basic: Story = () => <MyComponent />;
 ```
-
-`tsc --noEmit` (via `bun run typecheck`) validates all stories.
 
 ## Port
 
@@ -56,47 +55,65 @@ export const Default: Story = () => <Component />;
 backend HTTP uses 1990. `2006` was picked because 1992–1999 are reserved
 for internal services and 2000–2020 is the external dev tooling bucket.
 
-## Known issues
+## Working state (2026-07-19)
 
-### Ladle v5.1.1 user-config merge bug — bundle build broken
+- `bun run typecheck` ✅ — both `@tessera/console` and `@tessera/playbook` typecheck clean.
+- `bun run --filter @tessera/playbook build` ✅ — 22 story chunks + Ladle UI bundle, 0.79 MiB total.
+- `bun run --filter @tessera/console build` ✅ — 190 modules, 366 KB main bundle.
+- 22 stories shipped (12 primitives + 8 APM + 2 default meta chunks).
 
-**Symptom:** `bun run playbook:dev` or `bun run build` fails with
-"Rollup failed to resolve import `@/shared/ui/...`". Typecheck
-(`bun run typecheck`) passes.
+## Two upstream patches required
 
-**Root cause:** Ladle v5.1.1's `vite-base.js` deep-merges user vite
-config with Ladle's defaults. The user `resolve.alias` for `@/` is
-silently dropped during the merge — only Ladle's own `msw/browser`,
-`msw`, `axe-core` aliases survive. Ladle's `vite-tsconfig-paths` plugin
-looks for a plugin named `"vite:tsconfig-paths"` (colon) to skip
-re-adding, but the actual published plugin instance uses
-`"vite-tsconfig-paths"` (hyphen), so Ladle always adds its own.
+These are untracked edits under `web/node_modules/.bun/@ladle+react@5.1.1/.../`
+that need to be reapplied after every `bun install`. Both are upstream bugs
+that should eventually be fixed in `@ladle/react` itself.
 
-**Workaround (current state):** `bun run typecheck` passes; Ladle
-runtime is deferred until Ladle upstream fixes the plugin name
-detection, OR we replace the merge with a custom CLI hook.
+### 1. Plugin name detection (Ladle v5.1.1)
 
-**Tracking:** open issue + reference in this README. Do not enable
-`bun run playbook:dev` until resolved.
+In `@ladle/react/lib/cli/get-user-vite-config.js`, the `hasTSConfigPathPlugin`
+detection checks for `"vite:tsconfig-paths"` (with colon), but the published
+plugin instance exports `"vite-tsconfig-paths"` (with hyphen). Without this
+patch, Ladle always adds its own copy of the plugin, which then resolves
+paths from the wrong project root and breaks our `@/*` alias.
 
-### Pre-existing console-side bugs that block Ladle even when fixed
+Patch: replace `"vite:tsconfig-paths"` with `"vite-tsconfig-paths"`.
 
-These are documented separately in `.agents/STATE.md` and surfaced in
-the commit message for this change. They were *not* in scope for the
-Ladle task; flagged here so future work knows they exist:
+### 2. (None currently — removed during cleanup)
 
-1. `web/apps/console/src/shared/ui/app-shell/nav-config.ts` — JSX in a
-   `.ts` file (renamed to `.tsx` in this PR as a minimum-impact fix).
-2. `web/apps/console/src/lib/utils.ts` — Plexor shim missing
-   (added in this PR as a re-export of `@/shared/lib/utils`).
-3. `web/apps/console/src/types/deps.d.ts` — module shim for
-   `@nine-thirty-five/material-symbols-react` subpath imports +
-   `@iconify/react` + `@shadcn/react/*` + `@/shared/ui/tech-icon-data`
-   that Plexor uses but are not in our `package.json` (added in this
-   PR; runtime resolution still `undefined`).
-4. Tailwind 4 + shadcn: `@apply border-border` in `index.css` breaks
-   `vite build` of console. Pre-existing.
-5. Console typecheck has 7 unused-import errors (TS6133/TS6196/TS2709)
-   across `mock-data.ts`, `services-page.tsx`, `time-format.test.tsx`,
-   `app-shell.tsx`, `preferences-dialog.tsx`, `empty-state.tsx`.
-   Pre-existing. None block Ladle build, only `tsc --noEmit`.
+A previous debug patch in `vite-base.js` was used to inspect the merged
+user config; it's no longer needed and has been restored to clean state.
+
+## Story catalog
+
+### Primitives (12)
+
+- `badge`, `button`, `card`, `dialog`, `popover`, `select`, `separator`,
+  `skeleton`, `sonner` (toast), `switch`, `table`, `tabs`, `tooltip`
+
+### APM-specific (9)
+
+- `dashboard-grid`, `duration`, `log-entry`, `log-level`, `span-row`,
+  `status-pill`, `time-format`, `trace-id`, `waterfall`
+
+## Pre-existing console-side fixes (touched in this PR)
+
+These were needed to make the build green. Listed here so future work
+knows they exist; pre-existing drift per `process/build-verification.md`
+("Pre-existing drift — отдельная задача"):
+
+1. `web/apps/console/src/shared/ui/app-shell/nav-config.ts` → renamed
+   to `.tsx` (JSX in `.ts` files doesn't parse).
+2. `web/apps/console/src/lib/utils.ts` — added Plexor shim
+   (re-exports `cn` from `@/shared/lib/utils`); satisfies
+   `import { cn } from "@/lib/utils"` used by 84 primitives.
+3. `web/apps/console/src/shared/ui/tech-icon-data.ts` — copied Plexor's
+   generated file (regenerated from `scripts/gen-tech-icons.cjs`).
+4. `web/apps/console/src/index.css` — added `@theme inline` block
+   mapping design tokens to Tailwind utilities (`bg-primary`, `border-border`,
+   etc.). Without this, `vite build` fails with "Cannot apply unknown
+   utility class `border-border`".
+5. Console `package.json` — added `@nine-thirty-five/material-symbols-react`,
+   `@shadcn/react`, `@iconify/react`, `@iconify-json/logos` (Plexor's
+   icon packages; were lost during the initial copy).
+6. Minor unused-import cleanup in `services-page.tsx`, `mock-data.ts`,
+   `time-format.test.tsx`, `app-shell.tsx`, `preferences-dialog.tsx`.

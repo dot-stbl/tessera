@@ -1,8 +1,8 @@
-
 using Refit;
 using Tessera.Providers.Victoria.Dto.VictoriaLogs;
 
 namespace Tessera.Providers.Victoria.Clients;
+
 /// <summary>
 ///     Refit client for VictoriaLogs LogsQL HTTP API.
 ///     Single-tenant path (<c>{tenant}</c>, MVP value <c>"0"</c>).

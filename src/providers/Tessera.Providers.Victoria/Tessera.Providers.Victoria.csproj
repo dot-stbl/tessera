@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup />
+  <PropertyGroup/>
   <ItemGroup>
-    <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
-    <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
-    <PackageReference Include="Refit" Version="7.0.*" />
-    <PackageReference Include="Refit.HttpClientFactory" Version="7.0.*" />
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj"/>
+    <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+    <PackageReference Include="Refit" Version="7.0.*"/>
+    <PackageReference Include="Refit.HttpClientFactory" Version="7.0.*"/>
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tessera.Providers.Victoria.Unit" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 namespace Tessera.Shared.Kernel.Domain.Traces;
 
 /// <summary>
-/// Status of a trace or span, mirroring OpenTelemetry span status codes.
+///     Status of a trace or span, mirroring OpenTelemetry span status codes.
 /// </summary>
 public enum TraceStatus
 {
@@ -12,5 +12,5 @@ public enum TraceStatus
     Error,
 
     /// <summary>Span status was unset (OpenTelemetry default).</summary>
-    Unset,
+    Unset
 }

@@ -6,4 +6,4 @@ namespace Tessera.Providers.Victoria.Dto.Jaeger.Span;
 /// </summary>
 /// <param name="Timestamp">Event time, in microseconds since epoch.</param>
 /// <param name="Fields">Structured key-value attributes on the event.</param>
-public sealed record JaegerLog(long Timestamp, IReadOnlyList<Jaeger.JaegerTag> Fields);
+public sealed record JaegerLog(long Timestamp, IReadOnlyList<JaegerTag> Fields);

@@ -1,8 +1,8 @@
-
 using Tessera.Shared.Kernel.Pagination;
 using Xunit;
 
 namespace Tessera.Shared.Kernel.Tests.Pagination;
+
 /// <summary>
 ///     Unit tests for <see cref="Page{T}" />.
 /// </summary>

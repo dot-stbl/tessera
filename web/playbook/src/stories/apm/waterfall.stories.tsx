@@ -18,7 +18,7 @@ const sampleSpans: WaterfallSpan[] = [
   { id: 's3', name: 'SELECT items',   service: 'postgres',     startOffsetMs: 64,   durationMs: 23,   depth: 2, status: 'ok' },
   { id: 's4', name: 'INSERT audit',   service: 'postgres',     startOffsetMs: 90,   durationMs: 12,   depth: 2, status: 'ok' },
   { id: 's5', name: 'Charge',         service: 'stripe',       startOffsetMs: 95,   durationMs: 1180, depth: 1, status: 'error' },
-  { id: 's6', name: 'Refund (idempotent)', service: 'stripe',  startOffsetMs: 1180, durationMs: 12,   depth: 2, status: 'idle' },
+  { id: 's6', name: 'Refund (idempotent)', service: 'stripe',  startOffsetMs: 1180, durationMs: 12,   depth: 2, status: 'unset' },
 ];
 
 export const SampleTrace: Story = () => (

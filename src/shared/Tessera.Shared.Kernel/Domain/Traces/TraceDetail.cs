@@ -1,10 +1,10 @@
-
 using Tessera.Shared.Kernel.Domain.Spans;
 using Tessera.Shared.Kernel.Identifiers;
 
 namespace Tessera.Shared.Kernel.Domain.Traces;
+
 /// <summary>
-/// Full trace with reconstructed span tree. Returned by GET /api/traces/{traceId}.
+///     Full trace with reconstructed span tree. Returned by GET /api/traces/{traceId}.
 /// </summary>
 public sealed record TraceDetail(
     TraceId TraceId,

@@ -1,8 +1,9 @@
-
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
 using Tessera.Shared.Http.Configuration;
 
 namespace Tessera.Shared.Http;
+
 /// <summary>
 ///     DelegatingHandler that attaches <c>Authorization: Bearer &lt;token&gt;</c> header
 ///     from <see cref="HttpClientAuthOptions" />. Token is read on every request
@@ -16,7 +17,6 @@ namespace Tessera.Shared.Http;
 /// </remarks>
 public sealed class BearerTokenHandler(IOptionsMonitor<HttpClientAuthOptions> options) : DelegatingHandler
 {
-
     /// <summary>
     ///     Attaches <c>Authorization: Bearer</c> header (when a token is configured)
     ///     before delegating to the inner handler pipeline.
@@ -26,10 +26,11 @@ public sealed class BearerTokenHandler(IOptionsMonitor<HttpClientAuthOptions> op
         CancellationToken cancellationToken)
     {
         var token = options.CurrentValue.AuthToken;
+
         if (!string.IsNullOrWhiteSpace(token))
         {
             request.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    new AuthenticationHeaderValue("Bearer", token);
         }
 
         return base.SendAsync(request, cancellationToken);

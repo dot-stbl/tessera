@@ -1,8 +1,8 @@
 namespace Tessera.Shared.Kernel.Results;
 
 /// <summary>
-/// Discriminated union for fallible operations. Match via pattern:
-/// <code>
+///     Discriminated union for fallible operations. Match via pattern:
+///     <code>
 /// return result switch
 /// {
 ///     Result&lt;T&gt;.Ok ok =&gt; ok.Value,

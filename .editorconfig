@@ -346,6 +346,7 @@ dotnet_diagnostic.CA1031.severity = none # do not catch general exception types 
 dotnet_diagnostic.CA1062.severity = none # validate arguments — слишком шумно с required
 dotnet_diagnostic.CA1303.severity = none # localize strings — не нужно
 dotnet_diagnostic.CA1707.severity = none # identifier should not contain underscore — see tests/ override below
+dotnet_diagnostic.CA1711.severity = none # identifier should not end in incorrect suffix — Provider/Helper/Mapper not in CA's whitelist but role-specific suffixes win over analyzer default
 dotnet_diagnostic.CA1716.severity = none # identifier should not match keyword
 dotnet_diagnostic.CA1812.severity = none # avoid uninstantiated internal classes (DI)
 dotnet_diagnostic.CA1873.severity = none # wrap logger.LogX in IsEnabled — IsEnabled wrappers are noise

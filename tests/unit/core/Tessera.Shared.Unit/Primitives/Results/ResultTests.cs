@@ -1,8 +1,8 @@
-
 using Tessera.Shared.Kernel.Results;
 using Xunit;
 
 namespace Tessera.Shared.Kernel.Tests.Results;
+
 /// <summary>
 ///     Unit tests for <see cref="Result{T}" />.
 /// </summary>
@@ -46,7 +46,7 @@ public sealed class ResultTests
         {
             Result<int>.Ok ok => ok.Value,
             Result<int>.Err => -1,
-            _ => -2,
+            _ => -2
         };
 
         Assert.Equal(7, extracted);
@@ -65,7 +65,7 @@ public sealed class ResultTests
         {
             Result<int>.Ok => "(ok)",
             Result<int>.Err err => err.Error.Code,
-            _ => "(unknown)",
+            _ => "(unknown)"
         };
 
         Assert.Equal("x", code);

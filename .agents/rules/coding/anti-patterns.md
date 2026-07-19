@@ -22,7 +22,7 @@ public sealed record TraceWithLogs(TraceDetail Trace, IReadOnlyList<LogEntry> Lo
 public async Task<TraceWithLogs> GetTraceWithLogsAsync(string id, CancellationToken ct);
 ```
 
-**Exception:** private methods within a single file (`var (a, b) = Split(s);`).
+**Exception:** `var (a, b) =` destructuring on the call site of a top-level / file-static helper. Note: `private` methods themselves are banned (see `class-layout-and-tooling.md` §1a).
 
 **Why:** tuples have no XML doc support, no extension methods, can't be
 mocked, no IntelliSense for field names in some IDEs.

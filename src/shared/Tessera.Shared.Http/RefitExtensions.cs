@@ -1,9 +1,9 @@
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Refit;
 
 namespace Tessera.Shared.Http;
+
 /// <summary>
 ///     Extension methods for registering Refit HTTP clients with Tessera-standard
 ///     resilience pipeline + bearer auth + OTel HTTP tracing.
@@ -26,12 +26,12 @@ public static class RefitExtensions
     public static IHttpStandardResiliencePipelineBuilder AddTesseraRefitClient<TClient>(
         this IServiceCollection services,
         string baseUrl)
-        where TClient : class
+            where TClient : class
     {
         return services
-            .AddRefitClient<TClient>()
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseUrl))
-            .AddHttpMessageHandler<BearerTokenHandler>()
-            .AddStandardResilienceHandler();
+                .AddRefitClient<TClient>()
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseUrl))
+                .AddHttpMessageHandler<BearerTokenHandler>()
+                .AddStandardResilienceHandler();
     }
 }

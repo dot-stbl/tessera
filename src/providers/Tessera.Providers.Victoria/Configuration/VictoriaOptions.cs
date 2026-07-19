@@ -1,8 +1,8 @@
-
 using Microsoft.Extensions.Options;
 using Tessera.Shared.Http.Configuration;
 
 namespace Tessera.Providers.Victoria.Configuration;
+
 /// <summary>
 ///     Victoria stack backend connection options. Bound from <c>tessera.toml</c>
 ///     via <see cref="IOptions{TOptions}" /> at composition root.

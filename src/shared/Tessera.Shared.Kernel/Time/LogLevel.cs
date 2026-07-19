@@ -1,7 +1,7 @@
 namespace Tessera.Shared.Kernel.Time;
 
 /// <summary>
-/// Log severity level. Maps to OpenTelemetry LogLevel + syslog severity.
+///     Log severity level. Maps to OpenTelemetry LogLevel + syslog severity.
 /// </summary>
 public enum LogLevel
 {
@@ -21,5 +21,5 @@ public enum LogLevel
     Error,
 
     /// <summary>Critical failures requiring immediate attention.</summary>
-    Fatal,
+    Fatal
 }

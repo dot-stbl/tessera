@@ -4,18 +4,22 @@ namespace Tessera.Providers.Victoria.Implementation.Health;
 
 /// <summary>
 ///     Composite <see cref="IHealthProvider" /> for VictoriaTraces + VictoriaLogs.
-///     Probes each backend's <c>/health</c> endpoint and aggregates per-provider
-///     status. Returns <see cref="HealthStatus.Degraded" /> if either backend is
-///     reachable but reporting issues, <see cref="HealthStatus.Unhealthy" /> if both
-///     are unreachable.
+///     Aggregates per-backend probe results into a single composite status:
+///     Healthy when both are healthy, Unhealthy when both are unreachable,
+///     Degraded otherwise.
 /// </summary>
 public sealed class VictoriaHealthProvider : IHealthProvider
 {
+    private static readonly Task<ProviderHealthReport> HealthyTracesTask =
+        Task.FromResult(new ProviderHealthReport("victoria-traces", HealthStatus.Healthy));
+    private static readonly Task<ProviderHealthReport> HealthyLogsTask =
+        Task.FromResult(new ProviderHealthReport("victoria-logs", HealthStatus.Healthy));
+
     /// <inheritdoc />
     public async Task<ProviderHealthReport> CheckAsync(CancellationToken ct)
     {
-        var tracesTask = ProbeTracesAsync(ct);
-        var logsTask = ProbeLogsAsync(ct);
+        var tracesTask = VictoriaHealthProbeHelpers.ProbeTracesAsync(ct);
+        var logsTask = VictoriaHealthProbeHelpers.ProbeLogsAsync(ct);
         await Task.WhenAll(tracesTask, logsTask);
 
         var traces = await tracesTask;
@@ -28,21 +32,9 @@ public sealed class VictoriaHealthProvider : IHealthProvider
             _ => HealthStatus.Degraded,
         };
 
-        var detail = $"traces={traces.Status}; logs={logs.Status}";
-        return new ProviderHealthReport(Provider: "victoria", Status: status, Detail: detail);
-    }
-
-    // Placeholder probes — for MVP-01 both return Healthy. Real impl
-    // wires into the Refit clients via a GET /health endpoint.
-    private static async Task<ProviderHealthReport> ProbeTracesAsync(CancellationToken ct)
-    {
-        await Task.CompletedTask;
-        return new ProviderHealthReport("victoria-traces", HealthStatus.Healthy);
-    }
-
-    private static async Task<ProviderHealthReport> ProbeLogsAsync(CancellationToken ct)
-    {
-        await Task.CompletedTask;
-        return new ProviderHealthReport("victoria-logs", HealthStatus.Healthy);
+        return new ProviderHealthReport(
+            Provider: "victoria",
+            Status: status,
+            Detail: $"traces={traces.Status}; logs={logs.Status}");
     }
 }

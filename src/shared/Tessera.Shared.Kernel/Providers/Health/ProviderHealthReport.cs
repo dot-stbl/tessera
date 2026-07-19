@@ -1,7 +1,7 @@
 namespace Tessera.Shared.Kernel.Providers.Health;
 
 /// <summary>
-/// Health probe result for a single provider.
+///     Health probe result for a single provider.
 /// </summary>
 /// <param name="Provider">Provider name (e.g. <c>"victoria-traces"</c>).</param>
 /// <param name="Status">Overall health status.</param>
