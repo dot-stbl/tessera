@@ -47,3 +47,6 @@ desktop.ini
 *~
 *.bak
 *.tmp
+
+# ─── soly extension bookkeeping ──────────────────────────────────────────────
+.agents/rule-mtimes.json

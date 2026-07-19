@@ -12,17 +12,20 @@ always: true
 
 ## 1. Layers overview
 
-Tessera — single-purpose web app (proxy к `vtselect`/`vlselect`/`vmselect`).
-Структура — **host / shared / modules**, без DDD-слоёв внутри модулей.
+Tessera — multi-provider APM UI в стиле Grafana (MVP-01 ships with Victoria
+как первый provider; future phases добавят Tempo/Jaeger/Loki/etc. через
+provider interfaces). Структура — **host / shared / modules / providers**,
+без DDD-слоёв внутри модулей.
 
 ```
-host/      ← entry points: Tessera.Host + Tessera.Build.Tools
-shared/    ← cross-cutting libraries (kernel, http, telemetry, openapi, validation)
-modules/   ← vertical-slice features: traces, logs, discovery, health
-tests/     ← разделено на unit/ + integration/
-deploy/    ← docker, systemd, k8s manifests
-web/       ← frontend (bun + Turbo monorepo)
-.agents/   ← soly state (rules, docs, plans)
+host/        ← entry points: Tessera.Host + Tessera.Build.Tools
+shared/      ← cross-cutting: kernel (domain types + provider interfaces), http, telemetry, openapi, validation
+modules/     ← vertical-slice features: traces, logs, discovery, health
+providers/   ← concrete data source implementations (MVP-01: Tessera.Providers.Victoria)
+tests/       ← разделено на unit/ + integration/
+deploy/      ← docker, systemd, k8s manifests
+web/         ← frontend (bun + Turbo monorepo)
+.agents/     ← soly state (rules, docs, plans)
 ```
 
 ## 2. Folder cap — max 5 projects per folder
@@ -34,7 +37,8 @@ web/       ← frontend (bun + Turbo monorepo)
 src/
 ├── host/                       (2 projects)
 ├── shared/                     (5 projects — at cap)
-└── modules/                    (4 projects — MVP, under cap)
+├── modules/                    (4 projects — MVP, under cap)
+└── providers/                  (1 project — MVP-01; grows as new backends added)
 ```
 
 ## 3. Layer responsibilities
@@ -58,13 +62,28 @@ src/
 
 | Project | Responsibility |
 |---------|----------------|
-| `Tessera.Shared.Kernel` | `Result<T>`, `Error`, `Id` (UUIDv7), `TimeRange`, `Pagination`, primitives |
+| `Tessera.Shared.Kernel` | Domain primitives (`Tenant`, `TraceId`, `SpanId`, `LogLevel`, `TimeRange`, `Page<T>`, `Result<T>`, `Error`) + **provider interfaces** (`ITraceProvider`, `ILogProvider`, `IMetricsProvider`, `IDiscoveryProvider`, `IHealthProvider`) |
 | `Tessera.Shared.Http` | Refit base + `Microsoft.Extensions.Http.Resilience` (Polly) + OTel HTTP instrumentation |
 | `Tessera.Shared.Telemetry` | OpenTelemetry setup, structured logging helpers, tracing conventions |
 | `Tessera.Shared.OpenApi` | Scalar.AspNetCore + Swashbuckle annotations, OpenAPI document configuration |
 | `Tessera.Shared.Validation` | FluentValidation helpers, request validation extension methods |
 
-**Не должно быть:** feature-specific логика, models от конкретных модулей.
+**Не должно быть:** feature-specific логика (endpoints, handlers), прямые ссылки на `Tessera.Providers.*`.
+
+### `providers/` — concrete data source backends (Grafana datasource model)
+
+**MVP-01:** `Tessera.Providers.Victoria` — реализация provider interfaces
+для Victoria stack (VictoriaTraces + VictoriaLogs + VictoriaMetrics).
+Refit → Jaeger/LogsQL/Prometheus endpoints, DTO mapping домен ↔
+provider-specific shapes. Wired в DI через `AddVictoriaProvider(...)`
+extension в composition root.
+
+**Future:** `Tessera.Providers.Tempo/`, `Tessera.Providers.Loki/`,
+`Tessera.Providers.Mimir/` и т.д. — каждый реализует те же provider
+interfaces из `Tessera.Shared.Kernel`. Добавление нового backend = новый
+project в `providers/` + регистрация в composition root.
+
+**Не должно быть:** endpoints, handlers, references на `Tessera.Modules.*`.
 
 ### `modules/` — vertical-slice features
 

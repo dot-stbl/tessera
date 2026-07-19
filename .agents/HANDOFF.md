@@ -4,9 +4,20 @@
 
 ## Что строим
 
-**Tessera** — APM UI для Victoria stack (Traces + Logs + Metrics). Self-hosted web приложение. Trace viewer с waterfall, структурированный log search, service inventory, кастомные Grafana-style дашборды.
+**Tessera** — APM UI в стиле Grafana (multi-provider data sources), не Victoria-specific UI. Self-hosted web приложение. Trace viewer с waterfall, структурированный log search, service inventory, кастомные Grafana-style дашборды. MVP-01 ships with Victoria (Traces + Logs + Metrics) как **первый** provider; future phases добавят другие backends (Tempo, Jaeger, Loki) через тот же provider interface — без refactor модулей.
 
 **Status:** pre-MVP scaffold. **Frontend работает с mock data. Backend skeleton landed, modules empty.**
+
+### Strategic positioning (owner-set, 2026-07-19)
+
+Tessera — **новый Grafana-аналог для APM**, не Victoria UI. Без своего collector/storage слоя (no Tempo/Mimir/etc.) — переиспользуем готовые коллекторы (VT/VL/VM сейчас, другие — потом).
+
+Следствия для архитектуры:
+- Новый top-level слой `src/providers/` для конкретных provider implementations
+- `Tessera.Modules.<Feature>` consume provider **interfaces** из `Tessera.Shared.Kernel` (не знают о Victoria)
+- Domain types (`Trace`, `Span`, `LogEntry`, `Service`) в shared/ в доменной форме, не Victoria/Jaeger DTO
+- Mapping домен ↔ provider-specific DTO — внутри provider implementation
+- Host composition root wires конкретного provider'а в DI
 
 **Stack:**
 - **Backend:** .NET 10 — ASP.NET Core minimal API, Refit + Polly + OpenTelemetry
@@ -142,6 +153,10 @@
 | Build SDK | `Microsoft.NET.Sdk` (NOT `Microsoft.Build.NoTargets`) | 2026-07-19 | `src/host/Tessera.Build.Tools/Tessera.Build.Tools.csproj` |
 | Module structure | `core/` + `extended/` if >5 files (NetArchTest enforced) | 2026-07-19 | `.agents/rules/coding/module-structure-5-cap.md` |
 | Backend SDK | .NET 10 (10.0.109+, latestFeature rollForward) | 2026-07-19 | `global.json` |
+| Strategic positioning | Grafana-analogue APM (multi-provider), NOT Victoria UI | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
+| Provider layer | New top-level `src/providers/` (Grafana datasource model) | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
+| Provider abstraction | Built in MVP-01 (interfaces in Shared.Kernel, Victoria impl in Providers) | 2026-07-19 | `.agents/HANDOFF.md` § Strategic positioning |
+| MVP-01 module scope | 4 modules: Traces + Logs + Discovery + Health | 2026-07-19 | `.agents/HANDOFF.md` § Что осталось сделать |
 
 ## Структура репо (для навигации)
 
@@ -178,11 +193,13 @@ tessera/
 │   │   ├── Tessera.Shared.Telemetry/      OpenTelemetry + log format (empty)
 │   │   ├── Tessera.Shared.OpenApi/        Scalar/OpenAPI wiring (empty)
 │   │   └── Tessera.Shared.Validation/     options validators (empty)
-│   └── modules/
-│       ├── Tessera.Modules.Traces/        traces endpoints (empty)
-│       ├── Tessera.Modules.Logs/          logs endpoints (empty)
-│       ├── Tessera.Modules.Discovery/     services + streams discovery (empty)
-│       └── Tessera.Modules.Health/        per-Victoria probes (empty)
+│   ├── modules/
+│   │   ├── Tessera.Modules.Traces/        traces endpoints (empty)
+│   │   ├── Tessera.Modules.Logs/          logs endpoints (empty)
+│   │   ├── Tessera.Modules.Discovery/     services + streams discovery (empty)
+│   │   └── Tessera.Modules.Health/        per-Victoria probes (empty)
+│   └── providers/                         NEW layer (MVP-01)
+│       └── Tessera.Providers.Victoria/    Victoria client + DTO mapping (to scaffold)
 ├── tests/                                 BACKEND tests
 │   ├── unit/
 │   │   ├── core/
@@ -255,21 +272,24 @@ dotnet build tessera.slnx -c Debug
 dotnet test tessera.slnx -c Debug --no-build
 ```
 
-## Следующие шаги (рекомендованный порядок)
+## Следующие шаги (рекомендованный порядок, MVP-01)
 
-1. **`Tessera.Shared.Kernel`** — `Tenant`, `TraceId`, `SpanId`, `LogLevel`, `TimeRange`, `Page<T>`, `Result<T>` (10-15 типов)
-2. **`Tessera.Shared.Http`** — 3 Refit-интерфейса (VT/VL/VM) + `AddVictoriaClients(...)` extension
-3. **`Tessera.Modules.Health`** — простейший модуль (per-Victoria `/health/readyz` probe) — для проверки DI wiring
-4. **`Tessera.Modules.Traces`** — `/api/traces*` endpoints (search, get by ID)
-5. **`Tessera.Modules.Logs`** — `/api/logs*` (LogsQL passthrough + structured field extraction)
-6. **`Tessera.Modules.Discovery`** — `/api/services` (aggregate from VT + VL)
-7. **`Tessera.Host/Program.cs`** — composition root: TOML config + auth + DI + endpoint mapping
-8. **Integration tests** — Testcontainers Victoria + WebApplicationFactory
-9. **PLAN.md** — formal task-by-task через `soly_workflow new tessera-mvp`
-10. **Trace detail page** + **Settings page** (UI)
-11. **Dashboard editor** (stretch)
-12. **Docker build** + **CI**
-13. **Publish to github.com/dot-stbl/tessera** — transfer ownership (когда ready)
+Стратегия: сначала foundation (shared kernel + provider abstraction + Victoria provider), потом modules поверх.
+
+1. **PLAN.md** — scaffold `soly_workflow new tessera-mvp`, flesh out via `discuss` + `plan` (task-by-task acceptance criteria)
+2. **`Tessera.Shared.Kernel`** — domain types (`Trace`, `Span`, `LogEntry`, `Service`, `TimeRange`, `Page<T>`, `Result<T>`) + **provider interfaces** (`ITraceProvider`, `ILogProvider`, `IMetricsProvider`, `IDiscoveryProvider`, `IHealthProvider`)
+3. **`Tessera.Providers.Victoria`** — Victoria Refit clients (VT/VL/VM) + DTO mapping домен ↔ Jaeger/LogsQL/Prometheus + `AddVictoriaProvider(...)` extension
+4. **`Tessera.Shared.Http`** — Refit base + Polly + OTel HTTP plumbing (используется Victoria provider)
+5. **`Tessera.Modules.Health`** — simplest module, consume `IHealthProvider` (DI verification)
+6. **`Tessera.Modules.Traces`** — `/api/traces*`, consume `ITraceProvider`
+7. **`Tessera.Modules.Logs`** — `/api/logs*`, consume `ILogProvider`
+8. **`Tessera.Modules.Discovery`** — `/api/services`, consume `IDiscoveryProvider`
+9. **`Tessera.Host/Program.cs`** — composition root: TOML config + auth + DI (`AddVictoriaProvider`) + endpoint mapping
+10. **Integration tests** — Testcontainers + WebApplicationFactory
+11. **Trace detail page** + **Settings page** (UI)
+12. **Dashboard editor** (stretch)
+13. **Docker build** + **CI**
+14. **Publish to github.com/dot-stbl/tessera** — transfer ownership (когда ready)
 
 ## Команды
 
