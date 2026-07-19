@@ -480,7 +480,9 @@ dotnet_diagnostic.CA1822.severity = suggestion # make member static (gen: instan
 dotnet_diagnostic.RCS1036.severity = suggestion # unnecessary blank line (gen: fluent formatting)
 dotnet_diagnostic.RCS1037.severity = suggestion # trailing whitespace (gen: CRLF artifacts)
 dotnet_diagnostic.RCS1038.severity = suggestion # file header copyright (gen: no copyright)
-dotnet_diagnostic.RCS1141.severity = suggestion # add 'param' element (gen: trivial types)
+dotnet_diagnostic.RCS1141.severity = none # add 'param' element to XML doc — owner-disabled 2026-07-19: dotnet format crashes on auto-fix (NotSupportedException), so it can't be enforced via build. Trivial types covered by CS1591.
+dotnet_diagnostic.RCS1142.severity = none # add 'typeparam' element to XML doc — same fix-all crash as RCS1141
+dotnet_diagnostic.IDE0320.severity = none # anonymous function can be made static — false positive on `Select(s => s.Foo)` closures capturing local vars; manual review catches real cases
 charset = unset
 
 [**/Migrations/*.cs]
@@ -538,3 +540,12 @@ dotnet_diagnostic.IDE0370.severity = none
 # cascades into CA1305/CS0029 conflicts.
 [src/shared/Plexor.Shared.Console/BannerArt.cs]
 dotnet_diagnostic.CA1834.severity = none
+# --- Last resort overrides ---
+# Default for *.cs — these are in addition to the [*.cs] blocks above.
+# Use this section to silence hidden-level diagnostics that break
+# `dotnet format --severity hidden` clean check.
+
+[*.cs]
+dotnet_diagnostic.RCS1141.severity = none # add 'param' element to XML doc — owner-disabled 2026-07-19: dotnet format crashes on auto-fix (NotSupportedException); can't be enforced at build time
+dotnet_diagnostic.RCS1142.severity = none # add 'typeparam' element to XML doc — same crash as RCS1141
+dotnet_diagnostic.IDE0320.severity = none # anonymous function can be made static — false positive on closures capturing local vars; manual review catches real cases
