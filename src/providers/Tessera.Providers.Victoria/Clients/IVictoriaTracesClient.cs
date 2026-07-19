@@ -1,9 +1,8 @@
-namespace Tessera.Providers.Victoria.Clients;
-
 using Refit;
 using Tessera.Providers.Victoria.Dto.Jaeger;
 using Tessera.Providers.Victoria.Dto.Jaeger.Trace;
 
+namespace Tessera.Providers.Victoria.Clients;
 /// <summary>
 ///     Refit client for the Jaeger-compatible API exposed by VictoriaTraces.
 ///     All endpoints are single-tenant (<c>{tenant}</c> path param, MVP value <c>"0"</c>).
@@ -15,7 +14,7 @@ public interface IVictoriaTracesClient
     ///     produced traces.
     /// </summary>
     [Get("/select/{tenant}/jaeger/api/services")]
-    Task<JaegerResponse<string>> GetServicesAsync(
+    public Task<JaegerResponse<string>> GetServicesAsync(
         string tenant,
         CancellationToken ct);
 
@@ -24,7 +23,7 @@ public interface IVictoriaTracesClient
     ///     list all operations for a given service.
     /// </summary>
     [Get("/select/{tenant}/jaeger/api/services/{service}/operations")]
-    Task<JaegerResponse<string>> GetOperationsAsync(
+    public Task<JaegerResponse<string>> GetOperationsAsync(
         string tenant,
         string service,
         CancellationToken ct);
@@ -35,7 +34,7 @@ public interface IVictoriaTracesClient
     ///     (use <see cref="GetTraceAsync" /> for the full span tree).
     /// </summary>
     [Get("/select/{tenant}/jaeger/api/traces")]
-    Task<JaegerResponse<JaegerTrace>> SearchTracesAsync(
+    public Task<JaegerResponse<JaegerTrace>> SearchTracesAsync(
         string tenant,
         [Query] string? service,
         [Query] string? operation,
@@ -52,7 +51,7 @@ public interface IVictoriaTracesClient
     ///     (complete span set + processes).
     /// </summary>
     [Get("/select/{tenant}/jaeger/api/traces/{traceId}")]
-    Task<JaegerResponse<JaegerTrace>> GetTraceAsync(
+    public Task<JaegerResponse<JaegerTrace>> GetTraceAsync(
         string tenant,
         string traceId,
         CancellationToken ct);

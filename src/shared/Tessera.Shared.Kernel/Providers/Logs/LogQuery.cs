@@ -1,8 +1,8 @@
-namespace Tessera.Shared.Kernel.Providers.Logs;
 
 using Tessera.Shared.Kernel.Identifiers;
 using Tessera.Shared.Kernel.Time;
 
+namespace Tessera.Shared.Kernel.Providers.Logs;
 /// <summary>
 /// Parameters for log query. Maps to GET /api/logs query string.
 /// </summary>

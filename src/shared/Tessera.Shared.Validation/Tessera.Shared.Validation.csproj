@@ -3,4 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Remove="Meziantou.Analyzer" />
+  </ItemGroup>
 </Project>

@@ -11,7 +11,10 @@ public sealed record TimeRange(long StartUnixMs, long EndUnixMs)
     /// <summary>
     /// Returns true when <paramref name="unixMs"/> falls within the range.
     /// </summary>
-    public bool Contains(long unixMs) => unixMs >= StartUnixMs && unixMs <= EndUnixMs;
+    public bool Contains(long unixMs)
+    {
+        return unixMs >= StartUnixMs && unixMs <= EndUnixMs;
+    }
 
     /// <summary>
     /// Intersection of two ranges. Returns null if they do not overlap.

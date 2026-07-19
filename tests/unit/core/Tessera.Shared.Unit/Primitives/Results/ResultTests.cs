@@ -1,8 +1,8 @@
-namespace Tessera.Shared.Kernel.Tests.Results;
 
 using Tessera.Shared.Kernel.Results;
 using Xunit;
 
+namespace Tessera.Shared.Kernel.Tests.Results;
 /// <summary>
 ///     Unit tests for <see cref="Result{T}" />.
 /// </summary>

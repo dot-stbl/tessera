@@ -14,4 +14,7 @@
     <ProjectReference Include="..\..\modules\Tessera.Modules.Discovery\Tessera.Modules.Discovery.csproj" />
     <ProjectReference Include="..\..\modules\Tessera.Modules.Health\Tessera.Modules.Health.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Remove="Meziantou.Analyzer" />
+  </ItemGroup>
 </Project>

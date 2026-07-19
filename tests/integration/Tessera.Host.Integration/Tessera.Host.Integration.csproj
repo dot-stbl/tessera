@@ -9,5 +9,6 @@
     <PackageReference Include="NSubstitute" Version="5.3.*" />
     <PackageReference Include="Shouldly" Version="4.3.*" />
     <PackageReference Include="Respawn" Version="6.2.*" />
+    <PackageReference Remove="Meziantou.Analyzer" />
   </ItemGroup>
 </Project>

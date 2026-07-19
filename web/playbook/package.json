@@ -1,0 +1,26 @@
+{
+  "name": "@tessera/playbook",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Component catalog — Ladle playground for @tessera/console primitives + APM components.",
+  "scripts": {
+    "dev": "ladle serve --port 2006",
+    "build": "ladle build --outDir dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@ladle/react": "^5.0.1",
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0",
+    "tailwindcss": "^4.3.2",
+    "typescript": "5.7.2",
+    "vite": "6.0.5",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

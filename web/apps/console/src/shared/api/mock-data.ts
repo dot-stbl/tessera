@@ -2,7 +2,6 @@ import type {
   HealthResponse,
   ListLogsResponse,
   ListServicesResponse,
-  ListTracesResponse,
   LogEntry,
   ServiceSummary,
   TraceSummary,

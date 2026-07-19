@@ -1,9 +1,9 @@
-namespace Tessera.Shared.Http;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Refit;
 
+namespace Tessera.Shared.Http;
 /// <summary>
 ///     Extension methods for registering Refit HTTP clients with Tessera-standard
 ///     resilience pipeline + bearer auth + OTel HTTP tracing.

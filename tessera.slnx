@@ -78,4 +78,8 @@
         <Project Path="tests/integration/Tessera.Victoria.Integration/Tessera.Victoria.Integration.csproj" />
     </Folder>
 
+    <Folder Name="/tests/unit/providers/">
+        <Project Path="tests/unit/providers/Tessera.Providers.Victoria.Unit/Tessera.Providers.Victoria.Unit.csproj" />
+    </Folder>
+
 </Solution>

@@ -1,7 +1,7 @@
-namespace Tessera.Providers.Victoria.Dto.Jaeger.Span;
 
 using Tessera.Providers.Victoria.Dto.Jaeger;
 
+namespace Tessera.Providers.Victoria.Dto.Jaeger.Span;
 /// <summary>
 ///     Jaeger span record as returned by VictoriaTraces. Times are in
 ///     <strong>microseconds since epoch</strong> (Jaeger convention).

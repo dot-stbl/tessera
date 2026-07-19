@@ -1,7 +1,7 @@
-namespace Tessera.Shared.Kernel.Domain.Traces;
 
 using Tessera.Shared.Kernel.Identifiers;
 
+namespace Tessera.Shared.Kernel.Domain.Traces;
 /// <summary>
 /// Lightweight trace summary without spans. Returned by GET /api/traces list endpoint.
 /// </summary>

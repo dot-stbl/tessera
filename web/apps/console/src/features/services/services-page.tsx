@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api/client';
 import { PageTemplate } from '@/shared/ui/app-shell';
-import { Duration } from '@/shared/ui/apm';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { cn } from '@/shared/lib/utils';
 

@@ -1,7 +1,7 @@
-namespace Tessera.Providers.Victoria.Dto.Jaeger.Trace;
 
 using Tessera.Providers.Victoria.Dto.Jaeger;
 
+namespace Tessera.Providers.Victoria.Dto.Jaeger.Trace;
 /// <summary>
 ///     Service / process metadata referenced by Jaeger spans via <c>processID</c>.
 ///     Holds the canonical <c>serviceName</c> plus any process-level tags

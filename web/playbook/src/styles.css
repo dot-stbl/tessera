@@ -1,0 +1,12 @@
+/*
+ * Global tokens for @tessera/playbook (Ladle).
+ *
+ * Single source of truth for design tokens is
+ * `apps/console/src/index.css` — this file just re-exports it so the
+ * Ladle Vite bundler picks up Tailwind 4 + Tessera OKLCH tokens + APM
+ * extensions. We do not duplicate token definitions here — if you need
+ * to change a value, edit console's index.css.
+ *
+ * `@import 'tailwindcss'` is included inside console's index.css.
+ */
+@import '../../apps/console/src/index.css';

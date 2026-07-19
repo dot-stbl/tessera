@@ -62,17 +62,3 @@ export function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
-
-function TesseraMark() {
-  // Tessera mark — 5 tiles in irregular scatter, one accent red.
-  // Canonical SVG: assets/mark-tessera.svg. Here inlined for fast load.
-  return (
-    <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
-      <rect x="3"  y="3"  width="6" height="6" rx="1" fill="currentColor" />
-      <rect x="13" y="3"  width="6" height="6" rx="1" fill="currentColor" />
-      <rect x="23" y="13" width="6" height="6" rx="1" fill="currentColor" />
-      <rect x="8"  y="23" width="6" height="6" rx="1" fill="currentColor" />
-      <rect x="18" y="23" width="6" height="6" rx="1" fill="var(--accent)" />
-    </svg>
-  );
-}

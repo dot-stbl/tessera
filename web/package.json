@@ -3,12 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "tooling/*"],
+  "workspaces": ["apps/*", "tooling/*", "playbook"],
   "scripts": {
     "dev": "bun --filter '@tessera/console' dev",
+    "playbook:dev": "bun --filter '@tessera/playbook' dev",
+    "playbook:build": "bun --filter '@tessera/playbook' build",
     "build": "bun --filter '@tessera/console' build",
     "test": "bun --filter '@tessera/console' test",
     "lint": "bun --filter '@tessera/console' lint",
-    "typecheck": "bun --filter '@tessera/console' typecheck"
+    "typecheck": "bun --filter '@tessera/console' --filter '@tessera/playbook' typecheck"
   }
 }
