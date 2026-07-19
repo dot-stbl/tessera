@@ -1,5 +1,5 @@
 ---
-description: c# analyzer packages — roslynator, meziantou, netanalyzers wiring. как они подключены, что делать при новых warnings.
+description: c# analyzer packages — roslynator + netanalyzers + threading analyzers wiring. как они подключены, что делать при новых warnings.
 globs: ["**/*.csproj", "**/Directory.Build.props", "**/Directory.Packages.props", "**/.editorconfig"]
 always: true
 ---

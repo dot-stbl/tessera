@@ -1,10 +1,14 @@
 ---
-description: unit testing — xUnit + NSubstitute + Shouldly, AAA pattern, naming, builders, anti-patterns
+description: unit testing — xUnit + hand-written doubles, AAA pattern, naming, builders, anti-patterns
 globs: ["**/*Unit*.cs", "**/*Tests.cs"]
 always: true
 ---
 
 # Unit testing
+
+MVP-01 stack: **xUnit + hand-written double classes + xUnit `Assert.*`** —
+no Shouldly, NSubstitute, Bogus (see `testing-stack-and-pyramid.md` for
+the rationale).
 
 ## 1. Structure — AAA
 
@@ -12,20 +16,20 @@ always: true
 [Fact]
 public async Task GetTraceHandler_ValidTraceId_ReturnsTraceDetail()
 {
-    // Arrange
-    var client = Substitute.For<IVictoriaTracesClient>();
+    // Arrange — hand-written double or a real instance
+    var client = new FakeVictoriaTracesClient
+    {
+        TraceResponse = new TraceResponse(/* ... */),
+    };
     var logger = NullLogger<GetTraceHandler>.Instance;
-    client.GetTraceAsync("0", "abc123", Arg.Any<CancellationToken>())
-        .Returns(new TraceResponse(/* ... */));
-
     var handler = new GetTraceHandler(client, logger);
 
     // Act
     var result = await handler.HandleAsync("abc123", CancellationToken.None);
 
-    // Assert
-    result.ShouldNotBeNull();
-    result.TraceId.ShouldBe("abc123");
+    // Assert — xUnit Assert.* only
+    Assert.NotNull(result);
+    Assert.Equal("abc123", result.TraceId);
 }
 ```
 
@@ -47,13 +51,13 @@ public async Task ItWorks() { }
 
 ## 3. One assertion concept per test
 
-Multiple `Should*` calls OK if they verify **one concept**:
+Multiple `Assert.*` calls OK when they verify **one concept**:
 
 ```csharp
 // ✅ OK — one concept: "trace was found"
-result.ShouldNotBeNull();
-result.TraceId.ShouldBe("abc123");
-result.Spans.ShouldNotBeEmpty();
+Assert.NotNull(result);
+Assert.Equal("abc123", result.TraceId);
+Assert.NotEmpty(result.Spans);
 
 // ❌ Bad — multiple concepts in one test
 [Fact]
@@ -84,7 +88,7 @@ public sealed class TraceDetailBuilder
         TraceId = _traceId,
         RootService = _rootService,
         DurationMs = _durationMs,
-        Status = _status
+        Status = _status,
     };
 }
 
@@ -102,21 +106,21 @@ var trace = new TraceDetailBuilder().WithDuration(5000).WithError().Build();
 [InlineData("HTTPStatusCode", "http.status_code")]  // already dot.case — no-op
 public void DotCase_Transforms_ToExpected(string input, string expected)
 {
-    DotCaseLogRecordProcessor.ToDotCase(input).ShouldBe(expected);
+    Assert.Equal(expected, DotCaseLogRecordProcessor.ToDotCase(input));
 }
 ```
 
 ## 6. Exceptions
 
 ```csharp
-// Shouldly style
-await Should.ThrowAsync<VictoriaTracesNotFoundException>(
+// xUnit Assert.ThrowsAsync
+await Assert.ThrowsAsync<VictoriaTracesNotFoundException>(
     () => handler.HandleAsync("notfound", CancellationToken.None));
 
-// With message check
-await Should.ThrowAsync<InvalidOperationException>(
-    () => handler.HandleAsync("notfound", CancellationToken.None))
-    .Message.ShouldContain("not configured");
+// With message check (use xUnit `Assert.Contains`)
+var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+    () => handler.HandleAsync("notfound", CancellationToken.None));
+Assert.Contains("not configured", ex.Message);
 ```
 
 ## 7. Cancellation
@@ -128,7 +132,7 @@ public async Task HandleAsync_Cancelled_ThrowsOperationCancelled()
     using var cts = new CancellationTokenSource();
     cts.Cancel();
 
-    await Should.ThrowAsync<OperationCanceledException>(
+    await Assert.ThrowsAsync<OperationCanceledException>(
         () => handler.HandleAsync("abc123", cts.Token));
 }
 ```
@@ -152,7 +156,45 @@ var handler = new CacheHandler(fakeClock, /* ... */);
 fakeClock.Advance(TimeSpan.FromMinutes(10));
 ```
 
-## 9. Anti-patterns
+## 9. Hand-written doubles — the canonical mocking pattern
+
+```csharp
+// MVP-01 canonical pattern: a tiny hand-written test double. Subclass
+// the interface with sealed class + override only the methods the test
+// needs. No reflection, no dynamic proxy, no transitive deps.
+//
+// Real example from Tessera.Providers.Victoria.Unit: the file-static
+// helpers (VictoriaTraceMapper, VictoriaLogMapper) are `internal static`,
+// so tests don't need doubles for them — they call the real code.
+//
+// For interfaces that DO need to be substituted (e.g. Refit clients in
+// upstream module tests), use this pattern:
+
+public sealed class FakeTraceProvider : ITraceProvider
+{
+    public List<TraceDetail> TraceDetails { get; init; } = [];
+
+    public Task<TraceDetail?> GetByIdAsync(TraceId traceId, CancellationToken ct) =>
+        Task.FromResult(TraceDetails.FirstOrDefault(t => t.TraceId == traceId));
+
+    public Task<Page<TraceSummary>> SearchAsync(TraceSearchQuery q, CancellationToken ct) =>
+        Task.FromResult(new Page<TraceSummary>([], null, false));
+}
+
+// Use:
+var provider = new FakeTraceProvider
+{
+    TraceDetails = [new TraceDetail(/* ... */, /* ... */)],
+};
+var handler = new GetTraceHandler(provider, /* ... */);
+```
+
+**Why this and not NSubstitute**: see `testing-stack-and-pyramid.md` —
+the transitive deps break on net10 with our package mix. Hand-written
+doubles are static, deterministic, IDE-friendly, and require no
+runtime/proxy infrastructure.
+
+## 10. Anti-patterns
 
 ```csharp
 // ❌ Multiple unrelated asserts
@@ -160,10 +202,10 @@ fakeClock.Advance(TimeSpan.FromMinutes(10));
 public async Task Test1()
 {
     var trace = await handler.HandleAsync("abc", default);
-    trace.ShouldNotBeNull();
-    trace.Status.ShouldBe("error");
-    cache.Received(1).Set("abc", trace);     // unrelated
-    logger.Received().LogInformation("...");  // unrelated
+    Assert.NotNull(trace);
+    Assert.Equal("error", trace.Status);
+    Assert.Equal(1, cache.SetCalls);   // unrelated
+    // ... unrelated assertions
 }
 
 // ❌ Testing implementation details
@@ -171,7 +213,8 @@ public async Task Test1()
 public async Task Handler_Calls_InternalHelperMethod()
 {
     await handler.HandleAsync("abc", default);
-    handler.Received().InternalHelperMethod();  // ❌ testing internals
+    // ❌ testing internals — would require a substitute (NSubstitute.Received()).
+    // With hand-written doubles, this category of test vanishes naturally.
 }
 
 // ❌ Shared mutable state
@@ -186,30 +229,48 @@ public async Task HandleAsync_DoesntThrow()
 {
     await handler.HandleAsync("abc", default);
     // no assert — passes if method returns without throwing
-    // (use Should.NotThrowAsync for explicit intent)
+    // (use Assert.Null(recordedException) or convert to Assert.NoThrow on the inner task)
 }
 ```
 
-## 10. Test isolation — no shared state
+## 11. Test isolation — no shared state
 
 ```csharp
 // ✅ Each test creates its own instances
 [Fact]
 public async Task Test1()
 {
-    var handler = new GetTraceHandler(Substitute.For<IVictoriaTracesClient>(), /* ... */);
+    var handler = new GetTraceHandler(new FakeTraceProvider(), /* ... */);
     // ...
 }
 
 [Fact]
 public async Task Test2()
 {
-    var handler = new GetTraceHandler(Substitute.For<IVictoriaTracesClient>(), /* ... */);
+    var handler = new GetTraceHandler(new FakeTraceProvider(), /* ... */);
     // ...
 }
 ```
 
-## 11. Coverage exclusions
+## 12. Constants and `[Theory]` arrays — `static readonly` per CA1861
+
+```csharp
+// ❌ Wrong — inline array allocations (CA1861 fires)
+[Theory]
+[InlineData("a")]
+[InlineData("b")]
+[InlineData("c")]
+public void Test_InlineArray(string s)
+{
+    foreach (var item in new[] { "a", "b", "c" })
+        Assert.NotNull(item);  // CA1861 — constant array allocated per call
+}
+
+// ✅ Correct — `static readonly` shared across test invocations
+private static readonly string[] Letters = ["a", "b", "c"];
+```
+
+## 13. Coverage exclusions
 
 Exclude generated code, migrations, Program.cs:
 
@@ -223,8 +284,11 @@ Exclude generated code, migrations, Program.cs:
 ## Self-audit grep
 
 ```bash
+# Shouldly / NSubstitute / Bogus usage (banned in MVP-01 tests)
+rg -n "Should\.|Substitute\.For|Faker<|Bogus\." tests/ --type cs
+
 # Tests without assertions
-rg -n "\[Fact\]" tests/ --type cs -A 20 | rg -v "Should|Assert\."
+rg -n "\[Fact\]" tests/ --type cs -A 20 | rg -v "Assert\.|Fact\(|Theory\(|InlineData"
 
 # Bad test names
 rg -n "public (async )?Task\s+\w+\(\)" tests/ --type cs | rg -v "_" | rg -v "TestData"

@@ -75,7 +75,7 @@ await client.GetTraceAsync(id, cancellationToken).ConfigureAwait(false);
 await client.GetTraceAsync(id, cancellationToken);
 ```
 
-**Enforcement:** MA0004 / CA2007.
+**Enforcement:** CA2007 (severity=error in `.editorconfig`).
 
 ### Parameter naming
 

@@ -33,7 +33,7 @@ await repository.GetUserAsync(id, cancellationToken).ConfigureAwait(false);
 await repository.GetUserAsync(id, cancellationToken);
 ```
 
-**Enforcement:** `MA0004` / `CA2007` (severity=error).
+**Enforcement:** `CA2007` (severity=error).
 
 Exception: **library code that runs in older runtimes** may need it. Tessera
 targets .NET 10 only — no exception.

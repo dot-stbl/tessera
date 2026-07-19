@@ -144,10 +144,29 @@ public sealed class MyType : IDisposable
 {
     private void Dispose(bool disposing) { ... }    // IDisposable pattern
 }
+
+// Minimal API endpoint handler (see api-design.md §1) — referenced as
+// a method group from MapGet/MapPost/MapDelete; `private static` keeps
+// the handler off the public API surface (consumers must not call
+// endpoint handlers directly — only via HTTP).
+public static class TracesEndpoint
+{
+    public static void MapTracesEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapGroup("/api/traces").MapGet("/{id}", GetTraceAsync);
+    }
+
+    private static async Task<...> GetTraceAsync(...) { ... }
+}
 ```
 
 These are **exemptions**, not encouraged. If you find yourself adding
 "framework-required" exemptions liberally, reconsider the design.
+
+**Crucial:** even inside endpoint handlers, DTO mappings (e.g.
+`ToTraceSummary`, `ToTraceDetail`) must delegate to a separate
+file-scoped static class — they cannot be `private static` helpers
+in the same file. See `api-design.md` §1 for the canonical pattern.
 
 **Enforcement:** every PR review checks for `private ` (followed by
 method-like keyword) outside of the above exemptions. `RCS1213`
@@ -182,7 +201,8 @@ public sealed class Span { }
 // VictoriaTraceMapper.cs → public static class VictoriaTraceMapper
 ```
 
-**Enforcement:** Meziantou `MA0048`.
+**Enforcement:** Roslynator convention (file name must match the
+first public type's name); code review.
 
 ## 4. Required tooling
 
@@ -195,7 +215,7 @@ in `src/host/Tessera.Build.Tools/`.
 dotnet format tessera.slnx --severity hidden  # canonical fix
 ```
 
-### Roslynator / Meziantou / VSTHRD analyzers
+### Roslynator / VSTHRD / CA analyzers
 
 Enabled globally via `Directory.Build.props`. See `analyzers.md`.
 

@@ -40,7 +40,8 @@ nested in `Result<T>`).
 // VictoriaOptions.cs   → public sealed class VictoriaOptions
 ```
 
-**Enforcement:** Meziantou `MA0048`.
+**Enforcement:** Roslynator convention + code review (file name
+must equal the first public type name).
 
 ## 3. Namespace mirrors folder path
 

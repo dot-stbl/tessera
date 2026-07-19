@@ -13,6 +13,13 @@ small, focused, and grouped by feature.
 
 ```csharp
 // ✅ Tessera pattern — minimal API
+// Endpoint handler method is `private static` (allowed per
+// class-layout-and-tooling.md §1a exemption for minimal API endpoint
+// handlers). All non-trivial DTO mapping lives in a separate
+// file-scoped static class under Endpoints/Mapping/.
+
+namespace Tessera.Modules.Traces.Endpoints;
+
 public static class TracesEndpoint
 {
     public static void MapTracesEndpoints(this IEndpointRouteBuilder app)
@@ -26,17 +33,23 @@ public static class TracesEndpoint
 
     private static async Task<Ok<TraceSummary[]>> ListTracesAsync(
         [AsParameters] ListTracesRequest request,
-        IVictoriaTracesClient client,
-        IOptions<VictoriaOptions> options,
+        ITraceProvider provider,
         CancellationToken ct)
     {
-        var tenant = options.Value.Tenant;
-        var response = await client.SearchTracesAsync(
-            tenant, request.Service, request.Operation,
-            request.StartUnixMs, request.EndUnixMs,
-            request.MinDuration, request.MaxDuration, request.Limit, ct);
-        return TypedResults.Ok(ToTraceSummaries(response));
+        var query = request.ToTraceSearchQuery();
+        var page = await provider.SearchAsync(query, ct);
+        return TypedResults.Ok(TraceEndpointMapper.ToSummaries(page));
     }
+}
+
+// File: Endpoints/Mapping/TraceEndpointMapper.cs
+// File-scoped static class. Pure DTO transformation — separate file because
+// per class-layout-and-tooling.md §1a, helpers cannot be private to the
+// endpoint class.
+internal static class TraceEndpointMapper
+{
+    public static TraceSummary[] ToSummaries(Page<TraceSummary> page) => /* ... */;
+    public static TraceDetail ToDetail(TraceDetail detail) => /* ... */;
 }
 ```
 
@@ -97,17 +110,16 @@ public sealed record PaginationRequest(string? Cursor, int? Limit = 50);
 ```csharp
 private static async Task<Results<Ok<TraceDetail>, NotFound, ProblemHttpResult>> GetTraceAsync(
     string traceId,
-    IVictoriaTracesClient client,
+    ITraceProvider provider,
+    TraceEndpointMapper mapper,
     CancellationToken ct)
 {
     try
     {
-        var response = await client.GetTraceAsync(traceId, ct);
-        return TypedResults.Ok(ToTraceDetail(response));
-    }
-    catch (VictoriaTracesNotFoundException)
-    {
-        return TypedResults.NotFound();
+        var detail = await provider.GetByIdAsync(new TraceId(traceId), ct);
+        return detail is null
+            ? TypedResults.NotFound()
+            : TypedResults.Ok(mapper.ToDetail(detail));
     }
     catch (Exception ex)
     {
