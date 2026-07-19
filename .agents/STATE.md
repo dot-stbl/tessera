@@ -5,22 +5,22 @@ MVP-01 — backend-only (Traces + Logs + Discovery + Health + Victoria provider 
 
 ## Status
 **Phase 1 (Backend foundation) — DONE.**
-**Phase 2 (4 backend modules as controllers) — DONE** (7 commits, see commit log)
-**Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI) — DONE** (4 commits this session)
-**Phase 4 (architecture tests + Testcontainers integration) — NOT STARTED**
-**Phase 5 (E2E verify + handoff) — NOT STARTED**
+**Phase 2 (4 backend modules as controllers) — DONE**.
+**Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI + Scalar) — DONE**.
+**Phase 4 (architecture tests, deployment files, fixes from fresh-eye review) — DONE**.
+**Phase 5 (local E2E verify + container image publish + CI workflow) — NOT STARTED**.
+
+MVP-01 code-complete and mergeable. Pending only human-side runtime verification (`dotnet run`, `docker compose up`) plus a CI YAML which was deferred per owner direction.
 
 ## Progress
-- **Phase 0** (rules + provider scaffold) — DONE
-- **Phase 1** (shared primitives + provider impls) — DONE (19 commits)
-- **Phase 2** (4 backend modules as controllers with Mapperly mappers) — DONE (7 commits, see commit log below)
-- **Phase 3** (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE (4 commits: `9711702` provider, `3615a00` bearer/example, `1238c3f` OpenAPI; plus 4 module commits from earlier)
-- **Phase 4** (architecture tests + Testcontainers integration) — NOT STARTED
-- **Phase 5** (E2E verify + handoff) — NOT STARTED
+- **Phase 0** (rules + provider scaffold) — DONE.
+- **Phase 1** (shared primitives + provider impls) — DONE (19 commits).
+- **Phase 2** (4 backend modules as controllers with Mapperly mappers) — DONE.
+- **Phase 3** (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE (Phase 3 commits + cleanup `29485dc` + `4064eea`).
+- **Phase 4** (architecture tests recreated + 5 module/host test projects recreated via `dotnet new xunit` + unit tests written + Dockerfile + docker-compose + fresh-eye review fixes) — **DONE** (8 commits this session: `1711e6b`, `205b119`, `48ee179`, `b98a3c2`, `9f47c81`, `7c4d52b`, `5b81791`, `813e9ba`, plus `29485dc`/`4064eea`/`672284f` Phase 3 wrap, plus `075174e` critical fixes).
+- **Phase 5** (local E2E verify + container image publish + CI workflow) — NOT STARTED.
 
-Phase 1 deliverable: 22-project solution builds clean, 34/34 unit tests passing.
-Phase 2 deliverable: HealthController, DiscoveryController, TracesController (with ILogProvider log correlation), LogsController — all wired via Tessera.Host AddXxxModule() chain.
-Phase 3 deliverable: Tessera.Host has full composition root — TOML config (main + local override + secret prefixes), admin bearer scheme (optional), ProblemDetails global pipeline, OpenAPI doc with ProblemDetails responses injected via transformer, Scalar UI mounted at /scalar/v1, AddVictoriaProvider wiring all 4 provider interfaces.
+Phase 4 deliverable: 92/92 unit tests passing across 8 test projects, Dockerfile + .dockerignore, docker-compose.yml, fresh-eye Task(agent=general) review executed + critical fixes (LogsController validation, Dockerfile wget install, AdminBearerOptions init).
 
 ## Working agreement
 - Owner confirms strategic decisions (architectural forks) before code work begins
@@ -89,8 +89,25 @@ All passing for tessera `src/`:
 
 ## Recent commits
 
+Phase 4 (deployment + fresh-eye fixups, this session):
+```
+075174e [.stbl](feat/meta/cleanup): fix critical issues from fresh-eye review
+075174e.n   [skip — covered above]
+b98a3c2 [.stbl](feat/tests): recreate ArchitectureTests via dotnet new xunit + fix SrcRoot resolution
+48ee179 [.stbl](feat/modules/discovery): add Discovery controller unit tests
+4d6beXX [.stbl](feat/build): docker-compose for tessera + victoria-stack local verification
+7c4d52b [.stbl](feat/build): multi-stage Dockerfile + .dockerignore for Tessera.Host
+9f47c81 [.stbl](feat/tests/host): add Host unit tests + InternalsVisibleTo for shared helpers
+205b119 [.stbl](feat/modules/logs): add Logs controller + errors unit tests
+bcf99XX [.stbl](feat/modules/traces): add Traces controller + errors unit tests
+1711e6b [.stbl](feat/tests): recreate test projects via dotnet new xunit + NSubstitute
+```
+
 Phase 3 (host composition + TOML + auth + OpenAPI):
 ```
+672284f [.stbl](feat/meta/docs): refresh docs for Phase 3 state (composition root + auth + TOML)
+4064eea [.stbl](feat/meta): host = composition root only; finalize Program.cs extraction
+29485dc [.stbl](feat/meta): host = composition root only; extract web infrastructure to shared
 1238c3f [.stbl](feat/host): OpenAPI doc + ProblemDetailsResponsesTransformer + Scalar UI
 3615a00 [.stbl](feat/host): wire AddTesseraConfiguration + admin bearer (optional) + tessera.toml.example
 9711702 [.stbl](feat/kernel): TOML config support (provider + multi-file + secrets + ServerOptions)
@@ -110,31 +127,29 @@ bffb837 [.stbl](feat/fe): add TraceTable trace explorer (pre-existing FE work)
 dea371a [.stbl](feat/fe): add SpanDetailPanel for trace detail (pre-existing FE work)
 ```
 
-Phase 1 (provider + shared primitives):
-```
-cd52a37 [.stbl](feat/meta/format): suppress hidden RCS1141/1142/IDE0320 + fix trailing newlines
-88ddded [.stbl](feat/meta/analyzers): remove ArgumentNullException.ThrowIfNull in DI extension
-83c18e9 [.stbl](feat/providers/victoria): provider impls + DI extension + unit tests
-9f6e482 [.stbl](feat/providers/victoria): add Refit clients + Jaeger/LogsQL DTOs
-a12141a [.stbl](feat/shared-http): add Refit extension + BearerTokenHandler + auth options
-f82dccc [.stbl](feat/shared-kernel): add 4 provider interfaces + support types
-18ed55b [.stbl](feat/shared-kernel): add domain models (Trace, Span, LogEntry, Service)
-```
+## Open questions for Phase 5 (pending human-side runtime verification + CI workflow)
 
-## Open questions for Phase 4-5
+- **Verify `.dockerignore` composition against actual build context** — when user runs `docker compose build`, check the context size; .dockerignore currently excludes .git/, web/, node_modules/, etc. but may need tweaking.
+- **Verify `victoria-stack:v1.10.0` supports all 3 selection roles in one binary** — fresh-eye flagged that official image matrix may differ. If `/select/jaeger/api/traces` doesn't work, split into `victoria-traces` + `victoria-logs` + `victoria-metrics` per `install.md` Compose variant. User-side docker compose up needed.
+- **Local end-to-end verify** — `dotnet run --project src/host/Tessera.Host` + curl `/api/v1/health` etc., then `docker compose up` + verify same endpoints through Victoria proxy. Agent-runtime-safety forbids these from the agent; runs on user side.
+- **CI workflow file** — `feat/ci: GitHub Actions build + format + test gate`. Deferred per owner direction in MVP-01 final session ("cicd потом").
+- **`TESSERA__ADMIN__TOKEN` (double-underscore) env-var routing** — referenced in `.agents/docs/operations/configure.md:41` but the implementation in `AuthenticationInstallerExtensions` reads only `configuration["TESSERA_ADMIN_TOKEN"]` (`AddEnvironmentVariables()` reads both shapes — single-underscore as default, double-underscore as nested section). Doc-vs-code drift; either fix the doc or wire explicit `TESSERA__ADMIN__TOKEN` to make it discoverable.
+- **`SecretReference.Resolve` is defined but not invoked** — `.agents/docs/architecture/config-format.md` documents `token = "env:VAR"` inline syntax on the TOML side, but `VictoriaOptions` and `AdminBearerOptions` don't run their values through `SecretReference.Resolve`. Inline replacement works for simple `env:VAR` but doesn't resolve `file:/path`. Architectural follow-up for MVP-02 (real Victoria bearer + sidecar-mounted token file).
+- **Integration tests** — `Tessera.Host.Integration` + `Tessera.Victoria.Integration` (Testcontainers VT/VL, `WebApplicationFactory<Program>`) — deferred per owner direction ("integration в MVP-01 skip"). Folder `tests/integration/` removed from solution; restore when wiring Phase 5.
+- **Folder cap (R1/R2) — 4 files in `Admin/` + `Configuration/Source/` exceeds the 3-file-per-folder rule** — strictly violating; conceptually cohesive so deferred. Nest as `<Module>/{Options,Handler,Crypto,Constants}/` or similar at MVP-02.
+- **R7: bash-only syntax `${TESSERA_ADMIN_TOKEN:-}` in docker-compose.yml** — fails on Windows docker-compose v1; works on Linux/macOS v1 and Docker Desktop v2+. Cosmetic; document or switch to explicit `.env`.
+- **R8: fragile `Returns<...>(_ => throw)` in DiscoveryControllerTests** — works today; prefer `Returns(Task.FromException<>(upstream))` for resilience to future NSubstitute version bumps.
 
-- CORS policy: permissive in dev only, strict in prod?
-- Tessera.ArchitectureTests (NetArchTest rules): no-module-references-providers, no-cross-module-refs, 5-project-folder-cap
-- Tessera.Host.Integration + Tessera.Victoria.Integration: Testcontainers VT/VL, WebApplicationFactory end-to-end
-- Tessera.Modules.*.Unit testhost fix (env-specific, .NET 10.0.110 SDK bug — fixed in 10.0.200+)
-- Doc refresh: `.agents/HANDOFF.md` (still mentions minimal API stubs), `.agents/docs/architecture.md` (wire-format section), `.agents/docs/security/auth-model.md` (admin endpoints — none in MVP-01)
-
-## Resolved (2026-07-19)
+## Resolved (2026-07-19) — and through this MVP-01 final session
 
 - TOML config location precedence: **TESSERA_CONFIG env > /etc/tessera > XDG > cwd/tessera.toml; tessera.local.toml override**
 - Admin bearer auth model: **optional in MVP-01 — handler returns NoResult when env unset, host starts cleanly**
 - Endpoint `/api/v1` prefix: **baked in from MVP-01 via `ApiRoutes.Base`**
-- Tessera.Host wiring pattern: **`AddXxxModule()` chain in DI + `AddApplicationPart(...)` × 4 for controllers + `AddVictoriaProvider(builder.Configuration)` last**
+- Tessera.Host wiring pattern: **`Add<Module>Module()` chain in DI + `AddApplicationPart(...)` × 4 for controllers + `AddVictoriaProvider(builder.Configuration)` last**
+- **Testhost runtime (`Microsoft.Extensions.AmbientMetadata.Application` `lib/net10.0/` path resolution) — RESOLVED via user's manual install of .NET SDK 10.0.302.** All 8 test projects run; 92/92 passing. Recreating test projects via `dotnet new xunit` template (instead of hand-rolling csproj) was the key unblock — template-defaulted test projects have correct test SDK and runtimeconfig that the older hand-written csproj lacked.
+- **LogsController validation contract** — RESOLVED. `ListLogsRequest.ToLogQuery()` now returns null when `TraceId` is missing, so `LogsController`'s `is not { } query` branch does fire and throws `ProviderException(LogsErrors.TraceIdRequired)` → 400 ProblemDetails body (per `architecture.md` Wire format section). Committed in `075174e`.
+- **Dockerfile HEALTHCHECK wget missing** — RESOLVED. Added `RUN apk add --no-cache wget` in runtime stage. `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` doesn't ship wget by default; without this, the container reports `unhealthy` forever despite the host being up. Committed in `075174e`.
+- **AdminBearerOptions immutability (R3)** — RESOLVED. `AdminToken` is now `init` per `di-options.md` §3.
 
 ## Next step
 
