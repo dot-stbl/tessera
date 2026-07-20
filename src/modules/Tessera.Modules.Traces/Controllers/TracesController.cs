@@ -70,13 +70,10 @@ public sealed class TracesController(
         CancellationToken cancellationToken = default)
     {
         var parsedTraceId = new TraceId(traceId);
-        var trace = await traceProvider.GetByIdAsync(parsedTraceId, cancellationToken);
-        if (trace is null)
-        {
-            throw new ProviderNotFoundException(
+        var trace = await traceProvider.GetByIdAsync(parsedTraceId, cancellationToken)
+            ?? throw new ProviderNotFoundException(
                 TracesErrors.TraceNotFound,
                 $"trace {traceId} not found");
-        }
 
         var range = TracesEndpointHelpers.ToLogCorrelationRange(trace);
         var logs = await logProvider.ListByTraceAsync(parsedTraceId, range, cancellationToken);
