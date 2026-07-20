@@ -58,10 +58,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # submodules: false -- the assets/stbl submodule's .gitmodules
+      # URL is a local Windows path that doesn't resolve on the
+      # ubuntu-latest runner. The brand assets are static SVGs/CSS
+      # used by the web/ frontend (deferred to MVP-02) and not by
+      # the backend build, so skipping the fetch is safe for MVP-01
+      # backend CI. The .gitmodules URL is out of scope for this
+      # commit; fixed in a follow-up that points it at the real
+      # dot-stbl/brand repo.
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -86,24 +94,23 @@ jobs:
       # format drift (FINALNEWLINE / IDE0130 in older test files) that
       # is out of scope for the CI workflow commit.
       - name: Build
-        run: >
-          dotnet build tessera.slnx -c Release
-            --no-restore
+        run: dotnet build tessera.slnx -c Release --no-restore
 
       - name: Test
-        run: >
-          dotnet test tessera.slnx -c Release
-            --no-build
-            --no-restore
-            --verbosity normal
+        run: dotnet test tessera.slnx -c Release --no-build --no-restore --verbosity normal
 
   format-check:
     name: format (dotnet format --verify)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # submodules: false -- same rationale as the build-and-test
+      # job (the assets/stbl .gitmodules URL doesn't resolve on the
+      # ubuntu-latest runner).
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -118,22 +125,24 @@ jobs:
       # rather than buried in the build log. Once the drift is gone,
       # TesseraFormatGateEnabled=true can move to the build job and
       # this job is redundant.
+      #
+      # Single-line `run:` (not the `>` folded scalar) so the shell
+      # sees one command line; the YAML folded form was being split
+      # by the runner's shell into multiple commands, breaking the
+      # '--verify-no-changes' flag as a standalone command.
       - name: Verify format
-        run: >
-          dotnet format tessera.slnx
-            --verify-no-changes
-            --severity hidden
-            --no-restore
+        run: dotnet format tessera.slnx --verify-no-changes --severity hidden --no-restore
 
   architecture:
     name: architecture (NetArchTest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # submodules: false -- same rationale as the other jobs.
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -144,8 +153,4 @@ jobs:
         run: dotnet restore tessera.slnx
 
       - name: Architecture tests
-        run: >
-          dotnet test tests/unit/core/Tessera.ArchitectureTests
-            -c Release
-            --no-restore
-            --verbosity normal
+        run: dotnet test tests/unit/core/Tessera.ArchitectureTests -c Release --no-restore --verbosity normal
