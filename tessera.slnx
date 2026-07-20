@@ -49,6 +49,9 @@
     <Folder Name="/src/modules/Tessera.Modules.Health/">
         <Project Path="src/modules/Tessera.Modules.Health/Tessera.Modules.Health.csproj" />
     </Folder>
+    <Folder Name="/src/modules/Tessera.Modules.Preferences/">
+        <Project Path="src/modules/Tessera.Modules.Preferences/Tessera.Modules.Preferences.csproj" />
+    </Folder>
 
     <!-- ============ Providers (Grafana datasource model) ================== -->
     <!-- /src/providers/<Name>/ — concrete data source backends            -->
@@ -73,6 +76,7 @@
         <Project Path="tests/unit/modules/Tessera.Modules.Logs.Unit/Tessera.Modules.Logs.Unit.csproj" />
         <Project Path="tests/unit/modules/Tessera.Modules.Discovery.Unit/Tessera.Modules.Discovery.Unit.csproj" />
         <Project Path="tests/unit/modules/Tessera.Modules.Health.Unit/Tessera.Modules.Health.Unit.csproj" />
+        <Project Path="tests/unit/modules/Tessera.Modules.Preferences.Unit/Tessera.Modules.Preferences.Unit.csproj" />
     </Folder>
 
     <Folder Name="/tests/unit/providers/">
