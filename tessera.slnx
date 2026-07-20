@@ -78,4 +78,20 @@
         <Project Path="tests/unit/providers/Tessera.Providers.Victoria.Unit/Tessera.Providers.Victoria.Unit.csproj" />
     </Folder>
 
+    <!-- ============ Load generator (CLI utility, not a test project) === -->
+    <Folder Name="/tests/Tessera.LoadGen/">
+        <Project Path="tests/Tessera.LoadGen/Tessera.LoadGen.csproj" />
+    </Folder>
+
+    <!-- ============ Integration test stack =============================== -->
+    <!-- Shared testing library (no [Fact] methods) — Testcontainers +
+         WebApplicationFactory helpers. -->
+    <Folder Name="/tests/integration/Tessera.Stack.Testing/">
+        <Project Path="tests/integration/Tessera.Stack.Testing/Tessera.Stack.Testing.csproj" />
+    </Folder>
+    <!-- End-to-end integration tests against the compose stack. -->
+    <Folder Name="/tests/integration/Tessera.Stack.Integration/">
+        <Project Path="tests/integration/Tessera.Stack.Integration/Tessera.Stack.Integration.csproj" />
+    </Folder>
+
 </Solution>

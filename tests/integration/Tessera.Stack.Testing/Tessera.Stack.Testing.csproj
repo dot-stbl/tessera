@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Stack.Testing</RootNamespace>
+    <AssemblyName>Tessera.Stack.Testing</AssemblyName>
+    <!-- Shared testing library — never packaged, never emitted to
+         output by `dotnet test` (it has no [Fact] method). Pulled in by
+         Tessera.Stack.Integration and (eventually) any other
+         integration-test project that needs the docker-compose +
+         WebApplicationFactory scaffolding. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <PackageReference Include="Testcontainers" Version="3.10.0" />
+    <!-- xunit's Runtime helpers (Fact, IClassFixture, ICollectionFixture
+         support) are needed because TesseraStackFixture +
+         DockerComposeFixture expose lifecycle hooks consumed by the
+         downstream Tessera.Stack.Integration test project. -->
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.assert" Version="2.9.3" />
+    <!-- OpenTelemetry SDK client — used by the OtlpPushHelper to write
+         traces / logs / metrics directly to the OTel collector endpoint
+         without spawning Tessera.LoadGen as a process. -->
+    <PackageReference Include="OpenTelemetry" Version="1.10.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0" />
+  </ItemGroup>
+
+  <!-- WebApplicationFactory<Program> needs the entry-point type to be
+       visible. Tessera.Host's `var app = builder.Build(); … app.Run();`
+       in Program.cs has no public Program class; the
+       HostAssemblyMarker.cs file co-locates the `public partial class
+       Program {}` declaration that the WAF needs to find. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\host\Tessera.Host\Tessera.Host.csproj" />
+    <ProjectReference Include="..\..\Tessera.LoadGen\Tessera.LoadGen.csproj" />
+  </ItemGroup>
+
+</Project>
