@@ -12,6 +12,7 @@ using Tessera.Shared.Authentication;
 using Tessera.Shared.Kernel.Configuration.Layout;
 using Tessera.Shared.Kernel.Configuration.Options;
 using Tessera.Shared.Kernel.Configuration.Source;
+using Tessera.Shared.Telemetry;
 using Tessera.Shared.Web;
 
 // --------------------------------------------------------------------
@@ -87,14 +88,36 @@ builder.Services.AddOptions<StorageOptions>()
     .ValidateOnStart();
 
 // Single composition helper — resolves the SQLite connection string
-// (operator-supplied or synthesized from FS layout + file name) and
-// adds the Preferences module + PreferencesDbContext.
+// (operator-supplied or synthesized from IFileSystemLayout.DataDirectory + StorageOptions.FileName)
+// and adds the Preferences module + PreferencesDbContext.
 //
 // Module composition must happen AFTER both StorageOptions is bound
 // (so the connection string is resolvable) AND IFileSystemLayout is
 // registered (so the synthesized path resolves to the OS-correct
 // data directory).
 builder.Services.AddPreferencesStorage();
+
+// --------------------------------------------------------------------
+// Tessera's own telemetry (Phase — observability)
+// --------------------------------------------------------------------
+// One OTel pipeline that covers traces + metrics via the shared
+// Tessera.Shared.Telemetry installer. Bound from [telemetry] in
+// tessera.toml with sane defaults (otlp_endpoint=http://localhost:4317
+// matches the compose stack collector). See diagnostics.md for
+// ActivitySource naming convention (Tessera.<Module>) + metric
+// naming (tessera.<noun>.<quantity>).
+builder.Services
+    .AddOptions<TelemetryOptions>()
+    .Bind(builder.Configuration.GetSection(TelemetryOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureTesseraTelemetry(
+        builder.Configuration
+            .GetSection(TelemetryOptions.SectionName)
+            .Get<TelemetryOptions>() ?? new TelemetryOptions());
 
 // --------------------------------------------------------------------
 // Controllers + JSON

@@ -31,6 +31,21 @@ token = "env:TESSERA_VICTORIA_TOKEN"
 # admin_token_source = "env:TESSERA_ADMIN_TOKEN"
 
 [telemetry]
-service_name = "tessera"
-log_level = "info"                  # trace | debug | info | warn | error
-metrics_endpoint = "/metrics"       # served on port 1992, separate from API
+service_name = "tessera"                       # resource.service.name in OTLP
+service_version = "0.0.0"                      # resource.service.version; default reads AssemblyInformationalVersion
+
+otlp_endpoint = "http://localhost:4317"         # gRPC OTLP — matches compose/otel-collector config.yaml
+
+# Off by default to keep logs / metrics under control. Flip on
+# while developing a new endpoint or chasing an issue:
+enable_console_exporter = false
+
+# Auto-instrumentation toggles. Per diagnostics.md §5: do not
+# double-instrument HTTP with manual StartActivity() — these cover
+# the per-request and per-HTTP-client-call spans.
+enable_asp_net_core_instrumentation = true
+enable_http_client_instrumentation = true
+
+# Trace sampling ratio applied to the root span. 1.0 keeps every
+# trace; 0.05–0.1 is typical for high-RPS production deployments.
+trace_sampling_ratio = 1.0

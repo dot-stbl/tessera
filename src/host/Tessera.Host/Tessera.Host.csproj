@@ -9,6 +9,7 @@
     <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Web/Tessera.Shared.Web.csproj" />
     <ProjectReference Include="..\..\..\src\shared/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj" />
     <ProjectReference Include="..\..\..\src\shared/Tessera.Shared.Validation/Tessera.Shared.Validation.csproj" />
+    <ProjectReference Include="..\..\..\src\shared/Tessera.Shared.Telemetry/Tessera.Shared.Telemetry.csproj" />
     <ProjectReference Include="..\..\..\src\shared/Tessera.Banner/Tessera.Banner.csproj" />
     <ProjectReference Include="..\..\modules/Tessera.Modules.Traces/Tessera.Modules.Traces.csproj" />
     <ProjectReference Include="..\..\modules/Tessera.Modules.Logs/Tessera.Modules.Logs.csproj" />
