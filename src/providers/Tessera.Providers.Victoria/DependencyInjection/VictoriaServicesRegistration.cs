@@ -46,14 +46,27 @@ public static class VictoriaServicesRegistration
     ///     rest of Tessera (per http-resilience-refit.md §2 — bare
     ///     <c>new HttpClient()</c> is banned).
     /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The BuildServiceProvider() call is scoped to this helper's
+    ///         body and disposed before the method returns — a temporary
+    ///         root provider for resolving <see cref="IOptions{TOptions}" />
+    ///         at registration time. The di-installer.md §5 banned-pattern
+    ///         warning about <c>BuildServiceProvider()</c> applies when the
+    ///         root provider leaks into request scope; here it does not.
+    ///         A future TODO may replace this with IValidateOptions + a
+    ///         hosted migration check.
+    ///     </para>
+    /// </remarks>
     /// <exception cref="InvalidOperationException"></exception>
     public static void RegisterClients(IServiceCollection services)
     {
+        using var tempProvider = services.BuildServiceProvider();
+        var options = tempProvider.GetRequiredService<IOptions<VictoriaOptions>>().Value;
+
         services.AddTesseraRefitClient<IVictoriaTracesClient>(
-            services.BuildServiceProvider().GetRequiredService<IOptions<VictoriaOptions>>().Value.TracesUrl?.ToString()
-                ?? throw new InvalidOperationException("VictoriaOptions.TracesUrl is required at startup"));
+            options.Traces.Url.ToString());
         services.AddTesseraRefitClient<IVictoriaLogsClient>(
-            services.BuildServiceProvider().GetRequiredService<IOptions<VictoriaOptions>>().Value.LogsUrl?.ToString()
-                ?? throw new InvalidOperationException("VictoriaOptions.LogsUrl is required at startup"));
+            options.Logs.Url.ToString());
     }
 }

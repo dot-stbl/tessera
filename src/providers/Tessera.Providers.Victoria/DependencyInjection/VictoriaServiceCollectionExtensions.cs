@@ -5,30 +5,30 @@ using Tessera.Providers.Victoria.Configuration;
 namespace Tessera.Providers.Victoria.DependencyInjection;
 
 /// <summary>
-///     DI extension for the Victoria stack provider (MVP-01).
-///     Façade over <see cref="VictoriaServicesRegistration" /> — Tessera.Host
-///     calls <c>services.AddVictoriaProvider(...)</c> from its composition root.
+///     Façade extension for wiring the Victoria provider into DI. The
+///     host composition root calls <c>AddVictoriaProvider(configuration)</c>
+///     once; per-module DI chains are isolated from this implementation.
 /// </summary>
 public static class VictoriaServiceCollectionExtensions
 {
     /// <summary>
     ///     Bind <see cref="VictoriaOptions" /> from the <c>victoria</c>
-    ///     configuration section, register the provider implementations and
-    ///     their kernel interface mappings, and register the Refit HTTP
-    ///     clients for both backends.
+    ///     section of <paramref name="configuration" />, validate on start.
+    ///     <c>ErrorOnUnknownConfiguration = false</c> keeps backward
+    ///     compatibility with sidecar docs that include extra keys during
+    ///     Phase 6 transition; tighten once config schema is locked.
     /// </summary>
     public static IServiceCollection AddVictoriaProvider(
         this IServiceCollection services,
         IConfiguration configuration)
     {
         services.AddOptions<VictoriaOptions>()
-            .Bind(configuration.GetSection("victoria"))
+            .Bind(configuration.GetSection("victoria"), static options => options.ErrorOnUnknownConfiguration = false)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
         VictoriaServicesRegistration.RegisterProviders(services);
         VictoriaServicesRegistration.RegisterClients(services);
-
         return services;
     }
 }
