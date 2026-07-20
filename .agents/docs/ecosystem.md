@@ -67,7 +67,7 @@ Tessera has: `lockup-tessera.svg`, `og-tessera.svg`, `favicon.svg`.
 ### Products use their own mark
 
 The `.stbl` logo is reserved for org-level use. Each product has its
-own mark. **Tessera mark** = 4 tiles in a 2x2 mosaic (referencing
+own mark. **Tessera mark** = 4 tiles in a scatter (referencing
 *tessera* = "tile" in Latin).
 
 ## Commit format

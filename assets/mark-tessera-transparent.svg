@@ -1,30 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  mark-tessera-transparent.svg — same 5-tile scatter, but TRANSPARENT background.
+  mark-tessera-transparent.svg — 4-tile scatter, TRANSPARENT background.
+  Use on colored/dark surfaces where mark-tessera.svg's white bg would clash.
 
-  Use this when placing the mark on a colored surface (dark themes,
-  branded backgrounds, etc.) where the white rectangle in mark-tessera.svg
-  would clash.
-
-  Theme support via @media (prefers-color-scheme: dark):
-    - Light: tiles dark (#1a1a1a), accent deep red (#a8201c)
-    - Dark:  tiles white (#ffffff), accent lighter red (#d94540)
-
-  Hex approximations of OKLCH tokens from .agents/docs/ui/design-system.md.
+  Redrawn 2026-07-21 (3 black + 1 red). Theme via prefers-color-scheme:
+    Light: tiles #000,   accent #A60000
+    Dark:  tiles #fff,   accent #E0483F (lighter red for contrast)
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Tessera">
   <title>Tessera</title>
   <style>
-    .tile { fill: #1a1a1a; }
-    .accent { fill: #a8201c; }
+    .tile { fill: #000; }
+    .accent { fill: #A60000; }
     @media (prefers-color-scheme: dark) {
-      .tile { fill: #ffffff; }
-      .accent { fill: #d94540; }
+      .tile { fill: #fff; }
+      .accent { fill: #E0483F; }
     }
   </style>
-  <rect class="tile"   x="8"  y="8"  width="16" height="16" rx="2"/>
-  <rect class="tile"   x="32" y="8"  width="16" height="16" rx="2"/>
-  <rect class="tile"   x="56" y="32" width="16" height="16" rx="2"/>
-  <rect class="tile"   x="20" y="56" width="16" height="16" rx="2"/>
-  <rect class="accent" x="44" y="56" width="16" height="16" rx="2"/>
+  <rect class="tile"   x="22" y="8"  width="16" height="16"/>
+  <rect class="tile"   x="52" y="34" width="16" height="16"/>
+  <rect class="tile"   x="12" y="56" width="16" height="16"/>
+  <rect class="accent" x="31" y="56" width="16" height="16"/>
 </svg>

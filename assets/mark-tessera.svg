@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  mark-tessera.svg — canonical Tessera mark (5-tile scatter).
+  mark-tessera.svg — canonical Tessera mark (4-tile scatter).
 
-  Tessera = "tile" (Latin). The mark evokes five discrete data points
-  (traces, logs, events) in irregular positions — the pattern of an
-  observability surface where one event stands out (accent red).
+  Tessera = "tile" (Latin). Four discrete tiles in irregular (scatter)
+  positions — an observability surface where one event stands out (accent red).
 
+  Redrawn 2026-07-21: 4 tiles (3 black + 1 red #A60000) — was a 5-tile scatter.
   Usage: 16px favicon, 32px sidebar, 80px lockup, 128px+ hero.
-  Black tiles + one accent (Tessera's deep red, oklch(35% 0.18 25)).
-  White background.
+  Black tiles + one accent (Tessera deep red #A60000). White background.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Tessera">
   <title>Tessera</title>
   <rect width="80" height="80" fill="#fff"/>
-  <rect x="8"  y="8"  width="16" height="16" rx="2" fill="#1a1a1a"/>
-  <rect x="32" y="8"  width="16" height="16" rx="2" fill="#1a1a1a"/>
-  <rect x="56" y="32" width="16" height="16" rx="2" fill="#1a1a1a"/>
-  <rect x="20" y="56" width="16" height="16" rx="2" fill="#1a1a1a"/>
-  <rect x="44" y="56" width="16" height="16" rx="2" fill="#a8201c"/>
+  <rect x="22" y="8"  width="16" height="16" fill="#000"/>
+  <rect x="52" y="34" width="16" height="16" fill="#000"/>
+  <rect x="12" y="56" width="16" height="16" fill="#000"/>
+  <rect x="31" y="56" width="16" height="16" fill="#A60000"/>
 </svg>

@@ -120,7 +120,7 @@ src/
 - VT/VL/VM (10428/9428/8429) — НЕ в нашем pool (стандартные Victoria порты)
 
 ### Brand & design
-- **5-tile scatter mark** (финальный дизайн): 4 black tiles + 1 accent red, viewBox 32×32, 6px tiles + 1px radius (~3px gaps)
+- **4-tile scatter mark** (redraw 2026-07-21): 3 black tiles + 1 accent red (`#A60000`), sharp-cornered squares (~3px gaps)
 - **Variants:**
   - `mark-tessera.svg` — 80×80 white background (canonical, для OG/печати)
   - `mark-tessera-transparent.svg` — 80×80 transparent background (theme-aware: black↔white tiles)
@@ -187,7 +187,7 @@ src/
 | Accent color | deep red (NOT blue like plexor) | 2026-07-19 | `.agents/docs/ui/design-system.md` § 0 |
 | Localization | English + Russian (plexor pattern) | 2026-07-19 | `web/apps/console/src/shared/lib/i18n/` |
 | Asset sync | git submodule at `assets/stbl/` | 2026-07-19 | `.agents/docs/ecosystem.md` |
-| Brand mark | 5-tile scatter (4 black + 1 red) | 2026-07-19 | `assets/mark-tessera.svg` |
+| Brand mark | 4-tile scatter (3 black + 1 red, `#A60000`) | 2026-07-21 | `assets/mark-tessera.svg` |
 | Build SDK | `Microsoft.NET.Sdk` (NOT `Microsoft.Build.NoTargets`) | 2026-07-19 | `src/host/Tessera.Build.Tools/Tessera.Build.Tools.csproj` |
 | Module structure | `core/` + `extended/` if >5 files (NetArchTest enforced) | 2026-07-19 | `.agents/rules/coding/module-structure-5-cap.md` |
 | Backend SDK | .NET 10 (10.0.110+, latestFeature rollForward) | 2026-07-19 | `global.json` |

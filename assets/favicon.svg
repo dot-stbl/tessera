@@ -1,28 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  favicon.svg — Tessera mark at favicon size (32×32) with theme support.
-
-  Uses @media (prefers-color-scheme: dark) so the favicon adapts to the
-  user's OS theme:
-    - Light mode: black tiles + deep red accent
-    - Dark mode:  white tiles + lighter red accent (for contrast)
-
-  For places that need explicit white background (e.g. README preview cards),
-  use assets/mark-tessera.svg instead.
-  For colored/dark backgrounds, use assets/mark-tessera-transparent.svg.
+  favicon.svg — Tessera mark (4-tile scatter) at favicon size (32×32), theme-aware.
+  Redrawn 2026-07-21 (3 black + 1 red).
+    Light: black tiles + deep red accent (#A60000)
+    Dark:  white tiles + lighter red accent (#E0483F)
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <style>
-    .tile { fill: #1a1a1a; }
-    .accent { fill: #a8201c; }
+    .tile { fill: #000; }
+    .accent { fill: #A60000; }
     @media (prefers-color-scheme: dark) {
-      .tile { fill: #ffffff; }
-      .accent { fill: #d94540; }
+      .tile { fill: #fff; }
+      .accent { fill: #E0483F; }
     }
   </style>
-  <rect class="tile"   x="3"  y="3"  width="6" height="6" rx="1"/>
-  <rect class="tile"   x="13" y="3"  width="6" height="6" rx="1"/>
-  <rect class="tile"   x="23" y="13" width="6" height="6" rx="1"/>
-  <rect class="tile"   x="8"  y="23" width="6" height="6" rx="1"/>
-  <rect class="accent" x="18" y="23" width="6" height="6" rx="1"/>
+  <rect class="tile"   x="9"  y="3"  width="6" height="6"/>
+  <rect class="tile"   x="21" y="14" width="6" height="6"/>
+  <rect class="tile"   x="5"  y="22" width="6" height="6"/>
+  <rect class="accent" x="12" y="22" width="6" height="6"/>
 </svg>
