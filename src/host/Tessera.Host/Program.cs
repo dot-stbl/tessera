@@ -201,4 +201,19 @@ app.MapGet("/",
 app.UseTesseraOpenApi();
 app.MapControllers();
 
+// --------------------------------------------------------------------
+// Front-end bundle (Phase 6 / MVP-02)
+// --------------------------------------------------------------------
+// wwwroot/ is populated at publish time by the multi-stage Dockerfile
+// (compose/Dockerfile fetches the bun-built FE and copies it into
+// Tessera.Host/wwwroot/ before `dotnet publish`). Static files are
+// served from the same origin as the API so the SPA can fetch
+// /api/v1/* directly without CORS preflight noise. MapFallbackToFile
+// sends unmatched routes to index.html so client-side routing
+// works on direct deep-link loads.
+// Single root policy per ASP.NET Core defaults — /index.html and
+// /assets/* short-circuit before the fallback.
+app.UseStaticFiles();
+app.MapFallbackToFile("index.html");
+
 app.Run();

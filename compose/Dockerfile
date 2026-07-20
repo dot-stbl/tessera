@@ -19,6 +19,40 @@
 #
 # Compose variant (tessera + split Victoria stack + OTel collector):
 # see compose/docker-compose.yml.
+#
+# Phase 6: the FE bundle lives at web/apps/console/dist/. A separate
+# bun-builder stage produces it; the result is copied into
+# src/host/Tessera.Host/wwwroot/ before `dotnet publish` so the
+# Microsoft.NET.Sdk.Web defaults (EnableDefaultContentItems=true)
+# pick it up automatically. .gitignore keeps the local wwwroot
+# out of source control — runtime packaging is the layer that
+# stitches the bundle to the host.
+
+# ----------------------------------------------------------------------------
+# Stage 0: front-end bundle (bun + vite)
+# ----------------------------------------------------------------------------
+FROM oven/bun:1.2-alpine AS fe-builder
+
+WORKDIR /src/web
+
+# Layer-cache dependency install: copy lockfile + manifests only.
+COPY web/package.json web/bunfig.toml web/bun.lock* ./
+COPY web/tooling ./tooling
+COPY web/apps ./apps
+COPY web/packages ./packages 2>/dev/null || true
+
+# Workspace install — bun reads bunfig.toml scope map + workspace
+# layout. `--frozen-lockfile` fails the build if lockfile is out of
+# date (matching the .NET restore gate).
+RUN bun install --frozen-lockfile
+
+# Build the console package only — Ladle playground / unit tests
+# are not part of the runtime image.
+RUN bun --cwd apps/console run build
+
+# Verify the bundle landed where the next stage expects it.
+RUN test -f /src/web/apps/console/dist/index.html \
+ && test -d /src/web/apps/console/dist/assets
 
 # ----------------------------------------------------------------------------
 # Stage 1: build
@@ -61,6 +95,15 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
 
 # Bring in the rest of the source now that restore is cached.
 COPY . .
+
+# Stash the FE bundle from stage 0 into Tessera.Host/wwwroot/.
+# Microsoft.NET.Sdk.Web (EnableDefaultContentItems=true) lifts every
+# file under wwwroot/ into the published output as a `Content` item;
+# the SPA reaches it via app.UseStaticFiles() in Program.cs. This
+# step runs in Dockerfile, not in source control, so wwwroot/
+# stays empty in Git (the .gitignore at the repo root excludes it).
+RUN mkdir -p src/host/Tessera.Host/wwwroot \
+ && cp -R /src/web/apps/console/dist/. src/host/Tessera.Host/wwwroot/
 
 # Publish the host with `dotnet publish`. self-contained=false so
 # the runtime image supplies the shared framework (alpine runtime

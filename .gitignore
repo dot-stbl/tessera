@@ -17,6 +17,14 @@ coverage.*.xml
 *.nuget.props
 *.nuget.targets
 
+# ─── Tessera build artefacts ─────────────────────────────────────────────────
+# Tessera.Host/wwwroot is populated at publish time by the multi-stage
+# Dockerfile (Phase 6). Keeping it out of source control means a clean
+# checkout has an empty wwwroot and `dotnet publish` produces an
+# asset-less runtime; the FE bundle flows through Docker layer caches.
+src/host/Tessera.Host/wwwroot/
+src/host/Tessera.Host/wwwroot/**/*
+
 # ─── Node / frontend ─────────────────────────────────────────────────────────
 node_modules/
 dist/
