@@ -49,7 +49,7 @@ tile work (значение слова "tessera" в латыни и италья
 ```
 ❌ Tessera.Modules.User           # not a theme word
 ❌ Tessera.Modules.Auth           # not a theme word
-❌ Tessera.Modules.Telemetry      # conflicts with Tessera.Shared.Telemetry
+❌ Tessera.Modules.Telemetry      # conflicts with Tessera.Shared.* namespace convention
 ❌ Tessera.Modules.Tile           # theme word в module name (theme для schemas, не features)
 ✅ Tessera.Modules.Traces         # concept name (Trace)
 ✅ Tessera.Modules.Discovery      # concept name (Service discovery)

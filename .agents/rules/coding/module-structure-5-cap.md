@@ -32,8 +32,8 @@ src/
 ├── shared/                     (5 projects — at cap)
 │   ├── Tessera.Shared.Kernel/
 │   ├── Tessera.Shared.Http/
-│   ├── Tessera.Shared.Telemetry/
-│   ├── Tessera.Shared.OpenApi/
+│   ├── Tessera.Shared.Authentication/
+│   ├── Tessera.Shared.Web/
 │   └── Tessera.Shared.Validation/
 └── modules/                    (4 projects — under cap, MVP)
     ├── Tessera.Modules.Traces/
@@ -114,8 +114,8 @@ public sealed class FolderLimitsTests
 src/shared/
 ├── Tessera.Shared.Kernel/
 ├── Tessera.Shared.Http/
-├── Tessera.Shared.Telemetry/
-├── Tessera.Shared.OpenApi/
+├── Tessera.Shared.Authentication/
+├── Tessera.Shared.Web/
 └── Tessera.Shared.Validation/    (5 — at cap, ok)
 
 # ✅ Good — nested when over cap
@@ -131,8 +131,8 @@ src/modules/
 src/shared/
 ├── Tessera.Shared.Kernel/
 ├── Tessera.Shared.Http/
-├── Tessera.Shared.Telemetry/
-├── Tessera.Shared.OpenApi/
+├── Tessera.Shared.Authentication/
+├── Tessera.Shared.Web/
 ├── Tessera.Shared.Validation/
 └── Tessera.Shared.Caching/      (6 — over cap, must nest)
 ```

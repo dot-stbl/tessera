@@ -64,11 +64,15 @@ src/
 
 | Project | Responsibility |
 |---------|----------------|
-| `Tessera.Shared.Kernel` | Domain primitives (`Tenant`, `TraceId`, `SpanId`, `LogLevel`, `TimeRange`, `Page<T>`, `Result<T>`, `Error`) + **provider interfaces** (`ITraceProvider`, `ILogProvider`, `IMetricsProvider`, `IDiscoveryProvider`, `IHealthProvider`) |
-| `Tessera.Shared.Http` | Refit base + `Microsoft.Extensions.Http.Resilience` (Polly) + OTel HTTP instrumentation |
-| `Tessera.Shared.Telemetry` | OpenTelemetry setup, structured logging helpers, tracing conventions |
-| `Tessera.Shared.OpenApi` | Scalar.AspNetCore + Swashbuckle annotations, OpenAPI document configuration |
-| `Tessera.Shared.Validation` | FluentValidation helpers, request validation extension methods |
+| `Tessera.Shared.Kernel` | Domain primitives (`Tenant`, `TraceId`, `SpanId`, `LogLevel`, `TimeRange`, `Page<T>`, `Result<T>`, `Error`) + **provider interfaces** (`ITraceProvider`, `ILogProvider`, `IDiscoveryProvider`, `IHealthProvider`) + configuration (`Configuration/Paths/*`, `ServerOptions`, TOML provider, `SecretReference`) + `ApiRoutes` + `TesseraJsonOptions` |
+| `Tessera.Shared.Http` | Refit base + `Microsoft.Extensions.Http.Resilience` (Polly) + OTel HTTP instrumentation + outbound `BearerTokenHandler` |
+| `Tessera.Shared.Authentication` | Admin bearer scheme (optional in MVP-01) — `AdminBearerHandler`, `AdminBearerOptions`, `AdminBearerConstants`, `AdminBearerCryptography` (FixedTimeEquals) |
+| `Tessera.Shared.Web` | RFC 9457 ProblemDetails (`TesseraExceptionHandler` + `IExceptionHandler`) + OpenAPI source-gen document + Scalar UI mount |
+| `Tessera.Shared.Validation` | FluentValidation helpers, request validation extension methods (shell in MVP-01) |
+
+> **Note:** `src/shared/Tessera.Banner/` exists but is NOT counted toward the
+> 5-project cap (its project name doesn't match the `Tessera.Shared.*`
+> pattern). It hosts the Spectre.Console-based CLI banner only.
 
 **Не должно быть:** feature-specific логика (endpoints, handlers), прямые ссылки на `Tessera.Providers.*`.
 
