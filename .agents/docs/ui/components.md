@@ -1,6 +1,6 @@
 # Tessera components catalog
 
-> **Live examples:** `web/playbook/index.html` (forthcoming). **Implementation:** `web/playbook/styles.css`.
+> ⚠️ **PARTIALLY OBSOLETE (2026-07-21).** The HTML / CSS-class snippets below reflect an earlier static-catalog plan. Real components are **React (Base UI + shadcn wrappers)** under `web/apps/console/src/shared/ui/{primitives,apm}`, catalogued in **Ladle** (not `web/playbook/`). The component *inventory* and *behavior notes* here remain a useful reference; the markup is illustrative, not the implementation. See `DESIGN.md` (repo root).
 
 Catalog of components specific to tessera. Plexor components inherited as-is
 (see `design-system.md`).

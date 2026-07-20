@@ -8,9 +8,10 @@ always: true
 
 **Two rule layers:**
 
-1. **Global** (`~/.agents/rules/`) — project-neutral C# rules, loaded for every session:
+1. **Global** (`~/.agents/rules/`) — project-neutral C#/TS + process rules, loaded for every session:
    - `secrets.md` — secret handling
-   - `coding/` — naming-and-types, code-shape, class-layout-and-tooling, constructors-and-fields, async-and-tasks, anti-patterns, logging, di-lifetimes, di-options, di-installer, folder-organization, nullability, exceptions, mapper, error-mapping, http-resilience-refit, json-and-ndjson, time-and-wire-format, configuration-toml-env, problem-details, api-route-constants, testing-stack-and-pyramid, testing-unit, analyzers, rules-format
+   - `csharp/` — naming-and-types, code-shape, class-layout-and-tooling, constructors-and-fields, async-and-tasks, anti-patterns, logging, di-lifetimes, di-options, di-installer, folder-organization, nullability, exceptions, mapper, mapping, error-mapping, http-resilience-refit, json-and-ndjson, time-and-wire-format, configuration-toml-env, problem-details, api-route-constants, api-design, architecture, technology-stack, ef-core, ef-migrations, ef-owned-types, repository-spec, cross-platform, filesystem-paths, multi-provider-auth, testing-stack-and-pyramid, testing-unit, testing-integration, analyzers, rules-format
+   - `typescript/` — react-and-components, tanstack-query-and-router, styling-and-design-system, workspace-and-i18n (**mandatory for `web/` work**)
    - `observability/` — diagnostics (OTel traces/metrics conventions)
    - `process/` — commit-format, build-verification, agent-runtime-safety, engineering-zone-access, project-slnx-registration, worker-audit
 

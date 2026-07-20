@@ -1,6 +1,11 @@
 # Tessera design system
 
-> **Source:** [`web/playbook/styles.css`](../../../web/playbook/styles.css) (adapted from plexor). **Live catalog:** [`web/playbook/index.html`](../../../web/playbook/index.html).
+> ⚠️ **DRIFT NOTICE (2026-07-21).** This doc predates the real implementation and is kept as *design intent*, not ground truth.
+> - **Authoritative tokens:** `web/apps/console/src/index.css` (Tailwind 4 + OKLCH, shadcn slot names). There is **no** `web/playbook/` static site.
+> - **Live catalog:** Ladle — `bun run playbook:dev` (port 2006), stories under `apps/console/stories/**`.
+> - **Corrections:** the deep-red brand color is **`--primary`** (light `oklch(0.505 0.213 27.518)`), **not `--accent`** (which is neutral gray, like `--ring`). `--font-sans` is **Geist** (body text uses Onest); mono is a JetBrains Mono stack. Spacing/type come from **Tailwind utilities**, not `--s-*`/`--fs-*`. Brand mark is a **4-tile scatter** (3 black + 1 red `#A60000`).
+> - **Consolidated FE brief:** `DESIGN.md` (repo root).
+> The APM token values (ok/err/warn/slow/level-*) below still match `index.css`.
 
 Tessera inherits the **plexor design system** as foundation (typography, spacing,
 layout chrome) and extends it with **APM-specific primitives**. **Accent color is

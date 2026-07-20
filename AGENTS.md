@@ -37,6 +37,13 @@ overrides + file index live in `.agents/rules/_index.md`.
 18. `process/agent-runtime-safety.md`
 19. `process/engineering-zone-access.md`
 
+**Frontend rules** (from `~/.agents/rules/typescript/`) — **mandatory for any `web/` work** (MVP-02+):
+
+- `react-and-components.md` — React 19 shape, named exports, hooks, `cn()`
+- `tanstack-query-and-router.md` — QueryClientProvider required, queryKeys, code-based routes
+- `styling-and-design-system.md` — DS primitives first, OKLCH tokens in `index.css`, theming
+- `workspace-and-i18n.md` — bun only, typecheck/lint/test gate, i18next copy
+
 **Tessera-specific rules** (from `.agents/rules/coding/`):
 
 20. `api-design.md` — controllers pattern, `[ApiController] + ControllerBase`

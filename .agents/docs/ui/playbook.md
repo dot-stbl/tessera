@@ -1,6 +1,6 @@
 # Tessera playbook
 
-> **Path:** `web/playbook/` (under `web/`). **Live:** `web/playbook/index.html`.
+> ⚠️ **OBSOLETE (2026-07-21).** The `web/playbook/` static-HTML catalog described below was **never built** — the project uses **Ladle** instead (`bun run playbook:dev`, port 2006; stories under `apps/console/stories/**`). Design tokens live in `web/apps/console/src/index.css`. This file is retained only as historical intent — ignore its directory layout and paths. See `DESIGN.md` (repo root) and the global rule `typescript/styling-and-design-system.md`.
 
 The playbook is the **single source of truth** for tessera's visual design.
 It's a static HTML site that any developer can open in a browser to see
