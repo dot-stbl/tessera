@@ -1,33 +1,37 @@
 # Tessera state
 
 > **Authoritative decisions:** see [`.agents/docs/decisions/0001-mvp01-locked-decisions.md`](docs/decisions/0001-mvp01-locked-decisions.md).
-> STATE.md now tracks progress + open questions; ADRs lock architectural choices.
+> STATE.md tracks progress + open questions; ADRs lock architectural choices.
 
 ## Milestone
-MVP-01 — backend-only (Traces + Logs + Discovery + Health + Victoria provider + Tessera.Host)
+MVP-02 (platform) — backend-only MVP-01 + multi-provider auth + EF Core storage layer + FS layout abstraction + telemetry pipeline + FE bundle.
 
-## Status
-**Phase 0 (rules + provider scaffold) — DONE.**
-**Phase 1 (shared primitives + provider impls) — DONE.**
-**Phase 2 (4 backend modules as controllers with Mapperly mappers) — DONE.**
-**Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE.**
-**Phase 4 (architecture tests, deployment files, fixes from fresh-eye review) — DONE.**
-**Phase 5 (compose stack + LoadGen CLI, deploy artefacts consolidated under `/compose`) — DONE.**
-**Phase 6 (multi-provider auth + storage layer + FS layout abstraction + Windows support + frontend bundle) — IN PROGRESS** on `tessera/mvp-2-platform` (ADR-0001 accepted 2026-07-20).
+## Status (branch `tessera/mvp-2-platform`, ADR-0001 locked 2026-07-20)
+**MVP-01 (Phase 0–5) — DONE** (commits `2cb9533`..`bbd97fb`). Backend ready.
+**MVP-02 workstreams:**
+- ✅ **Phase 1** — AGENTS.md force-loading + new global rules (multi-provider-auth, filesystem-paths, cross-platform)
+- ✅ **Phase 2** — config schema: ServerOptions + StorageOptions + SecretReference + double-underscore routing for `TESSERA_ADMIN_TOKEN`
+- ✅ **Phase 3** — `IFileSystemLayout` + Linux (`/etc/tessera`, `/var/lib/tessera`, XDG) + Windows (`%ProgramData%`, `%LOCALAPPDATA%`) impls
+- ✅ **Phase 4** — multi-provider auth: `IAuthProvider` framework, `Guest` + `AdminBearer` + `Ldap` (search-and-bind via `System.DirectoryServices.Protocols`) + `Keycloak` (JWT bearer via `Microsoft.AspNetCore.Authentication.JwtBearer`); `ICurrentUserContext` middleware
+- ✅ **Phase 5** — EF Core + SQLite + Repository<T> + Specification<T, TResult> + `Microsoft.Data.Sqlite` 10.0.10 wired only into `Tessera.Host` (binary-compat workaround for the no-net10-build issue); Preferences module + initial migration
+- ✅ **Phase 6** — vite FE bundle into `Tessera.Host/wwwroot/` via multi-stage Dockerfile (bun-builder + .NET publish)
+- ✅ **Phase 7a** — OTel pipeline (`Tessera.Shared.Telemetry` installer + host wiring)
+- ✅ **Phase 7b** — CI workflow (self-hosted Linux) + Phase 7 draft issue for Windows L1-L4
+- ⏸ **Phase 7 Windows L1-L4** — deferred. Tracked in `.github/ISSUE_DRAFT_phase-7-windows.md` (no Windows runner; GH-paid plan unavailable)
 
-MVP-01 backend code-complete. LoadGen CLI shipped; integration tests deliberately dropped (see Phase 5 notes). Phase 0 cleanup + ADR-0001 landed 2026-07-20 (commits `2cb9533`, `258ae6a`).
+**Tests:** 119/119 passing across 9 test projects (`dotnet test tessera.slnx`).
+**Build:** `dotnet build tessera.slnx -c Debug` → exit 0, 0 warnings.
 
-## Progress
-- **Phase 0a** (pre-existing format drift cleanup + VSTHRD111 disable) — DONE 2026-07-20 (`2cb9533`). Build gate green, 107/107 tests passing.
-- **Phase 0b** (sync stale project names in rules) — DONE (`8215500`).
-- **Phase 0c** (this commit — STATE.md / HANDOFF.md reconcile) — DONE.
-- **Phase 1** (AGENTS.md + new global rules) — NEXT.
-- **Phase 2** (config schema fix + SecretReference wiring) — PLANNED.
-- **Phase 3** (IFileSystemLayout + Linux + Windows impls) — PLANNED.
-- **Phase 4** (multi-provider auth: IAuthProvider + Guest + Admin → +LDAP → +Keycloak) — PLANNED.
-- **Phase 5** (SQLite + EF Core + Repository + Spec + Users + Dashboards + migration) — PLANNED.
-- **Phase 6** (vite bundle into Tessera.Host wwwroot) — PLANNED.
-- **Phase 7** (Windows install + dev workflow docs) — PLANNED.
+## Progress (Phase 0–6 already in MVP-01 history)
+- ✅ **Phase 0** — pre-existing format cleanup + VSTHRD111 disable + rule sync (`2cb9533`, `8215500`)
+- ✅ **Phase 1** — `tessera/mvp-2-platform` baseline + global C# rules
+- ✅ **Phase 2** — config schema + `TESSERA__ADMIN__TOKEN` routing (`c5dcb60`, `4ec7dec`)
+- ✅ **Phase 3** — `IFileSystemLayout` + LayoutProvider + `TesseraConfigPaths` migration (`1125eb0`, `38fb3c7`)
+- ✅ **Phase 4** — multi-provider auth wiring (`4cc752c`, `618341a`, `f1c0f3c`, `bf652c3`, `cc8f3cd`)
+- ✅ **Phase 5** — Repository/Spec primitives + Preferences module + `InitialSchema` migration (`55b269b`, `4fb5526`, `0e56fee`, `f7c9146`, `c5dcb60`-storage, `4ec7dec`, `e23385e`)
+- ✅ **Phase 6** — FE bundle (`064f5f5`, `dc70e7a`)
+- ✅ **Phase 7a/b** — OTel + Linux CI (`b30da28`, `c122ecd`)
+- ⏸ **Phase 7 Windows** — deferred, tracked by `.github/ISSUE_DRAFT_phase-7-windows.md`
 
 See ADR-0001 for the architectural decisions that drive Phase 1–7.
 
