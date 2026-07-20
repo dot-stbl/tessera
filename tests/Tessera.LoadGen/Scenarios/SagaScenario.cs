@@ -12,7 +12,7 @@ namespace Tessera.LoadGen.Scenarios;
 /// </summary>
 internal static class SagaScenario
 {
-    public static async Task<bool> RunAsync(ScenarioIteration iteration, CancellationToken ct)
+    public static async Task<bool> RunAsync(ScenarioIteration iteration, CancellationToken cancellationToken)
     {
         using var root = iteration.ActivitySource.StartActivity(
             $"{iteration.Operation}",
@@ -29,14 +29,14 @@ internal static class SagaScenario
         var compensate = false;
         foreach (var step in steps)
         {
-            ct.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             using (var forward = iteration.ActivitySource.StartActivity(
                 $"forward {step}",
                 ActivityKind.Internal,
                 parentContext: root?.Context ?? default))
             {
                 forward?.SetTag("saga.step", step);
-                await Task.Delay(iteration.Random.Next(5, 25), ct);
+                await Task.Delay(iteration.Random.Next(5, 25), cancellationToken);
                 forward?.SetTag("saga.result", "ok");
             }
 
@@ -52,7 +52,7 @@ internal static class SagaScenario
         {
             foreach (var step in steps.Reverse())
             {
-                ct.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
                 using var backward = iteration.ActivitySource.StartActivity(
                     $"compensate {step}",
                     ActivityKind.Internal,
@@ -63,7 +63,7 @@ internal static class SagaScenario
                     "Saga compensating step {Step} for {ServiceName}",
                     step,
                     iteration.Service.Name);
-                await Task.Delay(iteration.Random.Next(2, 15), ct);
+                await Task.Delay(iteration.Random.Next(2, 15), cancellationToken);
             }
             root?.SetTag("saga.outcome", "compensated");
             root?.SetTag("http.status_code", 409);

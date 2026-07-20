@@ -11,7 +11,7 @@ namespace Tessera.LoadGen.Scenarios;
 /// </summary>
 internal static class SimpleScenario
 {
-    public static async Task<bool> RunAsync(ScenarioIteration iteration, CancellationToken ct)
+    public static async Task<bool> RunAsync(ScenarioIteration iteration, CancellationToken cancellationToken)
     {
         using var activity = iteration.ActivitySource.StartActivity(
             $"{iteration.Operation}",
@@ -25,7 +25,7 @@ internal static class SimpleScenario
             iteration.Service.Name);
 
         var delay = iteration.Random.Next(5, 50);
-        await Task.Delay(delay, ct);
+        await Task.Delay(delay, cancellationToken);
 
         activity?.SetTag("http.status_code", 200);
         return true;

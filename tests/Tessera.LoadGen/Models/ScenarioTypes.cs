@@ -103,13 +103,13 @@ internal static class ScenarioDispatcher
     ///     for RED metrics counters.
     /// </summary>
     /// <returns><see langword="true" /> if the scenario completed successfully; <see langword="false" /> on simulated failure.</returns>
-    public static Task<bool> ExecuteAsync(ScenarioKind kind, ScenarioIteration iteration, CancellationToken ct)
+    public static Task<bool> ExecuteAsync(ScenarioKind kind, ScenarioIteration iteration, CancellationToken cancellationToken)
     {
         return kind switch
         {
-            ScenarioKind.Simple => SimpleScenario.RunAsync(iteration, ct),
-            ScenarioKind.Fanout => FanoutScenario.RunAsync(iteration, ct),
-            ScenarioKind.Saga => SagaScenario.RunAsync(iteration, ct),
+            ScenarioKind.Simple => SimpleScenario.RunAsync(iteration, cancellationToken),
+            ScenarioKind.Fanout => FanoutScenario.RunAsync(iteration, cancellationToken),
+            ScenarioKind.Saga => SagaScenario.RunAsync(iteration, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
         };
     }

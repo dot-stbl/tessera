@@ -61,7 +61,20 @@ internal static class GeneratorOptionsParser
     /// </summary>
     public static GeneratorOptions Parse(string[] args)
     {
-        var builder = new GeneratorOptionsBuilder();
+        var otlpEndpoint = "http://localhost:4317";
+        var services = new[]
+        {
+            "checkout-svc",
+            "payment-svc",
+            "auth-svc",
+            "notification-svc",
+        };
+        var rate = 10;
+        var duration = TimeSpan.Zero;
+        var scenario = "simple";
+        var pushMetrics = true;
+        var pushLogs = true;
+
         for (var index = 0; index < args.Length; index++)
         {
             var flag = args[index];
@@ -69,25 +82,25 @@ internal static class GeneratorOptionsParser
             switch (flag)
             {
                 case "--endpoint":
-                    builder.WithOtlpEndpoint(RequireValue(flag, value));
+                    otlpEndpoint = RequireValue(flag, value);
                     break;
                 case "--services":
-                    builder.WithServices(RequireValue(flag, value).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                    services = RequireValue(flag, value).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     break;
                 case "--rate":
-                    builder.WithRate(int.Parse(RequireValue(flag, value), System.Globalization.CultureInfo.InvariantCulture));
+                    rate = int.Parse(RequireValue(flag, value), System.Globalization.CultureInfo.InvariantCulture);
                     break;
                 case "--duration":
-                    builder.WithDuration(TimeSpan.Parse(RequireValue(flag, value), System.Globalization.CultureInfo.InvariantCulture));
+                    duration = TimeSpan.Parse(RequireValue(flag, value), System.Globalization.CultureInfo.InvariantCulture);
                     break;
                 case "--scenario":
-                    builder.WithScenario(RequireValue(flag, value));
+                    scenario = RequireValue(flag, value);
                     break;
                 case "--no-metrics":
-                    builder.WithPushMetrics(false);
+                    pushMetrics = false;
                     break;
                 case "--no-logs":
-                    builder.WithPushLogs(false);
+                    pushLogs = false;
                     break;
                 case "-h":
                 case "--help":
@@ -99,7 +112,17 @@ internal static class GeneratorOptionsParser
             }
             index++;
         }
-        return builder.Build();
+
+        return new GeneratorOptions
+        {
+            OtlpEndpoint = otlpEndpoint,
+            Services = services,
+            Rate = rate,
+            Duration = duration,
+            Scenario = scenario,
+            PushMetrics = pushMetrics,
+            PushLogs = pushLogs,
+        };
     }
 
     private static string RequireValue(string flag, string? value)
@@ -130,44 +153,5 @@ internal static class GeneratorOptionsParser
         Console.WriteLine("Notes:");
         Console.WriteLine("  --duration 0 (the default) means \"until Ctrl+C\".");
         Console.WriteLine("  --no-metrics / --no-logs disable the corresponding pipeline.");
-    }
-
-    private sealed class GeneratorOptionsBuilder
-    {
-        private string _otlpEndpoint = "http://localhost:4317";
-        private IReadOnlyList<string> _services = new[]
-        {
-            "checkout-svc",
-            "payment-svc",
-            "auth-svc",
-            "notification-svc",
-        };
-        private int _rate = 10;
-        private TimeSpan _duration = TimeSpan.Zero;
-        private string _scenario = "simple";
-        private bool _pushMetrics = true;
-        private bool _pushLogs = true;
-
-        public GeneratorOptionsBuilder WithOtlpEndpoint(string value) { _otlpEndpoint = value; return this; }
-        public GeneratorOptionsBuilder WithServices(IReadOnlyList<string> value) { _services = value; return this; }
-        public GeneratorOptionsBuilder WithRate(int value) { _rate = value; return this; }
-        public GeneratorOptionsBuilder WithDuration(TimeSpan value) { _duration = value; return this; }
-        public GeneratorOptionsBuilder WithScenario(string value) { _scenario = value; return this; }
-        public GeneratorOptionsBuilder WithPushMetrics(bool value) { _pushMetrics = value; return this; }
-        public GeneratorOptionsBuilder WithPushLogs(bool value) { _pushLogs = value; return this; }
-
-        public GeneratorOptions Build()
-        {
-            return new GeneratorOptions
-            {
-                OtlpEndpoint = _otlpEndpoint,
-                Services = _services,
-                Rate = _rate,
-                Duration = _duration,
-                Scenario = _scenario,
-                PushMetrics = _pushMetrics,
-                PushLogs = _pushLogs,
-            };
-        }
     }
 }

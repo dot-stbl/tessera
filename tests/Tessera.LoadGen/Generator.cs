@@ -42,8 +42,8 @@ public sealed class Generator
     private static readonly ActivitySource ActivitySource = new(SourceName);
     private static readonly Meter Meter = new(MeterName);
 
-    /// <summary>Executes <paramref name="options" /> until <paramref name="ct" /> fires or <see cref="GeneratorOptions.Duration" /> elapses.</summary>
-    public static async Task<int> RunAsync(GeneratorOptions options, CancellationToken ct = default)
+    /// <summary>Executes <paramref name="options" /> until <paramref name="cancellationToken" /> fires or <see cref="GeneratorOptions.Duration" /> elapses.</summary>
+    public static async Task<int> RunAsync(GeneratorOptions options, CancellationToken cancellationToken = default)
     {
         var kind = options.Scenario.ToScenarioKind();
         var services = DefaultServiceFactory.Materialise(options.Services);
@@ -115,12 +115,12 @@ public sealed class Generator
         var tickInterval = options.Rate <= 0 ? TimeSpan.FromSeconds(1) : TimeSpan.FromSeconds(1.0 / options.Rate);
         var nextTick = DateTimeOffset.UtcNow;
 
-        while (DateTimeOffset.UtcNow < deadline && !ct.IsCancellationRequested)
+        while (DateTimeOffset.UtcNow < deadline && !cancellationToken.IsCancellationRequested)
         {
             var now = DateTimeOffset.UtcNow;
             if (now < nextTick)
             {
-                await Task.Delay(nextTick - now, ct);
+                await Task.Delay(nextTick - now, cancellationToken);
             }
             nextTick = nextTick.Add(tickInterval);
 
@@ -137,7 +137,7 @@ public sealed class Generator
             bool ok;
             try
             {
-                ok = await ScenarioDispatcher.ExecuteAsync(kind, iteration, ct);
+                ok = await ScenarioDispatcher.ExecuteAsync(kind, iteration, cancellationToken);
             }
             catch (OperationCanceledException)
             {

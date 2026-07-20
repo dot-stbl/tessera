@@ -13,7 +13,7 @@ namespace Tessera.LoadGen.Scenarios;
 /// </summary>
 internal static class FanoutScenario
 {
-    public static async Task<bool> RunAsync(ScenarioIteration iteration, CancellationToken ct)
+    public static async Task<bool> RunAsync(ScenarioIteration iteration, CancellationToken cancellationToken)
     {
         using var root = iteration.ActivitySource.StartActivity(
             $"{iteration.Operation}",
@@ -31,7 +31,7 @@ internal static class FanoutScenario
         for (var index = 0; index < childCount; index++)
         {
             var dependency = $"dep-{iteration.Random.Next(1, 6)}";
-            tasks.Add(EmitChildAsync(iteration, root, dependency, ct));
+            tasks.Add(EmitChildAsync(iteration, root, dependency, cancellationToken));
         }
 
         var results = await Task.WhenAll(tasks);
@@ -44,7 +44,7 @@ internal static class FanoutScenario
         ScenarioIteration iteration,
         Activity? root,
         string dependency,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         using var child = iteration.ActivitySource.StartActivity(
             $"call {dependency}",
@@ -59,7 +59,7 @@ internal static class FanoutScenario
             iteration.Service.Name);
 
         var delay = iteration.Random.Next(2, 20);
-        await Task.Delay(delay, ct);
+        await Task.Delay(delay, cancellationToken);
         child?.SetTag("http.status_code", 200);
         return true;
     }
