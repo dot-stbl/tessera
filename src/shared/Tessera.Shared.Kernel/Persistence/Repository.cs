@@ -58,13 +58,40 @@ public abstract class Repository<TEntity>(DbContext dbContext)
 
     /// <summary>
     ///     First-or-default read — returns <c>null</c> when no row
-    ///     matches.
+    ///     matches. Default <c>NoTracking</c> (per
+    ///     <see cref="ISpecification{T, TResult}.Tracking" />):
+    ///     projection-shaped read, no change tracking.
     /// </summary>
     public Task<TResult?> FirstOrDefaultAsync<TResult>(
         ISpecification<TEntity, TResult> specification,
         CancellationToken cancellationToken = default)
     {
         return Apply(specification).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <summary>
+    ///     First-or-default read with <c>Tracking</c> override —
+    ///     for write paths that look up a tracked entity to mutate
+    ///     in place (insert-or-update, soft-delete with reference
+    ///     to entity, etc.). Spec semantics still apply (Where /
+    ///     OrderBy / Projection are honoured), but the returned
+    ///     entity participates in change tracking.
+    ///     <para>
+    ///         Use only when you need to <c>SaveChangesAsync</c>
+    ///         updates against the loaded entity. Otherwise
+    ///         prefer <see cref="FirstOrDefaultAsync{TResult}" />
+    ///         — the default <c>NoTracking</c> is the faster
+    ///         read path per <c>csharp/ef-core.md</c> §5.
+    ///     </para>
+    /// </summary>
+    public Task<TResult?> FirstOrDefaultTrackedAsync<TResult>(
+        ISpecification<TEntity, TResult> specification,
+        CancellationToken cancellationToken = default)
+    {
+        var source = (IQueryable<TEntity>)Set;
+        return specification
+            .Apply(source)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <summary>

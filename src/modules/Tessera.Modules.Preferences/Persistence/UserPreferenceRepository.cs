@@ -35,16 +35,21 @@ public sealed class UserPreferenceRepository(PreferencesDbContext dbContext)
     }
 
     /// <summary>
-    ///     Insert-or-update by composite key. MVP-01 uses
-    ///     <c>FindAsync</c> + <c>SaveChanges</c> (acceptable for a
-    ///     write-light table); set-based <c>ExecuteUpdate</c>
-    ///     replaces this when the throughput grows.
+    ///     Insert-or-update by composite key. Loads the existing
+    ///     row with <c>Tracking</c> explicitly via
+    ///     <see cref="Repository{TEntity}.FirstOrDefaultTrackedAsync{TResult}(ISpecification{TEntity, TResult}, CancellationToken)" /> —
+    ///     the default <c>NoTracking</c> read path returns a
+    ///     detached entity that <c>SaveChanges</c> cannot reach
+    ///     (EF Core change tracker only sees entities it loaded
+    ///     itself, with tracking on). Tracking override keeps the
+    ///     spec's Where / Projection intact while marking the
+    ///     returned entity for update.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="key"></param>
-    /// <param name="valueJson"></param>
-    /// <param name="clock"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="userId">Owning user id (sub claim or '0' for anonymous).</param>
+    /// <param name="key">Preference key (e.g. "theme", "language").</param>
+    /// <param name="valueJson">JSON-encoded payload.</param>
+    /// <param name="clock">TimeProvider for the updated_at timestamp.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<UserPreference> UpsertAsync(
         string userId,
         string key,
@@ -54,7 +59,9 @@ public sealed class UserPreferenceRepository(PreferencesDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(clock);
 
-        var existing = await GetByUserKeyAsync(userId, key, cancellationToken);
+        var existing = await FirstOrDefaultTrackedAsync(
+            UserPreferenceSpecs.ByUserKey(userId, key),
+            cancellationToken);
         if (existing is not null)
         {
             existing.ValueJson = valueJson;
