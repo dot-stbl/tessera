@@ -27,6 +27,8 @@ public static class VictoriaServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.ResolveVictoriaSecrets();
+
         VictoriaServicesRegistration.RegisterProviders(services);
         VictoriaServicesRegistration.RegisterClients(services);
         return services;

@@ -1,18 +1,23 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.Options;
 using Tessera.Shared.Http.Configuration;
 
 namespace Tessera.Providers.Victoria.Configuration;
 
 /// <summary>
 ///     Victoria stack backend connection options. Bound from <c>tessera.toml</c>
-///     via <see cref="IOptions{TOptions}" /> at composition root. The
-///     <c>[victoria.traces]</c> / <c>[victoria.logs]</c> / <c>[victoria.metrics]</c>
-///     nested sections bind to <see cref="Traces" /> / <see cref="Logs" /> /
-///     <see cref="Metrics" /> respectively — see
-///     <c>.agents/docs/architecture/config-format.md</c>.
+///     via <see cref="Microsoft.Extensions.Options.IOptions{TOptions}" /> at
+///     composition root. The <c>[victoria.traces]</c> /
+///     <c>[victoria.logs]</c> / <c>[victoria.metrics]</c> nested sections bind
+///     to <see cref="Traces" /> / <see cref="Logs" /> / <see cref="Metrics" />
+///     respectively — see <c>.agents/docs/architecture/config-format.md</c>.
+///     PostConfigure (Phase 2c) walks the nested <c>Token</c> fields and
+///     runs <c>SecretReference.Resolve</c> on each (so an inline
+///     <c>env:VAR</c> / <c>file:/path</c> is expanded before first use).
+///     Declared as a <c>sealed record</c> so PostConfigure can use
+///     <c>with</c>-expressions on the nested Traces / Logs / Metrics /
+///     Auth properties after SecretReference resolution.
 /// </summary>
-public sealed class VictoriaOptions
+public sealed record VictoriaOptions
 {
     /// <summary>VictoriaTraces (vtselect) backend options.</summary>
     [Required]
@@ -47,8 +52,11 @@ public sealed class VictoriaOptions
 ///     <c>SecretReference.Resolve</c> in PostConfigure (see Phase 2c) so the
 ///     raw value (e.g. <c>"env:TESSERA_VICTORIA_TOKEN"</c>) gets expanded
 ///     to the actual token before the provider reads it.
+///     Declared as a <c>sealed record</c> so PostConfigure on the parent
+///     <see cref="VictoriaOptions" /> can use <c>with</c>-expressions on the
+///     nested Traces / Logs / Metrics property.
 /// </summary>
-public sealed class VictoriaBackendOptions
+public sealed record VictoriaBackendOptions
 {
     /// <summary>Backend base URL (e.g. <c>"http://vt:10428"</c> for traces).</summary>
     [Required]
