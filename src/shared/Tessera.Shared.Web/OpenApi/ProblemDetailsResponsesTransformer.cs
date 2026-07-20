@@ -19,15 +19,6 @@ namespace Tessera.Shared.Web.OpenApi;
 /// </remarks>
 public sealed class ProblemDetailsResponsesTransformer : IOpenApiOperationTransformer
 {
-    private static readonly OpenApiMediaType ProblemJsonMediaType = new()
-    {
-        Schema = new OpenApiSchema
-        {
-            Type = JsonSchemaType.Object,
-            Description = "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457).",
-        },
-    };
-
     /// <inheritdoc />
     public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {

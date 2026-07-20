@@ -1,5 +1,4 @@
 using NetArchTest.Rules;
-using Xunit;
 
 namespace Tessera.ArchitectureTests;
 
@@ -14,14 +13,6 @@ namespace Tessera.ArchitectureTests;
 /// </summary>
 public sealed class LayerIsolationTests
 {
-    /// <summary>
-    ///     Concrete assemblies for each layer — Project references in
-    ///     <c>Tessera.ArchitectureTests.csproj</c> load them into the test
-    ///     domain; NetArchTest queries references at runtime.
-    /// </summary>
-    private static readonly System.Reflection.Assembly Host =
-        typeof(Tessera.Host.HostAssemblyMarker).Assembly;
-
     private static readonly System.Reflection.Assembly Kernel =
         typeof(Tessera.Shared.Kernel.Api.ApiRoutes).Assembly;
 
@@ -50,13 +41,13 @@ public sealed class LayerIsolationTests
     [Fact]
     public void Modules_DoNotReference_VictoriaProvider()
     {
-        var result = Types.InAssemblies(new[] { Traces, Logs, Discovery, Health })
+        var result = Types.InAssemblies([Traces, Logs, Discovery, Health])
             .ShouldNot()
             .HaveDependencyOn("Tessera.Providers.Victoria")
             .GetResult();
 
         Assert.True(result.IsSuccessful,
-            $"Modules must not reference Tessera.Providers.Victoria (provider-isolation rule). " +
+            "Modules must not reference Tessera.Providers.Victoria (provider-isolation rule). " +
             $"Offending types: {string.Join(", ", result.FailingTypeNames ?? [])}");
     }
 
@@ -68,7 +59,7 @@ public sealed class LayerIsolationTests
     [Fact]
     public void Modules_DoNotReference_HostCompositionRoot()
     {
-        var result = Types.InAssemblies(new[] { Traces, Logs, Discovery, Health })
+        var result = Types.InAssemblies([Traces, Logs, Discovery, Health])
             .ShouldNot()
             .HaveDependencyOn("Tessera.Host")
             .GetResult();
@@ -128,7 +119,7 @@ public sealed class LayerIsolationTests
             .GetResult();
 
         Assert.True(result.IsSuccessful,
-            $"Tessera.Providers.Victoria must not reference Tessera.Host. " +
+            "Tessera.Providers.Victoria must not reference Tessera.Host. " +
             $"Offending types: {string.Join(", ", result.FailingTypeNames ?? [])}");
     }
 
@@ -150,7 +141,7 @@ public sealed class LayerIsolationTests
             .GetResult();
 
         Assert.True(result.IsSuccessful,
-            $"Tessera.Providers.Victoria must not reference any Tessera.Modules.* namespace. " +
+            "Tessera.Providers.Victoria must not reference any Tessera.Modules.* namespace. " +
             $"Offending types: {string.Join(", ", result.FailingTypeNames ?? [])}");
     }
 

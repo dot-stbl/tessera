@@ -62,6 +62,7 @@ public sealed class TracesController(
     ///     per OpenTelemetry/Jaeger); malformed ids 404 at the router before
     ///     the handler runs.
     /// </summary>
+    /// <exception cref="ProviderNotFoundException"></exception>
     [HttpGet(ApiRoutes.Trace)]
     [EndpointSummary("Trace detail with correlated logs (single response)")]
     [ProducesResponseType<GetTraceResponse>(StatusCodes.Status200OK)]
@@ -70,13 +71,10 @@ public sealed class TracesController(
         CancellationToken cancellationToken = default)
     {
         var parsedTraceId = new TraceId(traceId);
-        var trace = await traceProvider.GetByIdAsync(parsedTraceId, cancellationToken);
-        if (trace is null)
-        {
-            throw new ProviderNotFoundException(
+        var trace = await traceProvider.GetByIdAsync(parsedTraceId, cancellationToken)
+            ?? throw new ProviderNotFoundException(
                 TracesErrors.TraceNotFound,
                 $"trace {traceId} not found");
-        }
 
         var range = TracesEndpointHelpers.ToLogCorrelationRange(trace);
         var logs = await logProvider.ListByTraceAsync(parsedTraceId, range, cancellationToken);

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj"/>
     <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj"/>
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.0" />
     <PackageReference Include="Refit" Version="13.1.0" />
     <PackageReference Include="Refit.HttpClientFactory" Version="13.1.0" />
     <PackageReference Remove="Meziantou.Analyzer" />

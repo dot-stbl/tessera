@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Configuration;
+using Tessera.Shared.Kernel.Exceptions;
+using Tomlyn;
 using Tomlyn.Model;
 
 namespace Tessera.Shared.Kernel.Configuration.Source;
@@ -33,10 +35,27 @@ public sealed class TomlConfigurationProvider(TomlConfigurationSource source) : 
             return;
         }
 
-        var model = Tomlyn.TomlSerializer.Deserialize<TomlTable>(tomlText);
-        if (model is not null)
+        try
         {
-            TomlTableFlattener.FlattenTable(model, prefix: string.Empty, data);
+            if (TomlSerializer.Deserialize<TomlTable>(tomlText) is { } model)
+            {
+                TomlTableFlattener.FlattenTable(model, prefix: string.Empty, data);
+            }
+        }
+        catch (TomlException ex)
+        {
+            // error-mapping.md §5 — translate the synchronous I/O
+            // parse failure to a typed boundary exception. The host's
+            // IExceptionHandler maps ProviderException("config.parse_error", ...)
+            // to ProblemDetails with status 502 and code "config.parse_error"
+            // in extensions, so a malformed tessera.toml surfaces as a
+            // typed problem rather than a raw stack trace.
+            // ex.Message is Tomlyn's line/column diagnostic — useful
+            // for developer diagnostics, no PII (the file is local).
+            throw new ProviderException(
+                code: "config.parse_error",
+                message: $"TOML parse error: {ex.Message}",
+                inner: ex);
         }
 
         Data = data;

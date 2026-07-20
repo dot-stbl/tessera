@@ -73,22 +73,47 @@ public sealed class TimeRangeTests
     }
 
     /// <summary>
-    ///     <see cref="TimeRange.Last" /> returns a range whose duration equals the supplied
-    ///     <see cref="TimeSpan" /> and whose end aligns with the current UTC instant.
+    ///     <see cref="TimeRange.Last(TimeSpan, TimeProvider)" /> returns a range whose duration
+    ///     equals the supplied <see cref="TimeSpan" /> and whose end aligns with the
+    ///     injected clock — fully deterministic.
     /// </summary>
     [Fact]
-    public void Last_ReturnsRangeWithExpectedDurationEndingNow()
+    public void Last_WithInjectedClock_AlignsEndToClockInstant()
     {
+        var fakeInstant = new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero);
+        var clock = new FakeTimeProvider(fakeInstant);
         var span = TimeSpan.FromMinutes(10);
+
+        var range = TimeRange.Last(span, clock);
+
+        Assert.Equal(fakeInstant.ToUnixTimeMilliseconds(), range.EndUnixMs);
+        Assert.Equal((long)span.TotalMilliseconds, range.EndUnixMs - range.StartUnixMs);
+        Assert.True(range.StartUnixMs < range.EndUnixMs);
+    }
+
+    /// <summary>
+    ///     The parameter-less <see cref="TimeRange.Last(TimeSpan)" /> overload
+    ///     resolves to <see cref="TimeProvider.System" /> — sanity check
+    ///     that the overload composition preserves the documented
+    ///     short-circuit (no separate code path).
+    /// </summary>
+    [Fact]
+    public void Last_Parameterless_UsesSystemClock()
+    {
+        var span = TimeSpan.FromMinutes(5);
         var beforeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         var range = TimeRange.Last(span);
 
         var afterMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        Assert.Equal((long)span.TotalMilliseconds, range.EndUnixMs - range.StartUnixMs);
-        // end is between beforeMs (now) and afterMs (just-after-now)
-        Assert.InRange(range.EndUnixMs, beforeMs, afterMs + 100);
-        // start is end - span, so it's in the past
-        Assert.True(range.StartUnixMs < range.EndUnixMs);
+        Assert.InRange(range.EndUnixMs, beforeMs - 1, afterMs + 100);
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow()
+        {
+            return now;
+        }
     }
 }

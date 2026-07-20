@@ -23,6 +23,7 @@ public static class VictoriaServiceCollectionExtensions
     {
         services.AddOptions<VictoriaOptions>()
             .Bind(configuration.GetSection("victoria"))
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         VictoriaServicesRegistration.RegisterProviders(services);

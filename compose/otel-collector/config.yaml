@@ -1,0 +1,84 @@
+# OTel Collector pipeline for the Tessera dev/compose stack.
+#
+# Receivers:
+#   - otlp/gRPC and otlp/HTTP at the IANA-registered ports 4317/4318.
+#     LoadGenerators, manual curl commands, or app SDKs push OTLP here.
+#
+# Processors:
+#   - memory_limiter: protects the collector from OOM.
+#   - batch: amortises export cost across spans / log records.
+#
+# Exporters:
+#   - prometheusremotewrite → VictoriaMetrics (metrics).
+#   - otlphttp → VictoriaLogs at /insert/opentelemetry/v1/logs.
+#   - otlphttp → VictoriaTraces at /insert/opentelemetry/v1/traces
+#     (VictoriaTraces exposes the OTLP/HTTP endpoint out of the box).
+#   - debug → stdout (kept for ad-hoc debugging; not part of the steady
+#     state once the pipeline is proven).
+#
+# Pipelines keep metrics / traces / logs separate. The Tessera host
+# itself does not currently emit OTLP — see the Tessera project plan;
+# this collector is fed by Tessera.LoadGen and any third-party
+# OTLP-aware clients.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1000
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+exporters:
+  # Metrics → VictoriaMetrics via Prometheus remote-write. Victoria
+  # exposes /api/v1/write natively; vmagent not required for
+  # dev-stack scale.
+  prometheusremotewrite/victoriametrics:
+    endpoint: http://victoria-metrics:8428/api/v1/write
+
+  # Logs → VictoriaLogs. VictoriaLogs accepts OTLP/HTTP at the
+  # /insert/opentelemetry/v1/logs endpoint by default.
+  otlphttp/victorialogs:
+    endpoint: http://victoria-logs:9428
+    logs_endpoint: /insert/opentelemetry/v1/logs
+    compression: gzip
+    headers:
+      VL-Extra-Fields: "collector=otel-collector,environment=development"
+
+  # Traces → VictoriaTraces. Same OTLP/HTTP shape as logs but on the
+  # traces endpoint.
+  otlphttp/victoriatraces:
+    endpoint: http://victoria-traces:10428
+    traces_endpoint: http://victoria-traces:10428/insert/opentelemetry/v1/traces
+    compression: gzip
+    headers:
+      VT-Extra-Fields: "collector=otel-collector,environment=development"
+
+  # Debug — local stdout; kept for one-shot diagnostics, can be removed
+  # once the pipeline is solid.
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheusremotewrite/victoriametrics]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/victoriatraces]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/victorialogs]

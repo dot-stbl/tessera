@@ -24,7 +24,7 @@ internal static class ProblemDetailsResponseShims
 
     public static void AddResponse(OpenApiOperation operation, string statusCode, string description)
     {
-        operation.Responses ??= new OpenApiResponses();
+        operation.Responses ??= [];
         operation.Responses.TryAdd(statusCode, new OpenApiResponse
         {
             Description = description,

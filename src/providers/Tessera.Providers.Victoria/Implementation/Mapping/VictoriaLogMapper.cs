@@ -9,17 +9,35 @@ using Tessera.Shared.Kernel.Time;
 namespace Tessera.Providers.Victoria.Implementation.Mapping;
 
 /// <summary>
+///     File-static singleton for the <see cref="JsonSerializerOptions" /> the
+///     VictoriaLogs NDJSON deserializer uses. Extracted from
+///     <see cref="VictoriaLogMapper" /> per anti-patterns.md §6 — JSON
+///     options are config, not per-class state, and must live in a
+///     dedicated <c>*JsonOptions</c> holder so the naming policy is
+///     shared across the provider without static-initialiser ordering
+///     hazards.
+/// </summary>
+internal static class VictoriaLogJsonOptions
+{
+    /// <summary>
+    ///     The single options instance the provider's NDJSON parser uses.
+    ///     <c>static readonly</c> is intentional — the converter graph
+    ///     is built once on first access and cached for the process
+    ///     lifetime per <c>System.Text.Json</c>'s lazy caching.
+    /// </summary>
+    public static readonly JsonSerializerOptions Instance = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+    };
+}
+
+/// <summary>
 ///     Pure mappings for VictoriaLogs NDJSON + LogsQL query construction.
 ///     Held as <c>internal static</c> so they're testable in isolation,
 ///     not private to the provider class.
 /// </summary>
 internal static class VictoriaLogMapper
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-    };
-
     /// <summary>
     ///     Build a LogsQL filter string from a <see cref="LogQuery" />.
     ///     Returns "*" when no filter or trace id is supplied.
@@ -33,7 +51,7 @@ internal static class VictoriaLogMapper
 
         if (!string.IsNullOrWhiteSpace(query.Filter))
         {
-            return query.Filter!;
+            return query.Filter;
         }
 
         return "*";
@@ -53,7 +71,7 @@ internal static class VictoriaLogMapper
             VLLogEntry? dto;
             try
             {
-                dto = JsonSerializer.Deserialize<VLLogEntry>(line, JsonOptions);
+                dto = JsonSerializer.Deserialize<VLLogEntry>(line, VictoriaLogJsonOptions.Instance);
             }
             catch (JsonException)
             {

@@ -1,13 +1,6 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi;
 using Scalar.AspNetCore;
-using Tessera.Shared.Kernel.Api;
-using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Web.Errors;
 using Tessera.Shared.Web.OpenApi;
 
@@ -36,7 +29,7 @@ public static class WebInstallerExtensions
     {
         services.AddProblemDetails();
         services.AddExceptionHandler<TesseraExceptionHandler>();
-        services.AddOpenApi(options =>
+        services.AddOpenApi(static options =>
             options.AddOperationTransformer<ProblemDetailsResponsesTransformer>());
         return services;
     }

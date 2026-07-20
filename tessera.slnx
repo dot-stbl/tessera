@@ -78,4 +78,9 @@
         <Project Path="tests/unit/providers/Tessera.Providers.Victoria.Unit/Tessera.Providers.Victoria.Unit.csproj" />
     </Folder>
 
+    <!-- ============ Load generator (CLI utility, not a test project) === -->
+    <Folder Name="/tests/Tessera.LoadGen/">
+        <Project Path="tests/Tessera.LoadGen/Tessera.LoadGen.csproj" />
+    </Folder>
+
 </Solution>

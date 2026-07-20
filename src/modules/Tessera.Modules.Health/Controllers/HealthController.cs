@@ -30,6 +30,7 @@ public sealed class HealthController(IHealthProvider provider, IHealthMapper map
     ///     controller body shape is single-valued by design so FE consumers
     ///     inspect <c>status</c> unconditionally on error.
     /// </summary>
+    /// <exception cref="ProviderException"></exception>
     [HttpGet]
     [EndpointSummary("Composite health status across all wired providers")]
     [ProducesResponseType<HealthResponse>(StatusCodes.Status200OK)]

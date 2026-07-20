@@ -29,6 +29,7 @@ public sealed class LogsController(ILogProvider provider) : ControllerBase
     ///     ValidationProblem path. Non-2xx responses are documented globally
     ///     by the host's <c>ProblemDetailsResponsesTransformer</c>.
     /// </summary>
+    /// <exception cref="ProviderException"></exception>
     [HttpGet]
     [EndpointSummary("List logs by trace id (MVP-01). Ad-hoc LogsQL — MVP-02.")]
     [ProducesResponseType<Page<LogEntry>>(StatusCodes.Status200OK)]

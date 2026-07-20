@@ -2,6 +2,7 @@ using Tessera.Providers.Victoria.Clients;
 using Tessera.Providers.Victoria.Configuration;
 using Tessera.Providers.Victoria.Implementation.Mapping;
 using Tessera.Shared.Kernel.Domain.Logs;
+using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Kernel.Identifiers;
 using Tessera.Shared.Kernel.Pagination;
 using Tessera.Shared.Kernel.Providers.Logs;
@@ -21,18 +22,42 @@ public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOpti
     {
         var logsql = VictoriaLogMapper.BuildLogsQuery(query);
 
-        using var response = await client.QueryAsync(
-            options.Tenant,
-            logsql,
-            query.Limit,
-            query.StartUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.StartUnixMs.Value),
-            query.EndUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.EndUnixMs.Value),
-            cancellationToken);
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.QueryAsync(
+                options.Tenant,
+                logsql,
+                query.Limit,
+                query.StartUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.StartUnixMs.Value),
+                query.EndUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.EndUnixMs.Value),
+                cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            // error-mapping.md §5: translate the synchronous HTTP failure
+            // to a typed boundary exception. The host's IExceptionHandler
+            // maps ProviderException("provider.network_error", ...) to a
+            // ProblemDetails with status 502 — a 5xx from Victoria no
+            // longer crashes the host with a raw HttpRequestException.
+            throw new ProviderException(
+                code: "provider.network_error",
+                message: $"Victoria logs query failed: {ex.Message}",
+                inner: ex);
+        }
 
-        response.EnsureSuccessStatusCode();
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ProviderException(
+                    code: "provider.network_error",
+                    message: $"Victoria logs query returned {(int)response.StatusCode}");
+            }
 
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        return VictoriaLogMapper.AsPage(VictoriaLogMapper.ParseNdjson(body, query.TraceId));
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return VictoriaLogMapper.AsPage(VictoriaLogMapper.ParseNdjson(body, query.TraceId));
+        }
     }
 
     /// <inheritdoc />
