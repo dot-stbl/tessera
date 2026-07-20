@@ -4,9 +4,8 @@ using Tessera.Modules.Discovery.Controllers;
 using Tessera.Shared.Kernel.Domain.Services;
 using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Kernel.Providers.Discovery;
-using Xunit;
 
-namespace Tessera.Modules.Discovery.Tests.Controllers;
+namespace Tessera.Modules.Discovery.Unit.Controllers;
 
 /// <summary>
 ///     <see cref="DiscoveryController" /> orchestration tests — the
@@ -41,7 +40,7 @@ public sealed class DiscoveryControllerTests
         var actionResult = await controller.ListAsync();
 
         var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
-        var body = Assert.IsAssignableFrom<IReadOnlyList<ServiceSummary>>(okResult.Value);
+        var body = Assert.IsType<IReadOnlyList<ServiceSummary>>(okResult.Value, exactMatch: false);
         Assert.Equal(2, body.Count);
         Assert.Equal("api-gateway", body[0].Name);
     }
@@ -56,13 +55,13 @@ public sealed class DiscoveryControllerTests
     {
         var provider = Substitute.For<IDiscoveryProvider>();
         provider.ListServicesAsync(Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<ServiceSummary>());
+            .Returns([]);
         var controller = new DiscoveryController(provider);
 
         var actionResult = await controller.ListAsync();
 
         var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
-        var body = Assert.IsAssignableFrom<IReadOnlyList<ServiceSummary>>(okResult.Value);
+        var body = Assert.IsType<IReadOnlyList<ServiceSummary>>(okResult.Value, exactMatch: false);
         Assert.Empty(body);
     }
 
@@ -98,7 +97,7 @@ public sealed class DiscoveryControllerTests
         using var cts = new CancellationTokenSource();
         var provider = Substitute.For<IDiscoveryProvider>();
         provider.ListServicesAsync(cts.Token)
-            .Returns(Array.Empty<ServiceSummary>());
+            .Returns([]);
         var controller = new DiscoveryController(provider);
 
         await controller.ListAsync(cts.Token);

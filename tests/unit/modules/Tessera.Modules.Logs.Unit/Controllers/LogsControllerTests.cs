@@ -9,9 +9,8 @@ using Tessera.Shared.Kernel.Identifiers;
 using Tessera.Shared.Kernel.Pagination;
 using Tessera.Shared.Kernel.Providers.Logs;
 using Tessera.Shared.Kernel.Time;
-using Xunit;
 
-namespace Tessera.Modules.Logs.Tests.Controllers;
+namespace Tessera.Modules.Logs.Unit.Controllers;
 
 /// <summary>
 ///     <see cref="LogsController" /> orchestration tests — MVP-01 only
@@ -53,7 +52,7 @@ public sealed class LogsControllerTests
         var body = Assert.IsType<Page<LogEntry>>(okResult.Value);
         Assert.Single(body.Items);
         await provider.Received(1).QueryAsync(
-            Arg.Is<LogQuery>(q =>
+            Arg.Is<LogQuery>(static q =>
                 q.TraceId == new TraceId("0123456789abcdef0123456789abcdef") &&
                 q.Stream == null &&
                 q.StartUnixMs == 0L &&
@@ -100,7 +99,7 @@ public sealed class LogsControllerTests
         using var cts = new CancellationTokenSource();
         var provider = Substitute.For<ILogProvider>();
         provider.QueryAsync(Arg.Any<LogQuery>(), cts.Token)
-            .Returns(new Page<LogEntry>(Array.Empty<LogEntry>(), null, false));
+            .Returns(new Page<LogEntry>([], null, false));
         var request = new ListLogsRequest
         {
             TraceId = "0123456789abcdef0123456789abcdef",

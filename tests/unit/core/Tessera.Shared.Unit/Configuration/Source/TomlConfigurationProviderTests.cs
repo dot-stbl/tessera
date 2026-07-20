@@ -3,7 +3,7 @@ using Tessera.Shared.Kernel.Configuration.Source;
 using Tessera.Shared.Kernel.Exceptions;
 using Xunit;
 
-namespace Tessera.Shared.Kernel.Tests.Configuration.Source;
+namespace Tessera.Shared.Unit.Configuration.Source;
 
 /// <summary>
 ///     Regression tests for <see cref="TomlConfigurationProvider" />:

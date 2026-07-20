@@ -338,6 +338,7 @@ dotnet_diagnostic.CA1812.severity = none # avoid uninstantiated internal classes
 dotnet_diagnostic.CA1873.severity = none # wrap logger.LogX in IsEnabled — IsEnabled wrappers are noise
 dotnet_diagnostic.xUnit1004.severity = none # \`[Fact(Skip = \"...\")]\` is the canonical xUnit pattern for environment-dependent tests; xUnit encourages \`[Trait(\"Category\", \"Integration\")]\` + filter, but for v0.1 single-suite projects the Skip parameter is the simpler escape hatch.
 dotnet_diagnostic.CA2007.severity = none # ConfigureAwait — не нужно в app code
+dotnet_diagnostic.VSTHRD111.severity = none # ConfigureAwait — owner-disabled 2026-07-20: app code (.NET 8+) не имеет SynchronizationContext; .ConfigureAwait(false) — лишний шум; BCL analyzer CA2007 уже disabled см. выше
 # VSTHRD002 / VSTHRD103 moved to §6 (Async / await) as `error` — 2026-06-16.
 
 #---------------------------------------------------------------------

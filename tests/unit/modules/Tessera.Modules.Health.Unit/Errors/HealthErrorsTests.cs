@@ -1,7 +1,6 @@
 using Tessera.Modules.Health.Errors;
-using Xunit;
 
-namespace Tessera.Modules.Health.Tests.Errors;
+namespace Tessera.Modules.Health.Unit.Errors;
 
 /// <summary>
 ///     <see cref="HealthErrors" /> static contract tests — verify the

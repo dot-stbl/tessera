@@ -12,9 +12,13 @@ internal static class MinimalVariant
     /// <summary>
     ///     Render the Minimal variant to <paramref name="console" />.
     ///     Three centered lines: name, version, tagline.
+    ///     <paramref name="noColor" /> is accepted for API parity with
+    ///     <see cref="BlockVariant.Render" /> but the minimal variant is
+    ///     intentionally colorless.
     /// </summary>
     public static void Render(IAnsiConsole console, string tagline, bool noColor)
     {
+        _ = noColor;
         console.WriteLine("tessera");
         console.WriteLine("v0.0.0");
         console.WriteLine();

@@ -13,9 +13,6 @@ namespace Tessera.ArchitectureTests;
 /// </summary>
 public sealed class LayerIsolationTests
 {
-    private static readonly System.Reflection.Assembly Kernel =
-        typeof(Tessera.Shared.Kernel.Api.ApiRoutes).Assembly;
-
     private static readonly System.Reflection.Assembly Traces =
         typeof(Tessera.Modules.Traces.Controllers.TracesController).Assembly;
 

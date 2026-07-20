@@ -1,8 +1,7 @@
 using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Web.Errors;
-using Xunit;
 
-namespace Tessera.Host.Tests.Errors;
+namespace Tessera.Host.UnitTests.Errors;
 
 /// <summary>
 ///     Static mapping helper <see cref="TesseraExceptionHandlerHelpers.MapStatus" />

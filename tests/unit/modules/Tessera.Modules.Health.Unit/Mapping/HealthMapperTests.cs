@@ -1,9 +1,8 @@
 using Tessera.Modules.Health.Contracts;
 using Tessera.Modules.Health.Mapping;
 using Tessera.Shared.Kernel.Providers.Health;
-using Xunit;
 
-namespace Tessera.Modules.Health.Tests.Mapping;
+namespace Tessera.Modules.Health.Unit.Mapping;
 
 /// <summary>
 ///     <see cref="HealthMapper" /> projection tests — verify Mapperly
@@ -58,7 +57,7 @@ public sealed class HealthMapperTests
     {
         var mapper = new HealthMapper();
 
-        Assert.IsAssignableFrom<IHealthMapper>(mapper);
+        Assert.IsType<IHealthMapper>(mapper, exactMatch: false);
         Assert.NotNull(mapper.ToResponse(new ProviderHealthReport("vt", HealthStatus.Healthy)));
     }
 }

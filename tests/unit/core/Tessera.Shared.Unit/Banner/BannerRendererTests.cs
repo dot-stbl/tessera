@@ -2,7 +2,7 @@ using Spectre.Console.Testing;
 using Tessera.Banner;
 using Xunit;
 
-namespace Tessera.Shared.Kernel.Tests.Banner;
+namespace Tessera.Shared.Unit.Banner;
 
 /// <summary>
 ///     Unit tests for <see cref="BannerRenderer" />. Uses

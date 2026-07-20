@@ -1,6 +1,4 @@
-using Tessera.LoadGen.Models;
-
-namespace Tessera.LoadGen.Scenarios;
+namespace Tessera.LoadGen.Models;
 
 /// <summary>
 ///     Per-request context shared by every scenario implementation —

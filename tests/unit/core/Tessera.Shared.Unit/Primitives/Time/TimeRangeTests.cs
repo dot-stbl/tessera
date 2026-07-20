@@ -1,7 +1,7 @@
 using Tessera.Shared.Kernel.Time;
 using Xunit;
 
-namespace Tessera.Shared.Kernel.Tests.Time;
+namespace Tessera.Shared.Unit.Primitives.Time;
 
 /// <summary>
 ///     Unit tests for <see cref="TimeRange" />.
@@ -56,7 +56,7 @@ public sealed class TimeRangeTests
         var intersection = a.Intersect(b);
 
         Assert.NotNull(intersection);
-        Assert.Equal(150, intersection!.StartUnixMs);
+        Assert.Equal(150, intersection.StartUnixMs);
         Assert.Equal(200, intersection.EndUnixMs);
     }
 

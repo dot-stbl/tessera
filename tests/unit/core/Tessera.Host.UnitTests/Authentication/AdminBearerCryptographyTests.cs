@@ -1,8 +1,7 @@
 using System.Text;
 using Tessera.Shared.Authentication.Admin;
-using Xunit;
 
-namespace Tessera.Host.Tests.Authentication;
+namespace Tessera.Host.UnitTests.Authentication;
 
 /// <summary>
 ///     <see cref="AdminBearerCryptography.FixedTimeEquals" /> tests — the

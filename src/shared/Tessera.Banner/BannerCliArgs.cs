@@ -1,5 +1,3 @@
-using CommandLine;
-
 namespace Tessera.Banner;
 
 /// <summary>

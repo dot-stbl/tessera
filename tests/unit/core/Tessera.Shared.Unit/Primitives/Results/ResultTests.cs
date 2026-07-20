@@ -1,7 +1,7 @@
 using Tessera.Shared.Kernel.Results;
 using Xunit;
 
-namespace Tessera.Shared.Kernel.Tests.Results;
+namespace Tessera.Shared.Unit.Primitives.Results;
 
 /// <summary>
 ///     Unit tests for <see cref="Result{T}" />.

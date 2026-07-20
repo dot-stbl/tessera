@@ -68,8 +68,8 @@ public sealed record BannerOptions(
 public enum BannerVariantKind
 {
     /// <summary>FigletText 'tessera' + bordered text + red accent divider.</summary>
-    Block,
+    Block = 0,
 
     /// <summary>Plain text frame, no Figlet — fallback for narrow terminals (&lt; 80 cols).</summary>
-    Minimal,
+    Minimal = 1,
 }

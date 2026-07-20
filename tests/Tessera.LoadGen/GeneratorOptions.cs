@@ -20,13 +20,13 @@ public sealed record GeneratorOptions
     public string OtlpEndpoint { get; init; } = "http://localhost:4317";
 
     /// <summary>Synthetic service names emitted by the load generator. Default four-service fanout.</summary>
-    public IReadOnlyList<string> Services { get; init; } = new[]
-    {
+    public IReadOnlyList<string> Services { get; init; } =
+    [
         "checkout-svc",
         "payment-svc",
         "auth-svc",
         "notification-svc",
-    };
+    ];
 
     /// <summary>Operations per second, distributed evenly across <see cref="Services" />. Default <c>10</c>.</summary>
     public int Rate { get; init; } = 10;
@@ -59,6 +59,7 @@ internal static class GeneratorOptionsParser
     ///     missing values throw <see cref="ArgumentException" /> with
     ///     the option name in the message.
     /// </summary>
+    /// <exception cref="ArgumentException"></exception>
     public static GeneratorOptions Parse(string[] args)
     {
         var otlpEndpoint = "http://localhost:4317";

@@ -5,7 +5,6 @@ using Tessera.Modules.Traces.Controllers;
 using Tessera.Modules.Traces.Errors;
 using Tessera.Modules.Traces.Mapping;
 using Tessera.Shared.Kernel.Domain.Logs;
-using Tessera.Shared.Kernel.Domain.Spans;
 using Tessera.Shared.Kernel.Domain.Traces;
 using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Kernel.Identifiers;
@@ -13,9 +12,8 @@ using Tessera.Shared.Kernel.Pagination;
 using Tessera.Shared.Kernel.Providers.Logs;
 using Tessera.Shared.Kernel.Providers.Traces;
 using Tessera.Shared.Kernel.Time;
-using Xunit;
 
-namespace Tessera.Modules.Traces.Tests.Controllers;
+namespace Tessera.Modules.Traces.Unit.Controllers;
 
 /// <summary>
 ///     <see cref="TracesController" /> orchestration tests — exercise the
@@ -39,7 +37,7 @@ public sealed class TracesControllerTests
             StartTime: 0L,
             DurationMs: 100L,
             Status: TraceStatus.Ok,
-            Spans: Array.Empty<Span>());
+            Spans: []);
     }
 
     /// <summary>
@@ -83,7 +81,7 @@ public sealed class TracesControllerTests
         Assert.Equal("next-cursor", body.Cursor);
         Assert.True(body.HasMore);
         await traceProvider.Received(1).SearchAsync(
-            Arg.Is<TraceSearchQuery>(q =>
+            Arg.Is<TraceSearchQuery>(static q =>
                 q.Service == "api" &&
                 q.StartUnixMs == 0L &&
                 q.EndUnixMs == 100L),
@@ -107,11 +105,11 @@ public sealed class TracesControllerTests
             .Returns(trace);
         logProvider
             .ListByTraceAsync(AnyTraceId, Arg.Any<TimeRange>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<LogEntry>>(Array.Empty<LogEntry>()));
+            .Returns(Task.FromResult<IReadOnlyList<LogEntry>>([]));
         var expected = new GetTraceResponse
         {
             Trace = trace,
-            CorrelatedLogs = Array.Empty<LogEntry>(),
+            CorrelatedLogs = [],
         };
         mapper.ToResponse(trace, Arg.Any<IReadOnlyList<LogEntry>>()).Returns(expected);
         var controller = new TracesController(traceProvider, logProvider, mapper);
@@ -173,9 +171,9 @@ public sealed class TracesControllerTests
         traceProvider.GetByIdAsync(AnyTraceId, cts.Token).Returns(trace);
         logProvider
             .ListByTraceAsync(AnyTraceId, Arg.Any<TimeRange>(), cts.Token)
-            .Returns(Task.FromResult<IReadOnlyList<LogEntry>>(Array.Empty<LogEntry>()));
+            .Returns(Task.FromResult<IReadOnlyList<LogEntry>>([]));
         mapper.ToResponse(trace, Arg.Any<IReadOnlyList<LogEntry>>())
-            .Returns(new GetTraceResponse { Trace = trace, CorrelatedLogs = Array.Empty<LogEntry>() });
+            .Returns(new GetTraceResponse { Trace = trace, CorrelatedLogs = [] });
         var controller = new TracesController(traceProvider, logProvider, mapper);
 
         await controller.GetAsync(AnyTraceId.Value, cts.Token);

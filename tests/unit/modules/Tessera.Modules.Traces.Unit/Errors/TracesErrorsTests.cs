@@ -1,7 +1,6 @@
 using Tessera.Modules.Traces.Errors;
-using Xunit;
 
-namespace Tessera.Modules.Traces.Tests.Errors;
+namespace Tessera.Modules.Traces.Unit.Errors;
 
 /// <summary>
 ///     <see cref="TracesErrors" /> static contract tests — error codes

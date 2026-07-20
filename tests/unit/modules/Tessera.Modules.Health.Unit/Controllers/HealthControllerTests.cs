@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Tessera.Modules.Health.Contracts;
@@ -7,9 +6,8 @@ using Tessera.Modules.Health.Errors;
 using Tessera.Modules.Health.Mapping;
 using Tessera.Shared.Kernel.Exceptions;
 using Tessera.Shared.Kernel.Providers.Health;
-using Xunit;
 
-namespace Tessera.Modules.Health.Tests.Controllers;
+namespace Tessera.Modules.Health.Unit.Controllers;
 
 /// <summary>
 ///     <see cref="HealthController" /> orchestration tests — verify the

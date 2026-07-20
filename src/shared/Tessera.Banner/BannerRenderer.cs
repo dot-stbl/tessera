@@ -44,6 +44,7 @@ public static class BannerRenderer
     ///     supplied <paramref name="options" />. No state, no side
     ///     effects — pure output.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public static void WriteTo(IAnsiConsole console, BannerOptions options)
     {
         ArgumentNullException.ThrowIfNull(console);
@@ -98,7 +99,7 @@ public static class BannerRenderer
             var version = typeof(BannerRenderer).Assembly
                 .GetName()
                 .Version;
-            if (version is null || version.Major == 0 && version.Minor == 0 && version.Build < 0)
+            if (version is null || (version.Major == 0 && version.Minor == 0 && version.Build < 0))
             {
                 return "0.0.0";
             }

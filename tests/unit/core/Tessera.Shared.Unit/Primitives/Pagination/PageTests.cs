@@ -1,7 +1,7 @@
 using Tessera.Shared.Kernel.Pagination;
 using Xunit;
 
-namespace Tessera.Shared.Kernel.Tests.Pagination;
+namespace Tessera.Shared.Unit.Primitives.Pagination;
 
 /// <summary>
 ///     Unit tests for <see cref="Page{T}" />.
@@ -32,7 +32,7 @@ public sealed class PageTests
     [Fact]
     public void Ctor_NoMorePages_CursorNullHasMoreFalse()
     {
-        var page = new Page<int>(Array.Empty<int>(), null, false);
+        var page = new Page<int>([], null, false);
 
         Assert.Null(page.Cursor);
         Assert.False(page.HasMore);

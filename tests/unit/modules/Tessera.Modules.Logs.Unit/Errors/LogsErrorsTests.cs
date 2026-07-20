@@ -1,7 +1,6 @@
 using Tessera.Modules.Logs.Errors;
-using Xunit;
 
-namespace Tessera.Modules.Logs.Tests.Errors;
+namespace Tessera.Modules.Logs.Unit.Errors;
 
 /// <summary>
 ///     <see cref="LogsErrors" /> static contract test — the dot.case code

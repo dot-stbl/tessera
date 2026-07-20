@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Tessera.LoadGen.Models;
 using Tessera.LoadGen.Scenarios;
 
 namespace Tessera.LoadGen.Models;
@@ -29,12 +28,12 @@ public static class DefaultServiceFactory
             result.Add(new SyntheticService
             {
                 Name = name,
-                Operations = new[]
-                {
+                Operations =
+                [
                     $"GET /{name}/items",
                     $"POST /{name}/items",
                     $"GET /{name}/items/{{id}}",
-                },
+                ],
             });
         }
         return result;
@@ -50,13 +49,13 @@ public static class DefaultServiceFactory
 public enum ScenarioKind
 {
     /// <summary>Single root span per request, no children. Cheapest baseline.</summary>
-    Simple,
+    Simple = 0,
 
     /// <summary>Root span with 2–3 child spans per request, simulating a fan-out of dependencies.</summary>
-    Fanout,
+    Fanout = 1,
 
     /// <summary>Root span compensating each child on failure — models long-running transaction-like work.</summary>
-    Saga,
+    Saga = 2,
 }
 
 /// <summary>
@@ -72,6 +71,7 @@ internal static class ScenarioKindExtensions
     ///     enum. Unknown values surface as <see cref="ArgumentException" />
     ///     so callers see the typed failure immediately.
     /// </summary>
+    /// <exception cref="ArgumentException"></exception>
     public static ScenarioKind ToScenarioKind(this string value)
     {
         return value switch
@@ -103,6 +103,7 @@ internal static class ScenarioDispatcher
     ///     for RED metrics counters.
     /// </summary>
     /// <returns><see langword="true" /> if the scenario completed successfully; <see langword="false" /> on simulated failure.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public static Task<bool> ExecuteAsync(ScenarioKind kind, ScenarioIteration iteration, CancellationToken cancellationToken)
     {
         return kind switch

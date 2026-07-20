@@ -8,7 +8,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Tessera.LoadGen.Models;
-using Tessera.LoadGen.Scenarios;
 
 namespace Tessera.LoadGen;
 
