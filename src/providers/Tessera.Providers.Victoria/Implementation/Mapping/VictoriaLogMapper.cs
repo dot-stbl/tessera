@@ -15,10 +15,18 @@ namespace Tessera.Providers.Victoria.Implementation.Mapping;
 /// </summary>
 internal static class VictoriaLogMapper
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-    };
+    /// <summary>
+    ///     Lazy-resolved singleton <see cref="JsonSerializerOptions" />
+    ///     with the snake_case naming policy the upstream VL endpoint
+    ///     emits. Lazily initialized because <see cref="JsonSerializerOptions" />
+    ///     caches the resolved converter graph on first use — a static
+    ///     field would block on first deserialization.
+    /// </summary>
+    private static readonly Lazy<JsonSerializerOptions> JsonOptions = new(
+        () => new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        });
 
     /// <summary>
     ///     Build a LogsQL filter string from a <see cref="LogQuery" />.
@@ -53,7 +61,7 @@ internal static class VictoriaLogMapper
             VLLogEntry? dto;
             try
             {
-                dto = JsonSerializer.Deserialize<VLLogEntry>(line, JsonOptions);
+                dto = JsonSerializer.Deserialize<VLLogEntry>(line, JsonOptions.Value);
             }
             catch (JsonException)
             {
