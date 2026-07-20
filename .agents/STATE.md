@@ -8,19 +8,23 @@ MVP-01 — backend-only (Traces + Logs + Discovery + Health + Victoria provider 
 **Phase 2 (4 backend modules as controllers) — DONE**.
 **Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI + Scalar) — DONE**.
 **Phase 4 (architecture tests, deployment files, fixes from fresh-eye review) — DONE**.
-**Phase 5 (local E2E verify + container image publish + CI workflow) — NOT STARTED**.
+**Phase 5 (compose stack + LoadGen CLI, deploy artefacts consolidated under `/compose`) — DONE**.
+**Phase 6 (local E2E verify + container image publish + CI workflow) — NOT STARTED**.
 
-MVP-01 code-complete and mergeable. Pending only human-side runtime verification (`dotnet run`, `docker compose up`) plus a CI YAML which was deferred per owner direction.
+MVP-01 backend code-complete and mergeable. LoadGen CLI shipped; integration tests deliberately dropped (see Phase 5 notes). Pending only human-side runtime verification (`docker compose -f compose/docker-compose.yml up` + curl) plus a CI YAML which was deferred per owner direction.
 
 ## Progress
 - **Phase 0** (rules + provider scaffold) — DONE.
 - **Phase 1** (shared primitives + provider impls) — DONE (19 commits).
 - **Phase 2** (4 backend modules as controllers with Mapperly mappers) — DONE.
-- **Phase 3** (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE (Phase 3 commits + cleanup `29485dc` + `4064eea`).
-- **Phase 4** (architecture tests recreated + 5 module/host test projects recreated via `dotnet new xunit` + unit tests written + Dockerfile + docker-compose + fresh-eye review fixes) — **DONE** (8 commits this session: `1711e6b`, `205b119`, `48ee179`, `b98a3c2`, `9f47c81`, `7c4d52b`, `5b81791`, `813e9ba`, plus `29485dc`/`4064eea`/`672284f` Phase 3 wrap, plus `075174e` critical fixes).
-- **Phase 5** (local E2E verify + container image publish + CI workflow) — NOT STARTED.
+- **Phase 3** (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE.
+- **Phase 4** (architecture tests recreated + 5 module/host test projects recreated via `dotnet new xunit` + unit tests written + Dockerfile + docker-compose + fresh-eye review fixes) — DONE.
+- **Phase 5** (compose stack consolidation + LoadGen CLI + audit agent pass) — **DONE** on a new branch `tessera-mvp-1-stack` (3 commits: `9c71843` consolidate docker artefacts into `/compose/` + replace single-binary `victoria-stack` with separated `victoria-metrics` / `victoria-logs` / `victoria-traces` images + OTel collector + Grafana; `90cdb50` + `edeecdc` add `tests/Tessera.LoadGen/` synthetic OTel generator — initial `tests/integration/{Stack.Testing,Stack.Integration}` round-trip test stack included in `90cdb50` then dropped in `edeecdc` after owner feedback "тест на compose не нужен"; rename `ct` → `cancellationToken` and remove audit-flagged `_`-prefix fields).
+- **Phase 6** (local E2E verify + container image publish + CI workflow) — NOT STARTED.
 
-Phase 4 deliverable: 92/92 unit tests passing across 8 test projects, Dockerfile + .dockerignore, docker-compose.yml, fresh-eye Task(agent=general) review executed + critical fixes (LogsController validation, Dockerfile wget install, AdminBearerOptions init).
+Phase 4 deliverable: 92/92 unit tests passing across 8 test projects, Dockerfile + .dockerignore (later moved into `/compose/`), docker-compose.yml (later replaced by `/compose/docker-compose.yml`), fresh-eye Task(agent=general) review + critical fixes.
+
+Phase 5 deliverable: `/compose/` as single source of truth (Dockerfile + .dockerignore + docker-compose.yml + otel-collector/config.yaml + grafana/provisioning/datasources/victoria.yaml + grafana/provisioning/dashboards/dashboards.yaml + config/tessera.dev.toml + README.md); `tests/Tessera.LoadGen/` console app (OpenTelemetry SDK + 3 scenarios: simple, fanout, saga); rule-audit Task(general) on the entire project — 11 critical / 8 high / 25 medium findings identified; session-introduced violations fixed (`ct` → `cancellationToken` rename, dropped `GeneratorOptionsBuilder._`-prefix fields); pre-existing critical violations (HttpClientFactory / EnsureSuccessStatusCode / VerifyFormatOnBuild placeholder) remain in `src/providers/Tessera.Providers.Victoria/` and `src/host/Tessera.Build.Tools/`, in `.planning/BACKEND-ISSUES.md`.
 
 ## Working agreement
 - Owner confirms strategic decisions (architectural forks) before code work begins
