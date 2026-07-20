@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tessera.Providers.Victoria.Clients;
 using Tessera.Providers.Victoria.Configuration;
 using Tessera.Providers.Victoria.Implementation.Mapping;
@@ -15,13 +16,14 @@ namespace Tessera.Providers.Victoria.Implementation;
 public sealed class VictoriaDiscoveryProvider(
     IVictoriaTracesClient tracesClient,
     IVictoriaLogsClient logsClient,
-    VictoriaOptions options) : IDiscoveryProvider
+    VictoriaOptions options,
+    ILogger<VictoriaDiscoveryProvider> logger) : IDiscoveryProvider
 {
     /// <inheritdoc />
     public async Task<IReadOnlyList<ServiceSummary>> ListServicesAsync(CancellationToken cancellationToken)
     {
-        var traceServices = await VictoriaDiscoveryMapper.TryListTraceServicesAsync(tracesClient, options.Tenant, cancellationToken);
-        var logStreams = await VictoriaDiscoveryMapper.TryListLogStreamsAsync(logsClient, options.Tenant, cancellationToken);
+        var traceServices = await VictoriaDiscoveryMapper.TryListTraceServicesAsync(tracesClient, logger, options.Tenant, cancellationToken);
+        var logStreams = await VictoriaDiscoveryMapper.TryListLogStreamsAsync(logsClient, logger, options.Tenant, cancellationToken);
 
         return VictoriaDiscoveryMapper.ToServiceList(traceServices, logStreams);
     }

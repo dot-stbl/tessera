@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tessera.Providers.Victoria.Clients;
 using Tessera.Shared.Kernel.Domain.Services;
 
@@ -52,11 +53,12 @@ internal static class VictoriaDiscoveryMapper
 
     /// <summary>
     ///     Fetch the service inventory from VT <c>/services</c>, swallowing
-    ///     any exception and returning an empty list. Per-provider failure
+    ///     network failures and returning an empty list. Per-provider failure
     ///     must not cascade to a UI crash.
     /// </summary>
     public static async Task<IReadOnlyList<string>> TryListTraceServicesAsync(
         IVictoriaTracesClient client,
+        ILogger logger,
         string tenant,
         CancellationToken cancellationToken)
     {
@@ -65,19 +67,28 @@ internal static class VictoriaDiscoveryMapper
             var response = await client.GetServicesAsync(tenant, cancellationToken);
             return response.Data;
         }
-        catch
+        catch (HttpRequestException ex)
         {
+            // exceptions.md §2: catch only the type you can act on. The
+            // catch-all swallow is gone — a non-network failure (e.g.
+            // mapping) is now a hard error surfaced through the caller's
+            // exception chain rather than a silent empty result.
+            logger.LogWarning(
+                ex,
+                "Victoria traces /services unreachable; returning empty list for tenant {Tenant}",
+                tenant);
             return [];
         }
     }
 
     /// <summary>
     ///     Fetch distinct <c>_stream</c> values from VL LogsQL, swallowing
-    ///     any exception or non-success status. Per-provider failure must
-    ///     not cascade to a UI crash.
+    ///     network failures and returning an empty list. Per-provider failure
+    ///     must not cascade to a UI crash.
     /// </summary>
     public static async Task<IReadOnlyList<string>> TryListLogStreamsAsync(
         IVictoriaLogsClient client,
+        ILogger logger,
         string tenant,
         CancellationToken cancellationToken)
     {
@@ -88,8 +99,12 @@ internal static class VictoriaDiscoveryMapper
                 ? []
                 : ExtractDistinctStreams(await response.Content.ReadAsStringAsync(cancellationToken));
         }
-        catch
+        catch (HttpRequestException ex)
         {
+            logger.LogWarning(
+                ex,
+                "Victoria logs /select/* unreachable; returning empty list for tenant {Tenant}",
+                tenant);
             return [];
         }
     }
