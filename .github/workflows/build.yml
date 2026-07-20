@@ -1,118 +1,145 @@
-name: build
+name: build-and-test
 
-# Tessera PR + push workflow.
-#
-# Triggers:
-#   - pull_request targeting main or develop
-#   - push to main or develop
-#
-# Jobs (all run on ubuntu-latest):
-#   build-and-test:  dotnet build + test against tessera.slnx.
-#   architecture:   separate job for NetArchTest rule violations so they
-#                   are visible independent of unit tests.
-#
-# Format gate (`dotnet format --verify-no-changes`) is intentionally
-# NOT in this workflow -- there is pre-existing format drift in older
-# test files (FINALNEWLINE / IDE0130) and the format cleanup lives
-# in a separate feature branch. When that lands, flip
-# TesseraFormatGateEnabled=true on the build job and add the format
-# check back.
-#
-# Path filters keep the workflow from running on web/ changes
-# (frontend lane -- separate workflow) or compose/ docs.
-#
-# Concurrency: cancel in-progress PR builds on a new push to the same
-# ref so the queue doesn't pile up. Main / develop pushes run to
-# completion (cancel-in-progress: false) because they're the record.
-
+# Triggered on every push to main (gate merges) and to the
+# tessera/** feature branches (PR-style validation). Tag-push
+# builds are intentionally absent — Tessera does not publish
+# package builds via CI; container images are published
+# out-of-band from a tagged commit on main.
 on:
   push:
-    branches: [main, develop]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'tessera.slnx'
-      - 'Directory.Build.props'
-      - 'Directory.Packages.props'
-      - 'global.json'
-      - '.github/workflows/build.yml'
+    branches:
+      - main
+      - "tessera/**"
   pull_request:
-    branches: [main, develop]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'tessera.slnx'
-      - 'Directory.Build.props'
-      - 'Directory.Packages.props'
-      - 'global.json'
-      - '.github/workflows/build.yml'
+    branches:
+      - main
 
+# Cancel superseded runs on the same branch — keeps the
+# self-hosted runner free for fresh work when a commit is
+# updated rapidly.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-permissions:
-  contents: read
+# Self-hosted runner, Linux x64. Phase 7 (Windows L1-L4) is
+# tracked in .github/ISSUE_DRAFT_phase-7-windows.md and is out
+# of scope for this file.
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 
 jobs:
+  # ─── job 1: format + build + unit tests ────────────────────────
+  # The full pipeline gate that matches the agent's local
+  # build-verification command (build-verification.md).
+  # dotnet format --verify-no-changes returns exit 2 on drift,
+  # which fails the job — prevents committed format drift.
   build-and-test:
-    name: build + test
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    name: format-check / build / tests
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+
     steps:
-      # submodules: false -- the assets/stbl submodule's .gitmodules
-      # URL is a local Windows path that doesn't resolve on the
-      # ubuntu-latest runner. The brand assets are static SVGs/CSS
-      # used by the web/ frontend (deferred to MVP-02) and not by
-      # the backend build, so skipping the fetch is safe for MVP-01
-      # backend CI. The .gitmodules URL is out of scope for this
-      # commit; fixed in a follow-up that points it at the real
-      # dot-stbl/brand repo.
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: false
+          fetch-depth: 1
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: 10.0.x
 
       - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
 
       - name: Restore
         run: dotnet restore tessera.slnx
 
+      - name: Format drift gate
+        # Equivalent to the agent's `dotnet format tessera.slnx
+        # --verify-no-changes --severity hidden` build-gate
+        # check. Drift accumulates silently otherwise — the
+        # rule per csharp/analyzers.md.
+        run: dotnet format tessera.slnx --verify-no-changes --severity hidden
+
       - name: Build
-        run: dotnet build tessera.slnx -c Release --no-restore
+        run: dotnet build tessera.slnx -c Debug --no-restore
 
-      - name: Test
-        run: dotnet test tessera.slnx -c Release --no-build --no-restore --verbosity normal
+      - name: Tests
+        # TrxLogger produces junit-compatible report; this
+        # runner doesn't upload test results, but the file is
+        # left behind for follow-up jobs.
+        run: dotnet test tessera.slnx --no-build --nologo --logger "trx;LogFileName=results.trx"
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/**/*.trx"
+          if-no-files-found: ignore
 
-  architecture:
-    name: architecture (NetArchTest)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  # ─── job 2: container image smoke ─────────────────────────────
+  # Build the multi-stage container that the runtime image is
+  # composed from (FE bun builder + .NET publish + alpine
+  # runtime). Catches Dockerfile regression that wouldn't
+  # surface in dotnet build (e.g. a missing COPY in the
+  # fe-builder stage, or a runtime image layer breakage).
+  docker-image:
+    name: docker build (tessera image)
+    runs-on: [self-hosted, linux, x64]
+    needs: build-and-test
+    timeout-minutes: 60
+
     steps:
-      # submodules: false -- same rationale as the build job.
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: false
+          fetch-depth: 1
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Tessera container (cache from main)
+        # cache-from pulls a previous image from GHCR (when
+        # one exists) so cold caches don't redo bun install +
+        # NuGet restore + dotnet publish for every commit.
+        # The pull-and-build step is skipped on the first
+        # ever run — there's no "previous image" — that's
+        # fine; the cache populates as soon as #1 lands.
+        uses: docker/build-push-action@v6
         with:
-          dotnet-version: '10.0.x'
+          context: .
+          file: compose/Dockerfile
+          tags: tessera:ci-${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/dot-stbl/tessera:main
+          cache-to: type=inline
+          load: true
+          provenance: false
 
-      - name: Restore
-        run: dotnet restore tessera.slnx
-
-      - name: Architecture tests
-        run: dotnet test tests/unit/core/Tessera.ArchitectureTests -c Release --no-restore --verbosity normal
+      - name: Smoke check (image boots, /api/v1/health reachable)
+        run: |
+          set -eu
+          image="tessera:ci-${{ github.sha }}"
+          cid=$(docker run --rm --detach \
+            --publish 1990 \
+            --env TESSERA_ADMIN_TOKEN=ci-smoke-token \
+            "$image")
+          trap 'docker kill "$cid" >/dev/null 2>&1 || true' EXIT
+          deadline=$(( $(date +%s) + 60 ))
+          while :; do
+            if curl --fail --silent http://127.0.0.1:1990/api/v1/health; then
+              echo "health OK"
+              exit 0
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "health probe timed out (60s)"
+              docker logs "$cid"
+              exit 1
+            fi
+            sleep 2
+          done
