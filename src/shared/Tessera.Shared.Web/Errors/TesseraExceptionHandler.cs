@@ -43,12 +43,14 @@ public sealed class TesseraExceptionHandler(ILogger<TesseraExceptionHandler> log
             },
         };
 
+#pragma warning disable CA1848
         logger.LogWarning(
             exception,
             "Provider failure on {Path}: {Code} -> {StatusCode}",
             httpContext.Request.Path,
             providerException.Code,
             statusCode);
+#pragma warning restore CA1848
 
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(

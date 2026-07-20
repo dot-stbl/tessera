@@ -111,11 +111,13 @@ public sealed class LdapAuthHandler(
 
         if (ldapException is not null)
         {
+#pragma warning disable CA1848
             Logger.LogWarning(
                 ldapException,
                 "LDAP authentication failed for {Username} on {Server}",
                 presentedUsername,
                 opts.Server);
+#pragma warning restore CA1848
 
             return Task.FromResult(AuthenticateResult.Fail(ErrorCode));
         }
