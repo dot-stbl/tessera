@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Tessera.Providers.Victoria.Configuration;
 
 namespace Tessera.Providers.Victoria.DependencyInjection;
@@ -23,6 +24,7 @@ public static class VictoriaServiceCollectionExtensions
     {
         services.AddOptions<VictoriaOptions>()
             .Bind(configuration.GetSection("victoria"))
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         VictoriaServicesRegistration.RegisterProviders(services);
