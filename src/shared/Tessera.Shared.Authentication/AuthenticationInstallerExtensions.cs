@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Tessera.Shared.Authentication.Core;
 using Tessera.Shared.Authentication.Providers.Admin;
 using Tessera.Shared.Authentication.Providers.Guest;
+using Tessera.Shared.Authentication.Providers.Ldap;
 
 namespace Tessera.Shared.Authentication;
 
@@ -19,13 +20,13 @@ namespace Tessera.Shared.Authentication;
 ///         <see cref="Microsoft.AspNetCore.Authentication.AuthenticationScheme" />;
 ///         authorization policies can target it via
 ///         <c>services.AddAuthorization(options =&gt; options.AddPolicy("admin",
-///         p =&gt; p.AddAuthenticationSchemes(AdminBearerAuthProvider.NameConst).RequireRole("admin")))</c>.
+///         p =&gt; p.AddAuthenticationSchemes(AdminBearerAuthProvider.NameConst).RequireRole("admin")))</c>
+///         (with similar AddAuthenticationSchemes for LdapAuthProvider.NameConst).
 ///     </para>
 ///     <para>
 ///         Per ADR-0001 Decision 1 — multi-provider auth framework. MVP-01
-///         ships with Guest + AdminBearer only; LDAP (4b) and Keycloak (4c)
-///         will plug in via the same <see cref="IAuthProvider" /> shape in
-///         later phases.
+///         ships Guest + AdminBearer; LDAP (4b) and Keycloak (4c) plug in
+///         via the same <see cref="IAuthProvider" /> shape.
 ///     </para>
 /// </summary>
 public static class AuthenticationInstallerExtensions
@@ -35,9 +36,9 @@ public static class AuthenticationInstallerExtensions
     ///     the Guest scheme (anonymous-read default) — independent of
     ///     <c>[auth.providers.guest]/enabled</c>. Conditionally
     ///     registers AdminBearer when
-    ///     <c>[auth.providers.admin-bearer]/enabled = true</c>.
-    ///     LDAP and Keycloak schemes will be added by the same call when
-    ///     their phases land.
+    ///     <c>[auth.providers.admin-bearer]/enabled = true</c> and LDAP
+    ///     when <c>[auth.providers.ldap]/enabled = true</c>.
+    ///     Keycloak scheme will be added when Phase 4c lands.
     /// </summary>
     /// <param name="services">Host service collection.</param>
     /// <param name="configuration">Host configuration root.</param>
@@ -66,11 +67,7 @@ public static class AuthenticationInstallerExtensions
         {
             builder = builder.AddScheme<AdminBearerOptions, AdminBearerHandler>(
                 AdminBearerAuthProvider.NameConst,
-                options =>
-                {
-                    options.AdminToken = configuration
-                        .GetSection("auth.providers.admin-bearer")["token"];
-                });
+                _ => { });
 
             _ = services
                 .AddOptions<AdminBearerOptions>()
@@ -80,8 +77,27 @@ public static class AuthenticationInstallerExtensions
                 .PostConfigure(ResolveAdminBearerToken.Apply);
         }
 
+        if (configuration
+            .GetSection($"{TesseraAuthenticationOptions.SectionName}.{TesseraAuthenticationOptions.ProvidersSectionName}.ldap")
+            .GetValue<bool>("enabled"))
+        {
+            builder = builder.AddScheme<LdapAuthOptions, LdapAuthHandler>(
+                LdapAuthProvider.NameConst,
+                _ => { });
+
+            _ = services
+                .AddOptions<LdapAuthOptions>()
+                .Bind(configuration.GetSection(LdapAuthOptions.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            services.AddOptions<LdapAuthOptions>()
+                .PostConfigure(ResolveLdapCredentials.Apply);
+        }
+
         services.AddSingleton<IAuthProvider, GuestAuthProvider>();
         services.AddSingleton<IAuthProvider, AdminBearerAuthProvider>();
+        services.AddSingleton<IAuthProvider, LdapAuthProvider>();
 
         return builder;
     }
