@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Tessera.Shared.Authentication.Admin;
+namespace Tessera.Shared.Authentication.Providers.Admin;
 
 /// <summary>
 ///     Length-equalizing constant-time byte comparison for admin-bearer token

@@ -91,14 +91,14 @@ builder.Services
 builder.Services.AddTesseraWebInfrastructure();
 
 // --------------------------------------------------------------------
-// Authentication (admin bearer — optional in MVP-01)
+// Authentication (multi-provider framework, guest + admin-bearer in MVP-01)
 // --------------------------------------------------------------------
-// Admin scheme is registered unconditionally so admin endpoints (Phase 5+)
-// can decorate themselves with [Authorize(Policy = "admin")] and not need
-// host changes. The handler reads the token from TESSERA_ADMIN_TOKEN env var;
-// if the env var is unset the handler returns NoResult() for every request,
-// so admin endpoints reject with 401 and the host still starts cleanly.
-builder.Services.AddTesseraAdminAuthentication(builder.Configuration);
+// Per ADR-0001 Decision 1, multiple auth schemes coexist; the default
+// scheme is taken from [auth]/default_scheme in tessera.toml (defaults
+// to "guest" so anonymous reads work without explicit [Authorize]).
+// AdminBearer is registered when [auth.providers.admin-bearer]/enabled
+// is true; LDAP (4b) and Keycloak (4c) will plug into the same framework.
+builder.Services.AddTesseraAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 // --------------------------------------------------------------------

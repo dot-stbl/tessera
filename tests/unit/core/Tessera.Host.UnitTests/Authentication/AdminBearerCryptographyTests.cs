@@ -1,5 +1,5 @@
 using System.Text;
-using Tessera.Shared.Authentication.Admin;
+using Tessera.Shared.Authentication.Providers.Admin;
 
 namespace Tessera.Host.UnitTests.Authentication;
 

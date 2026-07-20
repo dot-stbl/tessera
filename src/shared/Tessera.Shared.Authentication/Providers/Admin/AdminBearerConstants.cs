@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Authentication.Admin;
+namespace Tessera.Shared.Authentication.Providers.Admin;
 
 /// <summary>
 ///     Wire constants for the admin-bearer scheme — scheme name (as registered
@@ -10,7 +10,7 @@ namespace Tessera.Shared.Authentication.Admin;
 /// </summary>
 internal static class AdminBearerConstants
 {
-    public const string SchemeName = "admin";
+    public const string SchemeName = AdminBearerAuthProvider.NameConst;
 
     public const string AuthorizationHeader = "Authorization";
 

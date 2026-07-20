@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 
-namespace Tessera.Shared.Authentication.Admin;
+namespace Tessera.Shared.Authentication.Providers.Admin;
 
 /// <summary>
 ///     Authentication-scheme options for the admin bearer scheme. Token

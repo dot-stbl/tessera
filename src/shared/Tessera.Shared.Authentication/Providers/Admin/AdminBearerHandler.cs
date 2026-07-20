@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Tessera.Shared.Authentication.Admin;
+namespace Tessera.Shared.Authentication.Providers.Admin;
 
 /// <summary>
 ///     Authentication handler for the admin-bearer scheme. Single-factor:
