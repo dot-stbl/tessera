@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { AppShell, PageTemplate } from '@/shared/ui/app-shell';
 import { TracesPage } from '@/features/traces/traces-page';
+import { TraceDetailPage } from '@/features/traces/trace-detail-page';
 import { LogsPage } from '@/features/logs/logs-page';
 import { ServicesPage } from '@/features/services/services-page';
 import { DashboardsPage } from '@/features/dashboards/dashboards-page';
@@ -73,6 +74,12 @@ const tracesRoute = createRoute({
   component: TracesPage,
 });
 
+const traceDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/traces/$traceId',
+  component: TraceDetailPage,
+});
+
 const logsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/logs',
@@ -102,6 +109,7 @@ const settingsRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   tracesRoute,
+  traceDetailRoute,
   logsRoute,
   servicesRoute,
   dashboardsRoute,

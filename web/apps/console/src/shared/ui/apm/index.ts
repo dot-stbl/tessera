@@ -22,6 +22,9 @@ export type { WaterfallProps, WaterfallSpan } from './waterfall';
 export { LogEntry } from './log-entry';
 export type { LogEntryProps } from './log-entry';
 
+export { SpanDetailPanel } from './span-detail-panel';
+export type { SpanDetailPanelProps } from './span-detail-panel';
+
 export { DashboardGrid } from './dashboard-grid';
 export type {
   DashboardGridProps,

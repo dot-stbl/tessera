@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api/client';
 import { PageTemplate } from '@/shared/ui/app-shell';
@@ -128,8 +129,14 @@ function TraceRow({ trace }: { trace: TraceSummary }) {
   return (
     <tr className="border-b border-border last:border-b-0 hover:bg-surface-2">
       <td className="px-4 py-2">
-        <div className="font-medium text-foreground">{trace.rootService}</div>
-        <div className="text-xs text-muted-foreground">{trace.rootOperation}</div>
+        <Link
+          to="/traces/$traceId"
+          params={{ traceId: trace.traceId }}
+          className="block hover:underline"
+        >
+          <div className="font-medium text-foreground">{trace.rootService}</div>
+          <div className="text-xs text-muted-foreground">{trace.rootOperation}</div>
+        </Link>
       </td>
       <td className="px-4 py-2">
         <StatusPill status={trace.status} />
