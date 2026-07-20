@@ -9,6 +9,18 @@
     <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+    <!-- SQLite provider with lib/net10.0 build; makes the design-time
+         factory use the same SQLite DDL surface that production
+         migrations run against. PrivateAssets=all keeps the transitive
+         Microsoft.Data.Sqlite.Core 10.0.x out of Tessera.Host (which
+         only needs the SQLite provider at runtime; lib/net8.0 vs
+         lib/net10.0 share issues don't apply through the
+         non-PrivateAssets=true host project) — and out of the test
+         projects whose deps.json resolution explodes on the net8.0
+         build.
+         Tests that need a real SQLite keep using EF InMemory via
+         Tessera.Modules.Preferences.Unit's own PackageReference. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" PrivateAssets="all" />
   </ItemGroup>
 </Project>

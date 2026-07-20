@@ -29,6 +29,10 @@
          a real container image where lib/net8.0 SQLitePCLRaw forward-
          comps to net10.0 runtime and works). See csharp/ef-core.md §6
          — tool-generated migrations are required (Phase 5c). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
   </ItemGroup>
 </Project>
