@@ -1,12 +1,30 @@
-<div align="center">
+<p align="center">
+  <a href="https://github.com/dot-stbl/tessera">
+    <img src="assets/lockup-tessera.svg" alt="tessera — by stbl" width="480"/>
+  </a>
+</p>
 
-# tessera <span class="by-stbl"><span class="by">by</span><span class="dot"></span>stbl</span>
+<p align="center">
+  <em>self-hosted APM UI for the Victoria stack — traces, logs, metrics, dashboards.</em>
+</p>
 
-**APM UI for the Victoria stack — traces, logs, metrics, dashboards.**
+<p align="center">
+  <a href=".agents/docs/architecture.md"><strong>Docs</strong></a> ·
+  <a href=".agents/docs/operations/install.md"><strong>Install</strong></a> ·
+  <a href="https://github.com/dot-stbl/tessera/issues"><strong>Issues</strong></a> ·
+  <a href="#license"><strong>License</strong></a>
+</p>
 
-[Docs](.agents/docs/architecture.md) · [Install](.agents/docs/operations/install.md) · [Issues] · [License]
+<p align="center">
+  <a href="https://github.com/dot-stbl/tessera/actions/workflows/build.yml"><img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square"/></a>
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square"/>
+  <img alt="Tests" src="https://img.shields.io/badge/tests-108%2F108-brightgreen?style=flat-square"/>
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"/>
+</p>
 
-</div>
+<p align="center">
+  <strong>by <a href="https://github.com/dot-stbl">.stbl</a></strong> · pure B&amp;W · monospace only
+</p>
 
 ---
 
@@ -44,7 +62,7 @@ for Docker Compose, systemd, and k8s manifests.
 export TESSERA_ADMIN_TOKEN=$(openssl rand -hex 32)
 
 # 2. Run with Victoria (assumes vt/vl/vm on localhost)
-docker compose up -d
+docker compose -f compose/docker-compose.yml up -d
 
 # 3. Open http://localhost:1990 — guest mode for read,
 #    admin endpoints need Authorization: Bearer $TESSERA_ADMIN_TOKEN
@@ -66,10 +84,10 @@ full architecture overview.
 
 | | |
 |--|--|
-| Version | 0.0.0 (pre-release) |
+| Version | 0.1.0 (pre-release) |
 | .NET | 10 |
 | UI | React 19 + Vite + shadcn/ui + Tailwind 4 |
-| License | TBD (likely MIT) |
+| License | MIT |
 | Maintained by | [.stbl](https://github.com/dot-stbl) |
 
 ## Stack
