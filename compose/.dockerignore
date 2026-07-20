@@ -9,7 +9,7 @@
 #     context; the Dockerfile uses BuildKit cache mounts for NuGet anyway.
 #   - Keep test projects EXCEPT the two csproj manifests we need for restore
 #     (the Dockerfile already copies those before the . -> COPY . .).
-#   - Keep web/ out — frontend deferred to MVP-02.
+#   - Keep web/ out — frontend deferred to a later lane.
 #   - Keep .git/ docs/ infra/ out — host build doesn't need them.
 
 # Git metadata (large on big repos, useless to the SDK layer)
@@ -25,7 +25,7 @@
 **/TestResults
 **/coverage*
 
-# Frontend — separate deployment lane (MVP-02)
+# Frontend — separate deployment lane (later)
 web/
 node_modules/
 bun.lock

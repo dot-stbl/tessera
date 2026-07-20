@@ -12,11 +12,13 @@
 #
 # Build & run outside this repo:
 #   docker build -f compose/Dockerfile -t ghcr.io/dot-stbl/tessera:latest .
-#   docker run --rm -p 1990:1990 -v $PWD/tessera.toml:/etc/tessera/tessera.toml:ro \
+#   docker run --rm -p 1990:1990 \
+#     -v $PWD/tessera.conf:/etc/tessera.conf:ro \
+#     -v $PWD/tessera.data:/var/lib/tessera \
 #     -e TESSERA_ADMIN_TOKEN=... ghcr.io/dot-stbl/tessera:latest
 #
-# Compose variant (tessera + split Victoria stack + OTel collector +
-# Grafana): see compose/docker-compose.yml at the repository root.
+# Compose variant (tessera + split Victoria stack + OTel collector):
+# see compose/docker-compose.yml.
 
 # ----------------------------------------------------------------------------
 # Stage 1: build

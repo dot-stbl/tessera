@@ -1,4 +1,4 @@
-# Tessera + split Victoria stack + OTel Collector + Grafana.
+# Tessera + split Victoria stack + OTel Collector.
 #
 # Single source of truth for the dev/compose stack. Replaces the
 # previous single-binary victoria-stack deployment with three
@@ -25,8 +25,6 @@
 #   4317  otel-collector        (OTLP gRPC — fed by LoadGen + third-party
 #                               SDKs)
 #   4318  otel-collector        (OTLP HTTP)
-#   3000  grafana               (admin / admin by default — change via env
-#                               before exposing anywhere)
 
 # Reasonable safety net so deployment-scoped env vars don't leak
 # into tessera when invoked from a shell that has them set
@@ -115,29 +113,6 @@ services:
       victoria-traces:
         condition: service_healthy
 
-  # ── graph ─────────────────────────────────────────────────────────
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: tessera.grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana.data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-    depends_on:
-      victoria-metrics:
-        condition: service_healthy
-      victoria-logs:
-        condition: service_healthy
-      victoria-traces:
-        condition: service_healthy
-
   # ── application ───────────────────────────────────────────────────
 
   tessera:
@@ -154,12 +129,23 @@ services:
       - "1990:1990"
     environment:
       # TesseraConfigPaths.ResolveMainPath defaults to
-      # /etc/tessera/tessera.toml when TESSERA_CONFIG is unset, so
-      # the bind mount below lands the dev config where the host
-      # expects to find it.
+      # /etc/tessera/tessera.toml when TESSERA_CONFIG is unset.
+      # The /etc/tessera.conf bind mount below lands the dev config
+      # where the host expects to find it.
+      TESSERA_CONFIG: "/etc/tessera.conf/tessera.toml"
       TESSERA_ADMIN_TOKEN: "${TESSERA_ADMIN_TOKEN:-}"
+      # File-based data dir — see compose/README.md "Storage layout"
+      # for the directory layout under ~/etc/tessera/.
+      TESSERA_DATA_ROOT: "/var/lib/tessera"
     volumes:
-      - ./config/tessera.dev.toml:/etc/tessera/tessera.toml:ro
+      # Live config — read-only bind mount from the host checkout.
+      - ./config/tessera.conf:/etc/tessera.conf:ro
+      # Persistent host data — survives `docker compose down` and
+      # is the canonical location for the file-based state trees
+      # documented in compose/README.md. Bind-mount a host directory
+      # so the developer can inspect state from outside the
+      # container.
+      - tessera-data:/var/lib/tessera
     depends_on:
       victoria-metrics:
         condition: service_healthy
@@ -174,4 +160,4 @@ volumes:
   victoria-metrics.data:
   victoria-logs.data:
   victoria-traces.data:
-  grafana.data:
+  tessera-data:
