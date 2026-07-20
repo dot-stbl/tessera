@@ -114,11 +114,13 @@ ENV \
 
 EXPOSE 1990
 
-# Install wget (not in the default mcr.microsoft.com/dotnet/aspnet:10.0-alpine
-# image — fresh-eye review caught this when container started reporting
-# "unhealthy" forever despite the process being up). alpine's busybox
-# ships `wget` via the `wget` package separately from the base image.
-RUN apk add --no-cache wget
+# Install wget + libldap (not in the default mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+# image). alpine's busybox ships `wget` via the `wget` package separately
+# from the base image (used by HEALTHCHECK below). `libldap` is the
+# native dependency for System.DirectoryServices.Protocols, which the
+# LDAP authentication provider (Phase 4b, ADR-0001 D2) calls into; the
+# managed wrapper P/Invokes into libldap.so at runtime.
+RUN apk add --no-cache wget libldap
 
 # Health probe: the host exposes GET /api/v1/health (composite across
 # wired providers). Use `--fail` so curl exits non-zero on any 5xx
