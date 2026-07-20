@@ -79,11 +79,16 @@ jobs:
       - name: Restore
         run: dotnet restore tessera.slnx
 
-      - name: Build (with format gate)
+      # TesseraFormatGateEnabled is OFF in CI for the build-and-test
+      # job. The format-check job below runs the format verification
+      # explicitly. Flipping the gate default to 'true' on the build
+      # job is a follow-up -- it currently fails on pre-existing
+      # format drift (FINALNEWLINE / IDE0130 in older test files) that
+      # is out of scope for the CI workflow commit.
+      - name: Build
         run: >
           dotnet build tessera.slnx -c Release
             --no-restore
-            /p:TesseraFormatGateEnabled=true
 
       - name: Test
         run: >
@@ -105,11 +110,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # This job is the authoritative format gate. Until the
+      # pre-existing format drift is cleaned up (separate PR), the
+      # build job does NOT set TesseraFormatGateEnabled=true and
+      # this job runs 'dotnet format --verify-no-changes' as a
+      # discrete step -- so the check is a clear GitHub status entry
+      # rather than buried in the build log. Once the drift is gone,
+      # TesseraFormatGateEnabled=true can move to the build job and
+      # this job is redundant.
       - name: Verify format
-        # Defense-in-depth: the build target also runs this when
-        # TesseraFormatGateEnabled=true, but we run it as a separate
-        # job so the check is a discrete GitHub status entry rather
-        # than buried in the build log.
         run: >
           dotnet format tessera.slnx
             --verify-no-changes
