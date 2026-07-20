@@ -29,6 +29,12 @@ provider/proxy-flavoured global rules (error-mapping, http-resilience-refit,
 json-and-ndjson, time-and-wire-format, mapper) use Victoria/Jaeger/LogsQL as
 their worked examples.
 
+**Decisions** (`.agents/docs/decisions/`) — Architecture Decision Records
+lock architectural choices once made. Numbered sequentially (`NNNN-<slug>.md`).
+Each ADR lists status, context, decision, alternatives considered, rationale,
+and consequences. Reference ADRs from rules / code / HANDOFF when applying
+the locked choice. New ADR = add file + entry to `.agents/STATE.md` §Decisions.
+
 **Common mistakes to avoid:**
 - Don't duplicate global rules in this folder — they get loaded twice and waste context.
 - Don't put Plexor-specific content here (e.g. entity models, EF Core, controllers, exchange subscribers).
