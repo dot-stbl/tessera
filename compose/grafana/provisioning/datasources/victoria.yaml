@@ -1,0 +1,52 @@
+apiVersion: 1
+
+# Pre-provisioned Grafana datasources so that the first
+# http://localhost:3000 login already has the three Victoria
+# endpoints wired up. UI login is admin / admin (compose default
+# credentials; production-replace via env override).
+
+datasources:
+  - name: victoria-metrics
+    uid: victoria-metrics
+    type: prometheus
+    access: proxy
+    url: http://victoria-metrics:8428
+    isDefault: true
+    editable: true
+
+  - name: victoria-logs
+    uid: victoria-logs
+    type: victoriametrics-logs-datasource
+    access: proxy
+    url: http://victoria-logs:9428
+    jsonData:
+      maxLines: 1000
+    editable: true
+
+  # VictoriaTraces exposes a Tempo-compatible trace search at
+  # /select/tempo. Grafana's built-in Tempo datasource gives us the
+  # waterfall, service graph, and trace-to-logs correlation.
+  - name: victoria-traces
+    uid: victoria-traces
+    type: tempo
+    access: proxy
+    url: http://victoria-traces:10428/select/tempo
+    jsonData:
+      nodeGraph:
+        enabled: true
+      tracesToLogs:
+        datasourceUid: victoria-logs
+        filterByTraceID: true
+        filterBySpanID: false
+        tags:
+          - key: service.name
+            value: service.name
+      search:
+        filters:
+          - key: service.name
+            operator: "="
+            value: ""
+      spanBar:
+        type: "TagName"
+        tag: "operation"
+    editable: true

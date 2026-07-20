@@ -11,12 +11,12 @@
 # no SDK bits in production).
 #
 # Build & run outside this repo:
-#   docker build -f docker/Dockerfile -t ghcr.io/dot-stbl/tessera:latest .
+#   docker build -f compose/Dockerfile -t ghcr.io/dot-stbl/tessera:latest .
 #   docker run --rm -p 1990:1990 -v $PWD/tessera.toml:/etc/tessera/tessera.toml:ro \
 #     -e TESSERA_ADMIN_TOKEN=... ghcr.io/dot-stbl/tessera:latest
 #
-# Compose variant (tessera + Victoria stack): see docker-compose.yml
-# at the repository root.
+# Compose variant (tessera + split Victoria stack + OTel collector +
+# Grafana): see compose/docker-compose.yml at the repository root.
 
 # ----------------------------------------------------------------------------
 # Stage 1: build
@@ -95,7 +95,7 @@ WORKDIR /app
 COPY --from=build --chown=app:app /app ./
 
 # Compose/template mounts expect the production-style config directory
-# at /etc/tessera by default. Default-bind-mount points in docker-compose.yml;
+# at /etc/tessera by default. Default-bind-mount points in compose/docker-compose.yml;
 # the paths & TesseraConfigPaths.ResolveMainPath 4-level lookup also
 # cover cwd + XDG_CONFIG_HOME + TESSERA_CONFIG env override.
 ENV \

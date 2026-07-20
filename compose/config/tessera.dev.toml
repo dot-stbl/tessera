@@ -1,0 +1,38 @@
+# Tessera dev configuration for the compose stack.
+#
+# Bound into the tessera container as /etc/tessera/tessera.toml by
+# compose/docker-compose.yml. URLs use service names so they resolve
+# inside the compose network without any port mapping knowledge.
+#
+# Production deploys swap this file for the real tessera.toml — the
+# shape (sections, keys, types) is identical; only the URLs change.
+
+[server]
+host = "0.0.0.0"
+port = 1990
+
+[victoria]
+tenant = "0"
+timeout_ms = 5000
+
+[victoria.traces]
+url = "http://victoria-traces:10428"
+token = ""
+
+[victoria.logs]
+url = "http://victoria-logs:9428"
+token = ""
+
+[victoria.metrics]
+url = "http://victoria-metrics:8428"
+token = ""
+
+[auth]
+# MVP-01: admin token can stay empty in the dev stack. The
+# admin-auth scheme is registered unconditionally; without a token
+# it returns NoResult() and /api/v1/admin/* returns 401.
+
+[telemetry]
+service_name = "tessera"
+log_level = "info"
+metrics_endpoint = "/metrics"

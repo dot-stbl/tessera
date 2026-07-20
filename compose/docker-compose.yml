@@ -1,0 +1,177 @@
+# Tessera + split Victoria stack + OTel Collector + Grafana.
+#
+# Single source of truth for the dev/compose stack. Replaces the
+# previous single-binary victoria-stack deployment with three
+# dedicated victoria images so that the OTel collector can route
+# each telemetry signal to its native OTLP endpoint.
+#
+# Usage:
+#   docker compose -f compose/docker-compose.yml up -d
+#   curl -sf http://localhost:1990/api/v1/health
+#
+# Tear down:
+#   docker compose -f compose/docker-compose.yml down -v
+#
+# Inspect:
+#   docker compose -f compose/docker-compose.yml logs -f otel-collector
+#   docker compose -f compose/docker-compose.yml logs -f tessera
+#
+# Port allocation (host → container):
+#   1990  tessera               (api/v1/health, controllers, Scalar UI)
+#   8428  victoria-metrics      (Prometheus remote-write, /api/v1/* queries)
+#   9428  victoria-logs         (LogsQL, /insert/opentelemetry/v1/logs)
+#   10428 victoria-traces       (Jaeger /select/jaeger/api/* and
+#                               OTLP/HTTP /insert/opentelemetry/v1/traces)
+#   4317  otel-collector        (OTLP gRPC — fed by LoadGen + third-party
+#                               SDKs)
+#   4318  otel-collector        (OTLP HTTP)
+#   3000  grafana               (admin / admin by default — change via env
+#                               before exposing anywhere)
+
+# Reasonable safety net so deployment-scoped env vars don't leak
+# into tessera when invoked from a shell that has them set
+# unexpectedly.
+name: tessera
+
+services:
+
+  # ── data plane ─────────────────────────────────────────────────────
+
+  victoria-metrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: tessera.victoria-metrics
+    restart: unless-stopped
+    command:
+      - "-storageDataPath=/storage"
+      - "-httpListenAddr=:8428"
+      - "-retentionPeriod=7d"
+    ports:
+      - "8428:8428"
+    volumes:
+      - victoria-metrics.data:/storage
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8428/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  victoria-logs:
+    image: victoriametrics/victoria-logs:latest
+    container_name: tessera.victoria-logs
+    restart: unless-stopped
+    command:
+      - "-storageDataPath=/victoria-logs-data"
+      - "-httpListenAddr=:9428"
+      - "-retentionPeriod=7d"
+    ports:
+      - "9428:9428"
+    volumes:
+      - victoria-logs.data:/victoria-logs-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9428/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  victoria-traces:
+    image: victoriametrics/victoria-traces:latest
+    container_name: tessera.victoria-traces
+    restart: unless-stopped
+    command:
+      - "-httpListenAddr=:10428"
+      - "-storageDataPath=/victoria-traces-data"
+      - "-retentionPeriod=7d"
+    ports:
+      - "10428:10428"
+    volumes:
+      - victoria-traces.data:/victoria-traces-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:10428/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # ── observability plumbing ──────────────────────────────────────────
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: tessera.otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      # IANA-registered OTLP ports. Telemetry SDKs default to these.
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      victoria-metrics:
+        condition: service_healthy
+      victoria-logs:
+        condition: service_healthy
+      victoria-traces:
+        condition: service_healthy
+
+  # ── graph ─────────────────────────────────────────────────────────
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tessera.grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana.data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      victoria-metrics:
+        condition: service_healthy
+      victoria-logs:
+        condition: service_healthy
+      victoria-traces:
+        condition: service_healthy
+
+  # ── application ───────────────────────────────────────────────────
+
+  tessera:
+    # Build context is the repository root so the Dockerfile can
+    # COPY Directory.Build.props / src/ / global.json without
+    # relative-path gymnastics. The Dockerfile lives under
+    # compose/Dockerfile (same dir as this compose file).
+    build:
+      context: ..
+      dockerfile: ./compose/Dockerfile
+    container_name: tessera.host
+    restart: unless-stopped
+    ports:
+      - "1990:1990"
+    environment:
+      # TesseraConfigPaths.ResolveMainPath defaults to
+      # /etc/tessera/tessera.toml when TESSERA_CONFIG is unset, so
+      # the bind mount below lands the dev config where the host
+      # expects to find it.
+      TESSERA_ADMIN_TOKEN: "${TESSERA_ADMIN_TOKEN:-}"
+    volumes:
+      - ./config/tessera.dev.toml:/etc/tessera/tessera.toml:ro
+    depends_on:
+      victoria-metrics:
+        condition: service_healthy
+      victoria-logs:
+        condition: service_healthy
+      victoria-traces:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+volumes:
+  victoria-metrics.data:
+  victoria-logs.data:
+  victoria-traces.data:
+  grafana.data:
