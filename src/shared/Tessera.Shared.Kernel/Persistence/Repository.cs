@@ -92,15 +92,18 @@ public abstract class Repository<TEntity>(DbContext dbContext)
     /// <summary>
     ///     Add a tracked entity and persist. Use for new-aggregate
     ///     writes only — for set-based updates prefer
-    ///     <see cref="ExecuteUpdateAsync{TResult}" />.
+    ///     <see cref="ExecuteUpdateAsync{TResult}" />. Returns the
+    ///     tracked entity so callers can re-read computed properties
+    ///     (<c>CreatedAt</c>, etc.) after the insert.
     /// </summary>
-    public async Task AddAsync<TLocalEntity>(
+    public async Task<TLocalEntity> AddAsync<TLocalEntity>(
         TLocalEntity entity,
         CancellationToken cancellationToken = default)
         where TLocalEntity : class
     {
-        await DbContext.AddAsync(entity, cancellationToken);
+        var entry = await DbContext.AddAsync(entity, cancellationToken);
         await DbContext.SaveChangesAsync(cancellationToken);
+        return entry.Entity;
     }
 
     /// <summary>

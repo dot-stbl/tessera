@@ -8,7 +8,7 @@ namespace Tessera.Shared.Kernel.Persistence;
 ///     god-class; module specs compose these helpers + their own domain
 ///     criteria.
 /// </summary>
-internal static class FilterHelpers
+public static class FilterHelpers
 {
     /// <summary>
     ///     Standard soft-delete filter used by every per-module entity
