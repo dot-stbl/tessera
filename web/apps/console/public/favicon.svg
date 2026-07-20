@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  favicon.svg — Tessera mark (4-tile scatter), theme-aware. Served at /favicon.svg
+  by Vite (public/). Mirror of assets/favicon.svg. Redrawn 2026-07-21.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .tile { fill: #000; }
+    .accent { fill: #A60000; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #fff; }
+      .accent { fill: #E0483F; }
+    }
+  </style>
+  <rect class="tile"   x="9"  y="3"  width="6" height="6"/>
+  <rect class="tile"   x="21" y="14" width="6" height="6"/>
+  <rect class="tile"   x="5"  y="22" width="6" height="6"/>
+  <rect class="accent" x="12" y="22" width="6" height="6"/>
+</svg>

@@ -30,11 +30,10 @@ export function AppShell({ children }: AppShellProps) {
       <header className="app-topnav">
         <Link to="/" className="app-topnav-brand">
           <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
-            <rect x="3"  y="3"  width="6" height="6" rx="1" fill="currentColor"/>
-            <rect x="13" y="3"  width="6" height="6" rx="1" fill="currentColor"/>
-            <rect x="23" y="13" width="6" height="6" rx="1" fill="currentColor"/>
-            <rect x="8"  y="23" width="6" height="6" rx="1" fill="currentColor"/>
-            <rect x="18" y="23" width="6" height="6" rx="1" fill="var(--accent)"/>
+            <rect x="9"  y="3"  width="6" height="6" fill="currentColor"/>
+            <rect x="21" y="14" width="6" height="6" fill="currentColor"/>
+            <rect x="5"  y="22" width="6" height="6" fill="currentColor"/>
+            <rect x="12" y="22" width="6" height="6" fill="var(--primary)"/>
           </svg>
           <span>{APP_NAME}</span>
         </Link>
