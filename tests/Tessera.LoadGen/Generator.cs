@@ -43,7 +43,17 @@ public sealed class Generator
     private static readonly Meter Meter = new(MeterName);
 
     /// <summary>Executes <paramref name="options" /> until <paramref name="cancellationToken" /> fires or <see cref="GeneratorOptions.Duration" /> elapses.</summary>
-    public static async Task<int> RunAsync(GeneratorOptions options, CancellationToken cancellationToken = default)
+    public static Task<int> RunAsync(GeneratorOptions options, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(options, TimeProvider.System, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Injected-clock overload of <see cref="RunAsync(GeneratorOptions, CancellationToken)" />.
+    ///     Production callers use the parameter-less version; tests use
+    ///     this one with a <see cref="TimeProvider" /> for determinism.
+    /// </summary>
+    public static async Task<int> RunAsync(GeneratorOptions options, TimeProvider clock, CancellationToken cancellationToken = default)
     {
         var kind = options.Scenario.ToScenarioKind();
         var services = DefaultServiceFactory.Materialise(options.Services);
@@ -109,15 +119,15 @@ public sealed class Generator
 
         var deadline = options.Duration == TimeSpan.Zero
             ? DateTimeOffset.MaxValue
-            : DateTimeOffset.UtcNow.Add(options.Duration);
+            : clock.GetUtcNow().Add(options.Duration);
         var random = new Random(0xC0FFEE);
         var totalOperations = 0L;
         var tickInterval = options.Rate <= 0 ? TimeSpan.FromSeconds(1) : TimeSpan.FromSeconds(1.0 / options.Rate);
-        var nextTick = DateTimeOffset.UtcNow;
+        var nextTick = clock.GetUtcNow();
 
-        while (DateTimeOffset.UtcNow < deadline && !cancellationToken.IsCancellationRequested)
+        while (clock.GetUtcNow() < deadline && !cancellationToken.IsCancellationRequested)
         {
-            var now = DateTimeOffset.UtcNow;
+            var now = clock.GetUtcNow();
             if (now < nextTick)
             {
                 await Task.Delay(nextTick - now, cancellationToken);
