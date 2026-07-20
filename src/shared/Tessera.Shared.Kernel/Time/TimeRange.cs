@@ -28,10 +28,24 @@ public sealed record TimeRange(long StartUnixMs, long EndUnixMs)
 
     /// <summary>
     ///     Time range covering the last <paramref name="span" /> ending at the current UTC instant.
+    ///     Uses <see cref="TimeProvider.System" /> — production code that
+    ///     needs deterministic clock should call the <see cref="Last(TimeSpan, TimeProvider)" />
+    ///     overload with an injected clock.
     /// </summary>
     public static TimeRange Last(TimeSpan span)
     {
-        var end = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        return Last(span, TimeProvider.System);
+    }
+
+    /// <summary>
+    ///     Time range covering the last <paramref name="span" /> ending at the
+    ///     supplied <paramref name="clock" /> instant. Injected-time version for
+    ///     deterministic unit tests; production callers use
+    ///     <see cref="Last(TimeSpan)" />.
+    /// </summary>
+    public static TimeRange Last(TimeSpan span, TimeProvider clock)
+    {
+        var end = clock.GetUtcNow().ToUnixTimeMilliseconds();
         var start = end - (long)span.TotalMilliseconds;
         return new TimeRange(start, end);
     }
