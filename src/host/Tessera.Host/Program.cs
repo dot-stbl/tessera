@@ -2,12 +2,14 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Spectre.Console;
 using Tessera.Banner;
+using Tessera.Host.Storage;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
 using Tessera.Providers.Victoria.DependencyInjection;
 using Tessera.Shared.Authentication;
+using Tessera.Shared.Kernel.Configuration.Layout;
 using Tessera.Shared.Kernel.Configuration.Options;
 using Tessera.Shared.Kernel.Configuration.Source;
 using Tessera.Shared.Web;
@@ -50,6 +52,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddTesseraConfiguration();
 
 // --------------------------------------------------------------------
+// File-system layout ([fs_layout] section in tessera.toml)
+// --------------------------------------------------------------------
+// Resolves platform-appropriate config / data / state / cache / log / temp
+// directories via OperatingSystem.IsLinux / IsWindows. Override per
+// ADR-0001 D7 ([fs_layout]/provider = "linux" | "windows" | env
+// TESSERA_FS_LAYOUT_PROVIDER). Used by the Preferences module to place
+// the SQLite file under DataDirectory (or %LOCALAPPDATA%\tessera on
+// Windows).
+builder.Services.AddTesseraFileSystemLayout(builder.Configuration);
+
+// --------------------------------------------------------------------
 // Server options ([server] section in tessera.toml)
 // --------------------------------------------------------------------
 // Bind [server]/host + [server]/port from TOML into ServerOptions.
@@ -60,6 +73,28 @@ builder.Services.AddOptions<ServerOptions>()
     .Bind(builder.Configuration.GetSection(ServerOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+
+// --------------------------------------------------------------------
+// Storage options ([storage] section in tessera.toml)
+// --------------------------------------------------------------------
+// MVP-01 backs every persistent aggregate (UserPreference first) with
+// SQLite via Microsoft.EntityFrameworkCore.Sqlite 10.0.10. Validation
+// fails startup if [storage]/provider is something other than "sqlite"
+// — the host composition root only knows how to wire SQLite today.
+builder.Services.AddOptions<StorageOptions>()
+    .Bind(builder.Configuration.GetSection(StorageOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+// Single composition helper — resolves the SQLite connection string
+// (operator-supplied or synthesized from FS layout + file name) and
+// adds the Preferences module + PreferencesDbContext.
+//
+// Module composition must happen AFTER both StorageOptions is bound
+// (so the connection string is resolvable) AND IFileSystemLayout is
+// registered (so the synthesized path resolves to the OS-correct
+// data directory).
+builder.Services.AddPreferencesStorage();
 
 // --------------------------------------------------------------------
 // Controllers + JSON
@@ -117,6 +152,18 @@ builder.Services
     .AddVictoriaProvider(builder.Configuration);
 
 var app = builder.Build();
+
+// --------------------------------------------------------------------
+// Persistence schema bootstrap (Phase 5c)
+// --------------------------------------------------------------------
+// Apply pending EF Core migrations (or EnsureCreated when no
+// migration has been generated yet) before the host starts
+// accepting requests. Failure here aborts startup — the host is
+// not "started but broken", it's "not started" — so the operator
+// sees the failure in startup logs rather than 502s on the first
+// HTTP request.
+await PreferencesStorageInstaller
+    .EnsurePreferencesSchemaAsync(app.Services);
 
 // --------------------------------------------------------------------
 // Kestrel bind

@@ -5,19 +5,30 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
-    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
-    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Web\Tessera.Shared.Web.csproj" />
-    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Authentication\Tessera.Shared.Authentication.csproj" />
-    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Validation\Tessera.Shared.Validation.csproj" />
-    <ProjectReference Include="..\..\..\src\shared\Tessera.Banner\Tessera.Banner.csproj" />
-    <ProjectReference Include="..\..\modules\Tessera.Modules.Traces\Tessera.Modules.Traces.csproj" />
-    <ProjectReference Include="..\..\modules\Tessera.Modules.Logs\Tessera.Modules.Logs.csproj" />
-    <ProjectReference Include="..\..\modules\Tessera.Modules.Discovery\Tessera.Modules.Discovery.csproj" />
-    <ProjectReference Include="..\..\modules\Tessera.Modules.Health\Tessera.Modules.Health.csproj" />
-    <ProjectReference Include="..\..\providers\Tessera.Providers.Victoria\Tessera.Providers.Victoria.csproj" />
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Http/Tessera.Shared.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\shared\Tessera.Shared.Web/Tessera.Shared.Web.csproj" />
+    <ProjectReference Include="..\..\..\src\shared/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj" />
+    <ProjectReference Include="..\..\..\src\shared/Tessera.Shared.Validation/Tessera.Shared.Validation.csproj" />
+    <ProjectReference Include="..\..\..\src\shared/Tessera.Banner/Tessera.Banner.csproj" />
+    <ProjectReference Include="..\..\modules/Tessera.Modules.Traces/Tessera.Modules.Traces.csproj" />
+    <ProjectReference Include="..\..\modules/Tessera.Modules.Logs/Tessera.Modules.Logs.csproj" />
+    <ProjectReference Include="..\..\modules/Tessera.Modules.Discovery/Tessera.Modules.Discovery.csproj" />
+    <ProjectReference Include="..\..\modules/Tessera.Modules.Health/Tessera.Modules.Health.csproj" />
+    <ProjectReference Include="..\..\modules/Tessera.Modules.Preferences/Tessera.Modules.Preferences.csproj" />
+    <ProjectReference Include="..\..\providers/Tessera.Providers.Victoria/Tessera.Providers.Victoria.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Remove="Meziantou.Analyzer" />
     <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Sqlite is hosted only in Tessera.Host so it transitively does
+         not leak into shared / module test projects (the testhost was
+         crashing on .NET 10 because Microsoft.Data.Sqlite 10.0.x is
+         not published with a net10.0 build; only Tessera.Host publishes
+         a real container image where lib/net8.0 SQLitePCLRaw forward-
+         comps to net10.0 runtime and works). See csharp/ef-core.md §6
+         — tool-generated migrations are required (Phase 5c). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
   </ItemGroup>
 </Project>
