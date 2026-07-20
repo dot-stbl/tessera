@@ -36,6 +36,7 @@ overrides + file index live in `.agents/rules/_index.md`.
 17. `process/worker-audit.md`
 18. `process/agent-runtime-safety.md`
 19. `process/engineering-zone-access.md`
+20. `process/feature-workflow.md` — **issue → plan → build inside `git worktree`** (mandatory for every feature commit)
 
 **Frontend rules** (from `~/.agents/rules/typescript/`) — **mandatory for any `web/` work** (MVP-02+):
 
@@ -78,6 +79,35 @@ identical to CI. Per-project builds skip the format gate.
 
 Plus self-audit grep catalog (`~/.agents/rules/csharp/worker-audit-grep-catalog.md`)
 on changed files before commit.
+
+## Feature workflow (mandatory)
+
+Every feature commit flows through **issue → plan → build, inside a
+fresh git worktree** (full contract at
+`.agents/rules/process/feature-workflow.md`, mandatory pre-coding
+read). The four steps:
+
+1. **Issue** — capture scope in `.github/ISSUE_DRAFT_<topic>.md`
+   (local) or `gh issue create --body-file` (when `gh` CLI is
+   available). Skim before editing.
+2. **Plan** — convert the issue body into 1..N commits matching
+   `process/commit-format.md`. List them on paper **before** opening
+   the editor; the order of edits rarely matches the order of
+   commits.
+3. **Worktree** — `git worktree add ../tessera-<short-branch> -b
+   tessera/<short-branch>` from the main checkout. Edit + commit
+   there; the main checkout stays untouched. Cleanup at the end
+   via `git worktree remove ../tessera-<short-branch> && git
+   branch -d tessera/<short-branch>`.
+4. **Build** — per commit: format gate → build → test →
+   self-audit grep → commit → push. Same local gate that CI
+   runs.
+
+If `gh issue` workflow isn't available (no `gh` CLI / no
+authenticated session), `.github/ISSUE_DRAFT_*.md` files are
+the working substrate — local-only, commit to the same branch
+alongside the code, and reference them from commit bodies via
+`Implements: .github/ISSUE_DRAFT_<topic>.md`.
 
 ## Commit format (mandatory)
 
