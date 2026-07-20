@@ -1,30 +1,63 @@
 # Tessera state
 
+> **Authoritative decisions:** see [`.agents/docs/decisions/0001-mvp01-locked-decisions.md`](docs/decisions/0001-mvp01-locked-decisions.md).
+> STATE.md now tracks progress + open questions; ADRs lock architectural choices.
+
 ## Milestone
 MVP-01 — backend-only (Traces + Logs + Discovery + Health + Victoria provider + Tessera.Host)
 
 ## Status
-**Phase 1 (Backend foundation) — DONE.**
-**Phase 2 (4 backend modules as controllers) — DONE**.
-**Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI + Scalar) — DONE**.
-**Phase 4 (architecture tests, deployment files, fixes from fresh-eye review) — DONE**.
-**Phase 5 (compose stack + LoadGen CLI, deploy artefacts consolidated under `/compose`) — DONE**.
-**Phase 6 (local E2E verify + container image publish + CI workflow) — NOT STARTED**.
+**Phase 0 (rules + provider scaffold) — DONE.**
+**Phase 1 (shared primitives + provider impls) — DONE.**
+**Phase 2 (4 backend modules as controllers with Mapperly mappers) — DONE.**
+**Phase 3 (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE.**
+**Phase 4 (architecture tests, deployment files, fixes from fresh-eye review) — DONE.**
+**Phase 5 (compose stack + LoadGen CLI, deploy artefacts consolidated under `/compose`) — DONE.**
+**Phase 6 (multi-provider auth + storage layer + FS layout abstraction + Windows support + frontend bundle) — IN PROGRESS** on `tessera/mvp-2-platform` (ADR-0001 accepted 2026-07-20).
 
-MVP-01 backend code-complete and mergeable. LoadGen CLI shipped; integration tests deliberately dropped (see Phase 5 notes). Pending only human-side runtime verification (`docker compose -f compose/docker-compose.yml up` + curl) plus a CI YAML which was deferred per owner direction.
+MVP-01 backend code-complete. LoadGen CLI shipped; integration tests deliberately dropped (see Phase 5 notes). Phase 0 cleanup + ADR-0001 landed 2026-07-20 (commits `2cb9533`, `258ae6a`).
 
 ## Progress
-- **Phase 0** (rules + provider scaffold) — DONE.
-- **Phase 1** (shared primitives + provider impls) — DONE (19 commits).
-- **Phase 2** (4 backend modules as controllers with Mapperly mappers) — DONE.
-- **Phase 3** (Host composition root + TOML config + admin bearer + OpenAPI doc + Scalar UI) — DONE.
-- **Phase 4** (architecture tests recreated + 5 module/host test projects recreated via `dotnet new xunit` + unit tests written + Dockerfile + docker-compose + fresh-eye review fixes) — DONE.
-- **Phase 5** (compose stack consolidation + LoadGen CLI + audit agent pass) — **DONE** on a new branch `tessera-mvp-1-stack` (3 commits: `9c71843` consolidate docker artefacts into `/compose/` + replace single-binary `victoria-stack` with separated `victoria-metrics` / `victoria-logs` / `victoria-traces` images + OTel collector + Grafana; `90cdb50` + `edeecdc` add `tests/Tessera.LoadGen/` synthetic OTel generator — initial `tests/integration/{Stack.Testing,Stack.Integration}` round-trip test stack included in `90cdb50` then dropped in `edeecdc` after owner feedback "тест на compose не нужен"; rename `ct` → `cancellationToken` and remove audit-flagged `_`-prefix fields).
-- **Phase 6** (local E2E verify + container image publish + CI workflow) — NOT STARTED.
+- **Phase 0a** (pre-existing format drift cleanup + VSTHRD111 disable) — DONE 2026-07-20 (`2cb9533`). Build gate green, 107/107 tests passing.
+- **Phase 0b** (sync stale project names in rules) — DONE (`8215500`).
+- **Phase 0c** (this commit — STATE.md / HANDOFF.md reconcile) — DONE.
+- **Phase 1** (AGENTS.md + new global rules) — NEXT.
+- **Phase 2** (config schema fix + SecretReference wiring) — PLANNED.
+- **Phase 3** (IFileSystemLayout + Linux + Windows impls) — PLANNED.
+- **Phase 4** (multi-provider auth: IAuthProvider + Guest + Admin → +LDAP → +Keycloak) — PLANNED.
+- **Phase 5** (SQLite + EF Core + Repository + Spec + Users + Dashboards + migration) — PLANNED.
+- **Phase 6** (vite bundle into Tessera.Host wwwroot) — PLANNED.
+- **Phase 7** (Windows install + dev workflow docs) — PLANNED.
 
-Phase 4 deliverable: 92/92 unit tests passing across 8 test projects, Dockerfile + .dockerignore (later moved into `/compose/`), docker-compose.yml (later replaced by `/compose/docker-compose.yml`), fresh-eye Task(agent=general) review + critical fixes.
+See ADR-0001 for the architectural decisions that drive Phase 1–7.
 
-Phase 5 deliverable: `/compose/` as single source of truth (Dockerfile + .dockerignore + docker-compose.yml + otel-collector/config.yaml + grafana/provisioning/datasources/victoria.yaml + grafana/provisioning/dashboards/dashboards.yaml + config/tessera.dev.toml + README.md); `tests/Tessera.LoadGen/` console app (OpenTelemetry SDK + 3 scenarios: simple, fanout, saga); rule-audit Task(general) on the entire project — 11 critical / 8 high / 25 medium findings identified; session-introduced violations fixed (`ct` → `cancellationToken` rename, dropped `GeneratorOptionsBuilder._`-prefix fields); pre-existing critical violations (HttpClientFactory / EnsureSuccessStatusCode / VerifyFormatOnBuild placeholder) remain in `src/providers/Tessera.Providers.Victoria/` and `src/host/Tessera.Build.Tools/`, in `.planning/BACKEND-ISSUES.md`.
+## Phase 4 deliverable (now updated)
+107/107 unit tests passing across 8 test projects (`dotnet test tessera.slnx`):
+- `Tessera.Providers.Victoria.Unit` — 34
+- `Tessera.Host.UnitTests` — 8
+- `Tessera.Shared.Unit` — 28
+- `Tessera.ArchitectureTests` — 13
+- `Tessera.Modules.Health.Unit` — 9
+- `Tessera.Modules.Discovery.Unit` — 4
+- `Tessera.Modules.Traces.Unit` — 7
+- `Tessera.Modules.Logs.Unit` — 4
+
+Build: `dotnet build tessera.slnx -c Debug` → exit 0, 0 warnings.
+
+## Phase 5 deliverable (corrected)
+`/compose/` as single source of truth:
+- `compose/Dockerfile` (multi-stage build + runtime ALPINE with `apk add libldap` for Phase 4b LDAP — already added in `075174e` for HEALTHCHECK wget, will be reused)
+- `compose/.dockerignore`
+- `compose/docker-compose.yml` (3 separate Victoria containers + OTel collector + Tessera)
+- `compose/otel-collector/config.yaml`
+- `compose/config/tessera.conf/tessera.toml`
+- `compose/README.md`
+
+**Correction 2026-07-20:** earlier prose claimed `grafana/provisioning/{datasources,dashboards}/...` files were added in Phase 5. **They were not** — Grafana is not part of the compose stack. The State text is corrected to drop that claim.
+
+`tests/Tessera.LoadGen/` console app (OpenTelemetry SDK + 3 scenarios: simple, fanout, saga) — DONE.
+
+Rule-audit Task(general) found 11 critical / 8 high / 25 medium issues; session-introduced violations fixed. Pre-existing critical violations (HttpClientFactory / EnsureSuccessStatusCode / VerifyFormatOnBuild placeholder) remain in `src/providers/Tessera.Providers.Victoria/` and `src/host/Tessera.Build.Tools/` — tracked in `.planning/BACKEND-ISSUES.md`.
 
 ## Working agreement
 - Owner confirms strategic decisions (architectural forks) before code work begins
