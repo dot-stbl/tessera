@@ -32,14 +32,13 @@ public static class TesseraConfigurationExtensions
             Path = mainPath,
             Optional = true,
             ReloadOnChange = false,
-        });
-
-        builder.Add(new TomlConfigurationSource
-        {
-            Path = localPath,
-            Optional = true,
-            ReloadOnChange = false,
-        });
+        })
+            .Add(new TomlConfigurationSource
+            {
+                Path = localPath,
+                Optional = true,
+                ReloadOnChange = false,
+            });
 
         return builder;
     }

@@ -1,6 +1,3 @@
-using NetArchTest.Rules;
-using Xunit;
-
 namespace Tessera.ArchitectureTests;
 
 /// <summary>
@@ -22,6 +19,7 @@ public sealed class FolderStructureTests
     ///     <c>bin/Debug/net10.0 → bin/Debug → bin → Tessera.ArchitectureTests
     ///     → core → unit → tests → repo-root</c>, hence six <c>..</c>.
     /// </summary>
+    /// <exception cref="DirectoryNotFoundException"></exception>
     private static string ResolveSrcRoot()
     {
         var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
@@ -33,7 +31,7 @@ public sealed class FolderStructureTests
         return dir is null
             ? throw new System.IO.DirectoryNotFoundException(
                 "src/ not reachable from " + AppContext.BaseDirectory)
-            : System.IO.Path.Combine(dir.FullName, "src");
+            : Path.Combine(dir.FullName, "src");
     }
 
     /// <summary>
@@ -46,15 +44,15 @@ public sealed class FolderStructureTests
     [Fact]
     public void SharedProjects_DoNotExceedFiveProjectCap()
     {
-        var projectFiles = System.IO.Directory
-            .EnumerateFiles(SrcRoot, "Tessera.Shared.*.csproj", System.IO.SearchOption.AllDirectories)
-            .Where(p => p.StartsWith(System.IO.Path.Combine(SrcRoot, "shared"), StringComparison.Ordinal))
+        var projectFiles = Directory
+            .EnumerateFiles(SrcRoot, "Tessera.Shared.*.csproj", SearchOption.AllDirectories)
+            .Where(static p => p.StartsWith(Path.Combine(SrcRoot, "shared"), StringComparison.Ordinal))
             .ToArray();
 
         Assert.True(projectFiles.Length <= 5,
             $"src/shared/ has {projectFiles.Length} projects (cap is 5). " +
-            $"Projects: {string.Join(", ", projectFiles.Select(System.IO.Path.GetFileName))}. " +
-            $"Per module-structure-5-cap.md, nest a new project into shared/core/ or shared/extended/.");
+            $"Projects: {string.Join(", ", projectFiles.Select(Path.GetFileName))}. " +
+            "Per module-structure-5-cap.md, nest a new project into shared/core/ or shared/extended/.");
 
         // Sanity: cap enforced AFTER adding new projects by requiring the
         // exact expected count for MVP-01 (5 currently).
@@ -72,15 +70,15 @@ public sealed class FolderStructureTests
     [Fact]
     public void ModuleProjects_StayBelowFiveProjectCap()
     {
-        var projectFiles = System.IO.Directory
-            .EnumerateFiles(SrcRoot, "Tessera.Modules.*.csproj", System.IO.SearchOption.AllDirectories)
-            .Where(p => p.StartsWith(System.IO.Path.Combine(SrcRoot, "modules"), StringComparison.Ordinal))
+        var projectFiles = Directory
+            .EnumerateFiles(SrcRoot, "Tessera.Modules.*.csproj", SearchOption.AllDirectories)
+            .Where(static p => p.StartsWith(Path.Combine(SrcRoot, "modules"), StringComparison.Ordinal))
             .ToArray();
 
         Assert.True(projectFiles.Length < 5,
             $"src/modules/ has {projectFiles.Length} modules (cap is below 5 per module-structure-5-cap.md). " +
-            $"Projects: {string.Join(", ", projectFiles.Select(System.IO.Path.GetFileName))}. " +
-            $"At 5, nest into modules/core/ + modules/extended/.");
+            $"Projects: {string.Join(", ", projectFiles.Select(Path.GetFileName))}. " +
+            "At 5, nest into modules/core/ + modules/extended/.");
     }
 
     /// <summary>
@@ -92,18 +90,18 @@ public sealed class FolderStructureTests
     [Fact]
     public void ProviderProjects_FollowGrafanaDatasourceModel()
     {
-        var providersDir = System.IO.Path.Combine(SrcRoot, "providers");
-        var projectFiles = System.IO.Directory
+        var providersDir = Path.Combine(SrcRoot, "providers");
+        var projectFiles = Directory
             .EnumerateDirectories(providersDir)
-            .Select(System.IO.Path.GetFileName)
-            .Where(name => name!.StartsWith("Tessera.Providers.", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .Where(static name => name!.StartsWith("Tessera.Providers.", StringComparison.Ordinal))
             .ToArray();
 
-        Assert.All(projectFiles, name =>
+        Assert.All(projectFiles, static name =>
         {
             // Tessera.Providers.X where X is one concrete backend
-            var backend = name!.Substring("Tessera.Providers.".Length);
-            Assert.Matches(@"^[A-Z][A-Za-z0-9]+$", backend);
+            var backend = name!["Tessera.Providers.".Length..];
+            Assert.Matches("^[A-Z][A-Za-z0-9]+$", backend);
         });
     }
 
@@ -115,11 +113,11 @@ public sealed class FolderStructureTests
     [Fact]
     public void HostIsNotInSharedOrModulesFolders()
     {
-        var sharedDir = System.IO.Path.Combine(SrcRoot, "shared", "Tessera.Host");
-        var modulesDir = System.IO.Path.Combine(SrcRoot, "modules", "Tessera.Host");
-        Assert.False(System.IO.Directory.Exists(sharedDir), "Tessera.Host must not live in src/shared/");
-        Assert.False(System.IO.Directory.Exists(modulesDir), "Tessera.Host must not live in src/modules/");
-        Assert.True(System.IO.Directory.Exists(System.IO.Path.Combine(SrcRoot, "host", "Tessera.Host")),
+        var sharedDir = Path.Combine(SrcRoot, "shared", "Tessera.Host");
+        var modulesDir = Path.Combine(SrcRoot, "modules", "Tessera.Host");
+        Assert.False(Directory.Exists(sharedDir), "Tessera.Host must not live in src/shared/");
+        Assert.False(Directory.Exists(modulesDir), "Tessera.Host must not live in src/modules/");
+        Assert.True(Directory.Exists(Path.Combine(SrcRoot, "host", "Tessera.Host")),
             "Tessera.Host must live in src/host/.");
     }
 }

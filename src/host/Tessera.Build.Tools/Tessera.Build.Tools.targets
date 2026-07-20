@@ -1,8 +1,48 @@
 <Project>
 
-  <!-- Tessera.Build.Tools.targets — solution-level build hooks placeholder.
-       Real targets (VerifyFormatOnBuild, anti-pattern gates) land in a later
-       commit. For now this file just exists so Tessera.Build.Tools.csproj's
-       <Import Project="Tessera.Build.Tools.targets" /> resolves. -->
+  <!--
+    Tessera.Build.Tools.targets — solution-level build hooks.
+
+    The two targets here fire when Tessera.Build.Tools itself is built
+    (it's the first project in topological order, so the targets run
+    exactly once per solution build). Both are gated on
+    '$(TesseraFormatGateEnabled) == true' which is OFF by default so a
+    developer running 'dotnet build' in inner-loop work does not fail
+    on pre-existing format drift. CI flips the property to 'true' once
+    the in-flight drift is cleared (see STATE.md Open questions).
+
+    Targets:
+      - VerifyFormatOnBuild: post-build, runs the 'dotnet format'
+        verify-no-changes command at hidden severity on the solution.
+        Fails the build on any drift when enabled.
+      - TesseraAntiPatternGate: post-build, runs the audit-grep catalog
+        (see .agents/rules/csharp/worker-audit-grep-catalog.md) — for
+        now it's a no-op placeholder; the rule definitions live in
+        the file-static catalog and the agent runs them as part of
+        its self-gate, not in the build path.
+  -->
+
+  <Target Name="VerifyFormatOnBuild"
+          AfterTargets="Build"
+          Condition="'$(TesseraFormatGateEnabled)' == 'true'">
+    <Message Text="[Tessera] Verifying format on solution (dotnet format --verify-no-changes --severity hidden)..." Importance="High" />
+    <Exec Command="dotnet format --verify-no-changes --severity hidden &quot;$(MSBuildThisFileDirectory)..\..\..\tessera.slnx&quot;"
+          ContinueOnError="false"
+          IgnoreExitCode="false" />
+  </Target>
+
+  <!--
+    TesseraAntiPatternGate: placeholder for the future. The actual
+    rule catalog is at .agents/rules/csharp/worker-audit-grep-catalog.md
+    and is enforced by the agent's self-gate (worker-audit.md §2). The
+    build path can't run regex sweeps against .cs files without
+    shipping a Roslyn analyzer or a separate executable, which is
+    out of scope for MVP-01. Anti-pattern detection lives in the
+    agent's pre-merge audit instead.
+  -->
+  <Target Name="TesseraAntiPatternGate"
+          AfterTargets="Build">
+    <Message Text="[Tessera] Anti-pattern gate skipped (per-worker-audit.md §2; the agent self-gate owns this rule family)." Importance="Low" />
+  </Target>
 
 </Project>

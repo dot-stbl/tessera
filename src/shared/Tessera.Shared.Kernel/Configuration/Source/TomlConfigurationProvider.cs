@@ -37,7 +37,7 @@ public sealed class TomlConfigurationProvider(TomlConfigurationSource source) : 
 
         try
         {
-            if (Tomlyn.TomlSerializer.Deserialize<TomlTable>(tomlText) is { } model)
+            if (TomlSerializer.Deserialize<TomlTable>(tomlText) is { } model)
             {
                 TomlTableFlattener.FlattenTable(model, prefix: string.Empty, data);
             }

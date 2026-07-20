@@ -6,11 +6,11 @@ namespace Tessera.Shared.Kernel.Domain.Traces;
 public enum TraceStatus
 {
     /// <summary>Span completed without error.</summary>
-    Ok,
+    Ok = 0,
 
     /// <summary>Span completed with an error.</summary>
-    Error,
+    Error = 1,
 
     /// <summary>Span status was unset (OpenTelemetry default).</summary>
-    Unset
+    Unset = 2
 }

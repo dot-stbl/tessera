@@ -17,9 +17,9 @@ public sealed class VictoriaDiscoveryMapperTests
     ///     or don't (we return null). Malformed lines yield null.
     /// </summary>
     [Theory]
-    [InlineData("{\"_stream\":\"checkout-api\"}", "checkout-api")]
-    [InlineData("{\"_stream\":\"api\", \"msg\":\"hello\"}", "api")]
-    [InlineData("{\"msg\":\"no_stream\"}", null)]
+    [InlineData(/*lang=json,strict*/ "{\"_stream\":\"checkout-api\"}", "checkout-api")]
+    [InlineData(/*lang=json,strict*/ "{\"_stream\":\"api\", \"msg\":\"hello\"}", "api")]
+    [InlineData(/*lang=json,strict*/ "{\"msg\":\"no_stream\"}", null)]
     [InlineData("garbage", null)]
     public void ExtractStreamField_ParsesNdjsonLines(string line, string? expected)
     {
@@ -35,10 +35,14 @@ public sealed class VictoriaDiscoveryMapperTests
     {
         var lines = new[]
         {
-            "{\"_stream\":\"api\"}",
-            "{\"_stream\":\"web\"}",
-            "{\"_stream\":\"api\"}",
-            "{\"_stream\":\"db\"}",
+            /*lang=json,strict*/
+                                 "{\"_stream\":\"api\"}",
+            /*lang=json,strict*/
+                                 "{\"_stream\":\"web\"}",
+            /*lang=json,strict*/
+                                 "{\"_stream\":\"api\"}",
+            /*lang=json,strict*/
+                                 "{\"_stream\":\"db\"}",
         };
 
         var streams = VictoriaDiscoveryMapper.ExtractDistinctStreams(string.Join('\n', lines));
@@ -59,7 +63,7 @@ public sealed class VictoriaDiscoveryMapperTests
         var services = VictoriaDiscoveryMapper.ToServiceList(traceServices, logStreams);
 
         Assert.Equal(3, services.Count);
-        Assert.Equal(ExpectedMergedServices, services.Select(s => s.Name).ToArray());
-        Assert.All(services, s => Assert.Equal(0, s.SpanCount));
+        Assert.Equal(ExpectedMergedServices, services.Select(static s => s.Name).ToArray());
+        Assert.All(services, static s => Assert.Equal(0, s.SpanCount));
     }
 }

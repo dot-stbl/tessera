@@ -62,6 +62,7 @@ public sealed class TracesController(
     ///     per OpenTelemetry/Jaeger); malformed ids 404 at the router before
     ///     the handler runs.
     /// </summary>
+    /// <exception cref="ProviderNotFoundException"></exception>
     [HttpGet(ApiRoutes.Trace)]
     [EndpointSummary("Trace detail with correlated logs (single response)")]
     [ProducesResponseType<GetTraceResponse>(StatusCodes.Status200OK)]

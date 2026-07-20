@@ -128,7 +128,7 @@ internal static class VictoriaDiscoveryMapper
                 name,
                 SpanCount: 0,
                 ErrorCount: 0,
-                Operations: Array.Empty<Tessera.Shared.Kernel.Domain.Services.ServiceOperation>()));
+                Operations: []));
         }
 
         return services;

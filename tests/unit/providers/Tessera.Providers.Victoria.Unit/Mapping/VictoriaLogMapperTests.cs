@@ -94,7 +94,7 @@ public sealed class VictoriaLogMapperTests
     {
         var spanId = VictoriaLogMapper.ToSpanId(input);
         Assert.NotNull(spanId);
-        Assert.Equal(expected, spanId!.Value);
+        Assert.Equal(expected, spanId.Value);
     }
 
     /// <summary>

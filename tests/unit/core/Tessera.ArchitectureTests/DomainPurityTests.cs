@@ -1,5 +1,4 @@
 using NetArchTest.Rules;
-using Xunit;
 
 namespace Tessera.ArchitectureTests;
 
@@ -35,7 +34,7 @@ public sealed class DomainPurityTests
             .GetResult();
 
         Assert.True(result.IsSuccessful,
-            $"Tessera.Shared.Kernel must remain framework-free (no ASP.NET Core MVC). " +
+            "Tessera.Shared.Kernel must remain framework-free (no ASP.NET Core MVC). " +
             $"Offending types: {string.Join(", ", result.FailingTypeNames ?? [])}");
     }
 
@@ -53,7 +52,7 @@ public sealed class DomainPurityTests
             .GetResult();
 
         Assert.True(result.IsSuccessful,
-            $"Tessera.Shared.Kernel must remain ORM-free. " +
+            "Tessera.Shared.Kernel must remain ORM-free. " +
             $"Offending types: {string.Join(", ", result.FailingTypeNames ?? [])}");
     }
 
@@ -74,7 +73,7 @@ public sealed class DomainPurityTests
             .GetResult();
 
         Assert.True(result.IsSuccessful,
-            $"Tessera.Shared.Kernel must remain HTTP-client-free (Refit + HttpClient live in Tessera.Shared.Http). " +
+            "Tessera.Shared.Kernel must remain HTTP-client-free (Refit + HttpClient live in Tessera.Shared.Http). " +
             $"Offending types: {string.Join(", ", result.FailingTypeNames ?? [])}");
     }
 
@@ -96,9 +95,9 @@ public sealed class DomainPurityTests
             .ToHashSet();
 
         // MVP-01 ships ITraceProvider + ILogProvider + IDiscoveryProvider + IHealthProvider
-        Assert.Contains(providerInterfaceTypes, t => t.Name == "ITraceProvider");
-        Assert.Contains(providerInterfaceTypes, t => t.Name == "ILogProvider");
-        Assert.Contains(providerInterfaceTypes, t => t.Name == "IDiscoveryProvider");
-        Assert.Contains(providerInterfaceTypes, t => t.Name == "IHealthProvider");
+        Assert.Contains(providerInterfaceTypes, static t => t.Name == "ITraceProvider");
+        Assert.Contains(providerInterfaceTypes, static t => t.Name == "ILogProvider");
+        Assert.Contains(providerInterfaceTypes, static t => t.Name == "IDiscoveryProvider");
+        Assert.Contains(providerInterfaceTypes, static t => t.Name == "IHealthProvider");
     }
 }

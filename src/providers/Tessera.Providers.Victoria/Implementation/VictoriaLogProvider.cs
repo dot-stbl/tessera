@@ -1,4 +1,3 @@
-using System.Net.Http;
 using Tessera.Providers.Victoria.Clients;
 using Tessera.Providers.Victoria.Configuration;
 using Tessera.Providers.Victoria.Implementation.Mapping;

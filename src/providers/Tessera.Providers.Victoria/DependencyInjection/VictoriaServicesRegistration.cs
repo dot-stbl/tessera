@@ -32,10 +32,10 @@ public static class VictoriaServicesRegistration
         services.AddSingleton<VictoriaDiscoveryProvider>();
         services.AddSingleton<VictoriaHealthProvider>();
 
-        services.AddSingleton<ITraceProvider>(sp => sp.GetRequiredService<VictoriaTraceProvider>());
-        services.AddSingleton<ILogProvider>(sp => sp.GetRequiredService<VictoriaLogProvider>());
-        services.AddSingleton<IDiscoveryProvider>(sp => sp.GetRequiredService<VictoriaDiscoveryProvider>());
-        services.AddSingleton<IHealthProvider>(sp => sp.GetRequiredService<VictoriaHealthProvider>());
+        services.AddSingleton<ITraceProvider>(static sp => sp.GetRequiredService<VictoriaTraceProvider>());
+        services.AddSingleton<ILogProvider>(static sp => sp.GetRequiredService<VictoriaLogProvider>());
+        services.AddSingleton<IDiscoveryProvider>(static sp => sp.GetRequiredService<VictoriaDiscoveryProvider>());
+        services.AddSingleton<IHealthProvider>(static sp => sp.GetRequiredService<VictoriaHealthProvider>());
     }
 
     /// <summary>
@@ -46,6 +46,7 @@ public static class VictoriaServicesRegistration
     ///     rest of Tessera (per http-resilience-refit.md §2 — bare
     ///     <c>new HttpClient()</c> is banned).
     /// </summary>
+    /// <exception cref="InvalidOperationException"></exception>
     public static void RegisterClients(IServiceCollection services)
     {
         services.AddTesseraRefitClient<IVictoriaTracesClient>(

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using System.Text.Json.Serialization;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
@@ -36,10 +35,7 @@ builder.Configuration.AddTesseraConfiguration();
 // strongly-typed.
 builder.Services
     .AddControllers()
-    .AddJsonOptions(static options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    })
+    .AddJsonOptions(static options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
     .AddApplicationPart(typeof(Tessera.Modules.Health.Controllers.HealthController).Assembly)
     .AddApplicationPart(typeof(Tessera.Modules.Discovery.Controllers.DiscoveryController).Assembly)
     .AddApplicationPart(typeof(Tessera.Modules.Traces.Controllers.TracesController).Assembly)
@@ -96,7 +92,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/",
-    () => Results.Ok(new
+    static () => Results.Ok(new
     {
         name = "tessera",
         version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0",

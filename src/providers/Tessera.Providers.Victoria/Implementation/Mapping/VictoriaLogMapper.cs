@@ -51,7 +51,7 @@ internal static class VictoriaLogMapper
 
         if (!string.IsNullOrWhiteSpace(query.Filter))
         {
-            return query.Filter!;
+            return query.Filter;
         }
 
         return "*";

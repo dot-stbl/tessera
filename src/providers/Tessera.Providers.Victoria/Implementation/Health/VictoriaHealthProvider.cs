@@ -10,10 +10,6 @@ namespace Tessera.Providers.Victoria.Implementation.Health;
 /// </summary>
 public sealed class VictoriaHealthProvider : IHealthProvider
 {
-    private static readonly Task<ProviderHealthReport> HealthyTracesTask =
-        Task.FromResult(new ProviderHealthReport("victoria-traces", HealthStatus.Healthy));
-    private static readonly Task<ProviderHealthReport> HealthyLogsTask =
-        Task.FromResult(new ProviderHealthReport("victoria-logs", HealthStatus.Healthy));
 
     /// <inheritdoc />
     public async Task<ProviderHealthReport> CheckAsync(CancellationToken cancellationToken)
