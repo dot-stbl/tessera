@@ -1,0 +1,142 @@
+name: build
+
+# Tessera PR + push workflow.
+#
+# Triggers:
+#   - pull_request targeting main or develop
+#   - push to main or develop
+#
+# Jobs (all run on ubuntu-latest):
+#   build-and-test:  dotnet build + test, with TesseraFormatGateEnabled=true
+#                   so the format gate (src/host/Tessera.Build.Tools.targets
+#                   :: VerifyFormatOnBuild) blocks the build on any drift.
+#   format-check:   defense-in-depth — runs `dotnet format --verify-no-changes`
+#                   explicitly so the failure surfaces as a discrete GitHub
+#                   check rather than buried in the build log.
+#   architecture:   separate job for NetArchTest rule violations so they
+#                   are visible independent of unit tests.
+#
+# Path filters keep the workflow from running on web/ changes
+# (frontend lane — separate workflow) or compose/ docs.
+#
+# Concurrency: cancel in-progress PR builds on a new push to the same
+# ref so the queue doesn't pile up. Main / develop pushes run to
+# completion (cancel-in-progress: false) because they're the record.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'tessera.slnx'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'tessera.slnx'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/build.yml'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: build + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore tessera.slnx
+
+      - name: Build (with format gate)
+        run: >
+          dotnet build tessera.slnx -c Release
+            --no-restore
+            /p:TesseraFormatGateEnabled=true
+
+      - name: Test
+        run: >
+          dotnet test tessera.slnx -c Release
+            --no-build
+            --no-restore
+            --verbosity normal
+
+  format-check:
+    name: format (dotnet format --verify)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Verify format
+        # Defense-in-depth: the build target also runs this when
+        # TesseraFormatGateEnabled=true, but we run it as a separate
+        # job so the check is a discrete GitHub status entry rather
+        # than buried in the build log.
+        run: >
+          dotnet format tessera.slnx
+            --verify-no-changes
+            --severity hidden
+            --no-restore
+
+  architecture:
+    name: architecture (NetArchTest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore tessera.slnx
+
+      - name: Architecture tests
+        run: >
+          dotnet test tests/unit/core/Tessera.ArchitectureTests
+            -c Release
+            --no-restore
+            --verbosity normal
