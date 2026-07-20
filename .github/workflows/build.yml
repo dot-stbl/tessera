@@ -1,0 +1,118 @@
+name: build
+
+# Tessera PR + push workflow.
+#
+# Triggers:
+#   - pull_request targeting main or develop
+#   - push to main or develop
+#
+# Jobs (all run on ubuntu-latest):
+#   build-and-test:  dotnet build + test against tessera.slnx.
+#   architecture:   separate job for NetArchTest rule violations so they
+#                   are visible independent of unit tests.
+#
+# Format gate (`dotnet format --verify-no-changes`) is intentionally
+# NOT in this workflow -- there is pre-existing format drift in older
+# test files (FINALNEWLINE / IDE0130) and the format cleanup lives
+# in a separate feature branch. When that lands, flip
+# TesseraFormatGateEnabled=true on the build job and add the format
+# check back.
+#
+# Path filters keep the workflow from running on web/ changes
+# (frontend lane -- separate workflow) or compose/ docs.
+#
+# Concurrency: cancel in-progress PR builds on a new push to the same
+# ref so the queue doesn't pile up. Main / develop pushes run to
+# completion (cancel-in-progress: false) because they're the record.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'tessera.slnx'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'tessera.slnx'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/build.yml'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: build + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # submodules: false -- the assets/stbl submodule's .gitmodules
+      # URL is a local Windows path that doesn't resolve on the
+      # ubuntu-latest runner. The brand assets are static SVGs/CSS
+      # used by the web/ frontend (deferred to MVP-02) and not by
+      # the backend build, so skipping the fetch is safe for MVP-01
+      # backend CI. The .gitmodules URL is out of scope for this
+      # commit; fixed in a follow-up that points it at the real
+      # dot-stbl/brand repo.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore tessera.slnx
+
+      - name: Build
+        run: dotnet build tessera.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tessera.slnx -c Release --no-build --no-restore --verbosity normal
+
+  architecture:
+    name: architecture (NetArchTest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # submodules: false -- same rationale as the build job.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore tessera.slnx
+
+      - name: Architecture tests
+        run: dotnet test tests/unit/core/Tessera.ArchitectureTests -c Release --no-restore --verbosity normal

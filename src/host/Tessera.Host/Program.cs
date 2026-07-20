@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Spectre.Console;
+using Tessera.Banner;
 using Tessera.Modules.Discovery.DependencyInjection;
 using Tessera.Modules.Health.DependencyInjection;
 using Tessera.Modules.Logs.DependencyInjection;
@@ -7,6 +9,31 @@ using Tessera.Providers.Victoria.DependencyInjection;
 using Tessera.Shared.Authentication;
 using Tessera.Shared.Kernel.Configuration.Source;
 using Tessera.Shared.Web;
+
+// --------------------------------------------------------------------
+// Banner CLI flags (--help, --version, --banner)
+// --------------------------------------------------------------------
+// Per the .stbl brand ("hidden file in Unix. ls won't show it. ls -la
+// will"), the banner does NOT show on every startup. It only renders
+// when the user passes --help, --version, or --banner. We parse these
+// flags BEFORE WebApplication.CreateBuilder so they exit cleanly
+// without the host's pipeline spinning up.
+var bannerArgs = BannerCliArgs.Parse(args);
+if (bannerArgs.ShowHelp || bannerArgs.ShowVersion || bannerArgs.ShowBanner)
+{
+    BannerRenderer.WriteTo(AnsiConsole.Console, BannerOptions.ForHost(bannerArgs.NoColor) with { Variant = bannerArgs.Variant });
+    if (bannerArgs.ShowHelp)
+    {
+        AnsiConsole.Console.MarkupLine("[grey]Usage:[/] tessera [options]");
+        AnsiConsole.Console.MarkupLine("[grey]Options:[/]");
+        AnsiConsole.Console.MarkupLine("  [grey]--help, -h[/]              show this help");
+        AnsiConsole.Console.MarkupLine("  [grey]--version, -v[/]           show version");
+        AnsiConsole.Console.MarkupLine("  [grey]--banner[/]                 print the banner and exit");
+        AnsiConsole.Console.MarkupLine("  [grey]--variant <name>[/]         block | minimal (default: block)");
+        AnsiConsole.Console.MarkupLine("  [grey]--no-color[/]               disable ANSI colour output");
+    }
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
