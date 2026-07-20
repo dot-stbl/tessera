@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 using Spectre.Console;
 using Tessera.Banner;
 using Tessera.Modules.Discovery.DependencyInjection;
@@ -7,6 +8,7 @@ using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
 using Tessera.Providers.Victoria.DependencyInjection;
 using Tessera.Shared.Authentication;
+using Tessera.Shared.Kernel.Configuration.Options;
 using Tessera.Shared.Kernel.Configuration.Source;
 using Tessera.Shared.Web;
 
@@ -46,6 +48,18 @@ var builder = WebApplication.CreateBuilder(args);
 // env > /etc/tessera > XDG > cwd), then chains the optional
 // `tessera.local.toml` override in the same directory.
 builder.Configuration.AddTesseraConfiguration();
+
+// --------------------------------------------------------------------
+// Server options ([server] section in tessera.toml)
+// --------------------------------------------------------------------
+// Bind [server]/host + [server]/port from TOML into ServerOptions.
+// ValidateOnStart fails startup if port is outside the 1990-2120 reserved
+// range (see .agents/rules/coding/project-ports.md) or annotation breaks,
+// rather than failing on the first HTTP request.
+builder.Services.AddOptions<ServerOptions>()
+    .Bind(builder.Configuration.GetSection(ServerOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // --------------------------------------------------------------------
 // Controllers + JSON
@@ -103,6 +117,17 @@ builder.Services
     .AddVictoriaProvider(builder.Configuration);
 
 var app = builder.Build();
+
+// --------------------------------------------------------------------
+// Kestrel bind
+// --------------------------------------------------------------------
+// Read the resolved ServerOptions (already validated) and apply to Kestrel.
+// Replaces ASP.NET's default URL discovery (ASPNETCORE_URLS env + launchSettings.json)
+// so config is the single source for Host + Port. app.Urls is the canonical
+// way in .NET 10 to set the listen URL after Build.
+var serverOptions = app.Services.GetRequiredService<IOptions<ServerOptions>>().Value;
+app.Urls.Clear();
+app.Urls.Add($"http://{serverOptions.Host}:{serverOptions.Port}");
 
 // --------------------------------------------------------------------
 // Error pipeline
