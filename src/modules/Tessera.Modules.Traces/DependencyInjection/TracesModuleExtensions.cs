@@ -20,6 +20,7 @@ public static class TracesModuleExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ITracesMapper, TracesMapper>();
         services.AddSingleton<RequestViewService>();
+        services.AddSingleton<ErrorsInboxService>();
         return services;
     }
 }

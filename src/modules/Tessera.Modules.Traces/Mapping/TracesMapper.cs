@@ -1,21 +1,32 @@
-using Riok.Mapperly.Abstractions;
 using Tessera.Modules.Traces.Contracts;
 using Tessera.Shared.Kernel.Analysis;
+using Tessera.Shared.Kernel.Analysis.Errors;
 
 namespace Tessera.Modules.Traces.Mapping;
 
 /// <summary>
-///     Source-generated Mapperly projection of <see cref="RequestView" /> →
-///     <see cref="GetTraceResponse" />.
+///     Projection of <see cref="RequestView" /> → <see cref="GetTraceResponse" />,
+///     including error fields from <see cref="ErrorAnalysis" />.
 /// </summary>
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public sealed partial class TracesMapper : ITracesMapper
+public sealed class TracesMapper : ITracesMapper
 {
     /// <summary>
     ///     Map domain request view to the wire response. Renames
     ///     <see cref="RequestView.Logs" /> →
-    ///     <see cref="GetTraceResponse.CorrelatedLogs" /> for back-compat.
+    ///     <see cref="GetTraceResponse.CorrelatedLogs" /> for back-compat and
+    ///     attaches errored-span count + exception summaries.
     /// </summary>
-    [MapProperty(nameof(RequestView.Logs), nameof(GetTraceResponse.CorrelatedLogs))]
-    public partial GetTraceResponse ToResponse(RequestView view);
+    public GetTraceResponse ToResponse(RequestView view)
+    {
+        var errors = ErrorAnalysis.CollectErrors(view.Trace);
+        return new GetTraceResponse
+        {
+            Trace = view.Trace,
+            CorrelatedLogs = view.Logs,
+            Mode = view.Mode,
+            Markers = view.Markers,
+            ErroredSpanCount = errors.Count,
+            Exceptions = TracesErrorMapping.ToExceptionSummaries(errors),
+        };
+    }
 }

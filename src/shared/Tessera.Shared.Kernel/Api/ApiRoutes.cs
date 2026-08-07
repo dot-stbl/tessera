@@ -42,4 +42,7 @@ public static class ApiRoutes
 
     /// <summary>Ad-hoc log search (LogsQL filter, MVP-02).</summary>
     public const string Logs = Base + "/logs";
+
+    /// <summary>Errors inbox — grouped exception summaries over a time window (Traces module).</summary>
+    public const string Errors = Base + "/errors";
 }

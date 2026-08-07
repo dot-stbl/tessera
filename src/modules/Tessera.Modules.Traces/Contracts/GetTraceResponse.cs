@@ -24,4 +24,16 @@ public sealed record GetTraceResponse
 
     /// <summary>Timeline markers derived from correlated logs.</summary>
     public required IReadOnlyList<LogMarker> Markers { get; init; }
+
+    /// <summary>
+    ///     Count of spans with <see cref="Tessera.Shared.Kernel.Domain.Traces.TraceStatus.Error" />.
+    ///     Zero when <see cref="Trace" /> is null or has no errored spans.
+    /// </summary>
+    public int ErroredSpanCount { get; init; }
+
+    /// <summary>
+    ///     Exception summaries for errored spans (type/message/span/service/operation).
+    ///     Empty when no error spans or no exception events.
+    /// </summary>
+    public IReadOnlyList<TraceExceptionSummary> Exceptions { get; init; } = [];
 }
