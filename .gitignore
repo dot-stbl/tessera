@@ -58,3 +58,7 @@ desktop.ini
 
 # ─── soly extension bookkeeping ──────────────────────────────────────────────
 .agents/rule-mtimes.json
+
+# Agent worktrees (local only)
+.agents/worktree/
+
