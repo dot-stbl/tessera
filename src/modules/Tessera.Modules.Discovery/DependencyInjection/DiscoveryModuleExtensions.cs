@@ -1,13 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using Tessera.Modules.Discovery.Services;
 
 namespace Tessera.Modules.Discovery.DependencyInjection;
 
 /// <summary>
-///     Composition-root helper for the Discovery module. The module has no
-///     module-scoped services (it consumes <see cref="Tessera.Shared.Kernel.Providers.Discovery.IDiscoveryProvider" />
-///     directly), so this extension is intentionally empty — it's here so
-///     <c>Program.cs</c> has a consistent <c>AddXxxModule()</c> chain across
-///     all four feature modules.
+///     Composition-root helper for the Discovery module. Registers service RED
+///     orchestration; provider implementations are wired in <c>Tessera.Host</c>.
 /// </summary>
 public static class DiscoveryModuleExtensions
 {
@@ -16,6 +14,7 @@ public static class DiscoveryModuleExtensions
     /// </summary>
     public static IServiceCollection AddDiscoveryModule(this IServiceCollection services)
     {
+        services.AddSingleton<ServiceRedService>();
         return services;
     }
 }

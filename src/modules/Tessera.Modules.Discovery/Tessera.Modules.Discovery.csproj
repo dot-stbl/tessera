@@ -6,6 +6,9 @@
     <ProjectReference Include="..\..\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj"/>
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Tessera.Modules.Discovery.Unit" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Remove="Meziantou.Analyzer"/>
     <PackageReference Remove="Microsoft.VisualStudio.Threading.Analyzers" />
   </ItemGroup>
