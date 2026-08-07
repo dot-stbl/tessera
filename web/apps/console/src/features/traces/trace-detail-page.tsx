@@ -4,9 +4,9 @@ import { getRouteApi, Link } from '@tanstack/react-router';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { LogEntry, SpanDetailPanel, Waterfall, formatDuration } from '@/shared/ui/apm';
-import type { WaterfallSpan } from '@/shared/ui/apm';
+import type { SpanRowMarker, WaterfallSpan } from '@/shared/ui/apm';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
-import type { LogEntry as LogEntryData, Span } from '@/shared/api/types';
+import type { LogEntry as LogEntryData, LogMarker, Span } from '@/shared/api/types';
 
 const routeApi = getRouteApi('/traces/$traceId');
 
@@ -59,6 +59,32 @@ export function logsForSpan(logs: LogEntryData[], spanId: string | undefined): L
   return logs.filter((entry) => entry.spanId === spanId);
 }
 
+/**
+ * Group timeline markers by the span they belong to.
+ *
+ * Markers without a span id are dropped rather than parked on the root: a log
+ * emitted outside any span has no position in the span tree, and inventing one
+ * would put a marker on a bar it never belonged to. They stay visible in the
+ * unfiltered log list below the waterfall.
+ */
+export function groupMarkersBySpan(markers: LogMarker[]): Map<string, SpanRowMarker[]> {
+  const grouped = new Map<string, SpanRowMarker[]>();
+
+  for (const marker of markers) {
+    if (marker.spanId === null) continue;
+    const forSpan = grouped.get(marker.spanId);
+    const entry: SpanRowMarker = {
+      offsetMs: marker.offsetMs,
+      level: marker.level,
+      message: marker.message,
+    };
+    if (forSpan) forSpan.push(entry);
+    else grouped.set(marker.spanId, [entry]);
+  }
+
+  return grouped;
+}
+
 export function TraceDetailPage() {
   const { traceId } = routeApi.useParams();
   // The selected span is URL state: the link you hand to someone else opens on
@@ -95,6 +121,7 @@ export function TraceDetailPage() {
     () => logsForSpan(allLogs, selectedSpanId),
     [allLogs, selectedSpanId],
   );
+  const markersBySpanId = useMemo(() => groupMarkersBySpan(view?.markers ?? []), [view?.markers]);
 
   let subtitle = traceId;
   if (trace) {
@@ -147,6 +174,7 @@ export function TraceDetailPage() {
                 spans={tree}
                 totalDurationMs={trace.durationMs}
                 selectedSpanId={selectedSpanId}
+                markersBySpanId={markersBySpanId}
                 onSpanClick={(span) =>
                   selectSpan(span.id === selectedSpanId ? undefined : span.id)
                 }
@@ -201,7 +229,7 @@ function LogsSection({ entries, totalCount, selectedSpanId, onClearSpanFilter }:
   return (
     <section className="flex flex-col gap-2">
       <header className="flex items-center gap-3">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <h2 className="meta">
           {scoped ? 'Logs for selected span' : 'Logs'} · {entries.length}
         </h2>
         {scoped && (

@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { cn } from '@/shared/lib/utils';
-import { SpanRow, type SpanRowProps } from './span-row';
+import { SpanRow, type SpanRowMarker, type SpanRowProps } from './span-row';
 
 export interface WaterfallSpan {
   id: string;
@@ -22,6 +22,12 @@ export interface WaterfallProps {
   /** Currently selected span id. */
   selectedSpanId?: string;
   onSpanClick?: (span: WaterfallSpan) => void;
+  /**
+   * Notable logs to draw on the timeline, keyed by the span they were emitted
+   * in. Entries whose span is absent from `spans` are simply not drawn — a log
+   * is never attached to a span it did not come from.
+   */
+  markersBySpanId?: Map<string, SpanRowMarker[]>;
   className?: string;
 }
 
@@ -52,11 +58,13 @@ export function Waterfall({
   totalDurationMs,
   selectedSpanId,
   onSpanClick,
+  markersBySpanId,
   className,
 }: WaterfallProps) {
   return (
     <div className={cn('waterfall', className)}>
       <div className="waterfall-axis">
+        <div className="waterfall-axis-offset">at</div>
         <div className="waterfall-axis-label">Service · Operation</div>
         <div className="waterfall-axis-track">
           {TICKS.map((t, i) => (
@@ -73,11 +81,11 @@ export function Waterfall({
             </span>
           ))}
         </div>
-        <div className="waterfall-axis-dur">Duration</div>
+        <div className="waterfall-axis-dur">Took</div>
       </div>
       <div className="waterfall-body">
         {spans.length === 0 ? (
-          <div className="waterfall-empty">No spans in this trace.</div>
+          <div className="waterfall-empty">This trace has no spans. Its logs are below.</div>
         ) : (
           spans.map((span) => (
             <WaterfallNode
@@ -86,6 +94,7 @@ export function Waterfall({
               totalDurationMs={totalDurationMs}
               selectedSpanId={selectedSpanId}
               onSpanClick={onSpanClick}
+              markersBySpanId={markersBySpanId}
             />
           ))
         )}
@@ -99,6 +108,7 @@ interface WaterfallNodeProps {
   totalDurationMs: number;
   selectedSpanId?: string;
   onSpanClick?: (span: WaterfallSpan) => void;
+  markersBySpanId?: Map<string, SpanRowMarker[]>;
 }
 
 function WaterfallNode({
@@ -106,6 +116,7 @@ function WaterfallNode({
   totalDurationMs,
   selectedSpanId,
   onSpanClick,
+  markersBySpanId,
 }: WaterfallNodeProps): ReactNode {
   const rowProps: SpanRowProps = {
     name: span.name,
@@ -118,6 +129,7 @@ function WaterfallNode({
     isCritical: span.isCritical,
     isSelected: span.id === selectedSpanId,
     onClick: onSpanClick ? () => onSpanClick(span) : undefined,
+    markers: markersBySpanId?.get(span.id),
   };
 
   return (
@@ -130,6 +142,7 @@ function WaterfallNode({
           totalDurationMs={totalDurationMs}
           selectedSpanId={selectedSpanId}
           onSpanClick={onSpanClick}
+          markersBySpanId={markersBySpanId}
         />
       ))}
     </>

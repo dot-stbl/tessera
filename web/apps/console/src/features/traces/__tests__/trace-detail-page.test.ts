@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildWaterfallTree, logsForSpan } from '../trace-detail-page';
-import type { LogEntry, Span } from '@/shared/api/types';
+import { buildWaterfallTree, groupMarkersBySpan, logsForSpan } from '../trace-detail-page';
+import type { LogEntry, LogMarker, Span } from '@/shared/api/types';
 
 /**
  * These two functions carry the only non-presentational logic on the request
@@ -123,5 +123,42 @@ describe('logsForSpan', () => {
 
   it('returns nothing for a span that emitted no logs', () => {
     expect(logsForSpan(logs, 'unlogged')).toEqual([]);
+  });
+});
+describe('groupMarkersBySpan', () => {
+  function marker(partial: Partial<LogMarker> = {}): LogMarker {
+    return {
+      spanId: 'a',
+      offsetMs: 100,
+      level: 'error',
+      message: 'boom',
+      timestampUnixMs: 1_100,
+      ...partial,
+    };
+  }
+
+  it('groups markers under the span that emitted them', () => {
+    const grouped = groupMarkersBySpan([
+      marker({ spanId: 'a', message: 'first' }),
+      marker({ spanId: 'b', message: 'second' }),
+      marker({ spanId: 'a', message: 'third' }),
+    ]);
+
+    expect(grouped.get('a')?.map((m) => m.message)).toEqual(['first', 'third']);
+    expect(grouped.get('b')).toHaveLength(1);
+  });
+
+  it('drops markers with no span id rather than parking them on a span', () => {
+    // A log emitted outside any span has no position in the span tree, and
+    // inventing one would put a marker on a bar it never belonged to.
+    const grouped = groupMarkersBySpan([marker({ spanId: null })]);
+
+    expect(grouped.size).toBe(0);
+  });
+
+  it('keeps the offset in trace coordinates', () => {
+    const grouped = groupMarkersBySpan([marker({ offsetMs: 862 })]);
+
+    expect(grouped.get('a')?.[0]?.offsetMs).toBe(862);
   });
 });

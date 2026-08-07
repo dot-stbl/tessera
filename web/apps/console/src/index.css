@@ -49,10 +49,27 @@
   --fg-2: oklch(35% 0.018 240);
   --muted-2: oklch(65% 0.014 240);
 
-  /* ─── Borders (2 levels) ─── */
-  --border: oklch(0.92 0.004 286.32);
-  --border-2: oklch(85% 0.008 240);
-  --input: oklch(0.92 0.004 286.32);
+  /* ─── Borders (3 levels) ───
+   * --border was oklch(92%): visible on a swatch, invisible in a dense table,
+   * which left every screen reading as one flat sheet. Darkened so a hairline
+   * can carry structure on its own — this app has hundreds of rows and no room
+   * for a box around each of them.
+   *   --border    hairline between rows
+   *   --border-2  edge of a surface
+   *   --rule      the one strong line: gutter edge, header underline
+   */
+  --border: oklch(0.895 0.005 250);
+  --border-2: oklch(0.83 0.007 250);
+  --rule: oklch(0.72 0.010 250);
+  --input: oklch(0.885 0.005 250);
+
+  /* ─── Density and the time gutter ───
+   * Time runs down the left edge of every listing in this app, always at the
+   * same width, always monospaced. --gutter is that column.
+   */
+  --row: 28px;
+  --gutter: 62px;
+  --rail: 52px;
 
   /* ─── Waterfall gridlines + categorical service palette (APM) ───
    * Service hues live in 190–320 only, clear of the status hues
@@ -157,8 +174,9 @@
   --fg-2: oklch(82% 0.008 250);
   --muted-2: oklch(45% 0.012 240);
 
-  --border: oklch(30% 0.012 250);
-  --border-2: oklch(38% 0.014 250);
+  --border: oklch(31% 0.012 250);
+  --border-2: oklch(40% 0.014 250);
+  --rule: oklch(52% 0.014 250);
   --input: var(--border);
 
   --grid: oklch(1 0 0 / 0.06);
@@ -359,26 +377,27 @@
 
 /* =========================================================================
  * APM components — Tessera extensions
+ *
+ * Three type roles, and which one a string gets says what kind of string it is:
+ *   .meta  — monospace, uppercase, tracked. Column headers, labels, tags: the
+ *            scaffolding around the data.
+ *   mono   — monospace, tabular. Every machine value: durations, ids,
+ *            timestamps, counts, service and operation names.
+ *   prose  — Onest. Sentences only: empty states, errors, help.
+ * An APM screen is almost entirely machine values, so setting those in a machine
+ * face and reserving the human face for sentences is not decoration — it tells
+ * you at a glance what kind of thing you are looking at.
  * ========================================================================= */
 
-/* ─── Log level chip ─── */
-.log-level {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
+/* ─── The meta layer ─── */
+.meta {
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
 }
-.log-level-trace  { color: var(--level-trace); background: var(--level-trace-bg); }
-.log-level-debug  { color: var(--level-debug); background: var(--level-debug-bg); }
-.log-level-info   { color: var(--level-info);  background: var(--level-info-bg); }
-.log-level-warn   { color: var(--level-warn);  background: var(--level-warn-bg); }
-.log-level-error  { color: var(--level-error); background: var(--level-error-bg); }
-.log-level-fatal  { color: var(--level-fatal); background: var(--level-fatal-bg); }
 
 /* ─── Duration ─── */
 .duration {
@@ -388,8 +407,10 @@
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
 }
-.duration-slow { color: var(--slow-ink); background: var(--slow-soft); padding: 1px 4px; border-radius: var(--radius-sm); }
-.duration-very-slow { color: var(--err-ink); background: var(--err-soft); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: 600; }
+/* Ink only. The tinted lozenge was the loudest thing in a column of forty
+ * numbers and only ever meant "this one is bigger". */
+.duration-slow { color: var(--slow-ink); }
+.duration-very-slow { color: var(--err-ink); font-weight: 600; }
 .duration-unit {
   margin-left: 1px;
   color: var(--muted-foreground);
@@ -428,81 +449,150 @@
 .pill-slow { background: var(--slow-soft); color: var(--slow-ink); }
 .pill-idle { background: var(--idle-soft); color: var(--idle-ink); }
 
-/* ─── Log entry ─── */
+/* ─── Log stream ───
+ * The same spine again: time in the gutter, at the same width, in the same face.
+ * Severity is stated twice over — as a coloured stamp and as a 2px edge on the
+ * gutter's right side — and that edge *is* the app's structural rule, so the two
+ * devices are one. The message is then the only free-flowing text on the row.
+ */
 .log-entry {
-  border-bottom: 1px solid var(--border);
-  border-left: 3px solid var(--lvc, transparent);
-  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 11.5px;
 }
-.log-entry:hover { background: var(--surface-2); }
-/* severity gutter — the left stripe scans faster than reading chips */
-.log-entry-trace { --lvc: var(--level-trace); }
-.log-entry-debug { --lvc: var(--level-debug); }
-.log-entry-info  { --lvc: var(--level-info); }
-.log-entry-warn  { --lvc: var(--level-warn); }
-.log-entry-error { --lvc: var(--level-error); }
-.log-entry-fatal { --lvc: var(--level-fatal); }
+.log-entry:last-child { border-bottom: 0; }
 .log-entry-row {
+  display: grid;
+  grid-template-columns: var(--gutter) 46px minmax(88px, 124px) 1fr 22px;
+  align-items: center;
+  min-height: var(--row);
+}
+.log-time {
+  height: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
+  justify-content: flex-end;
+  padding-right: 10px;
+  background: var(--surface-2);
+  border-right: 1px solid var(--rule);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-2);
 }
-.log-time { flex-shrink: 0; min-width: 80px; }
-.log-service { color: var(--fg-2); flex-shrink: 0; min-width: 112px; }
-.log-message { color: var(--foreground); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.log-expand {
-  background: none;
-  border: 0;
+.log-entry:hover { background: var(--surface-2); }
+.log-entry:hover .log-time { color: var(--fg-2); }
+
+/* Severity, stated on the axis. */
+.log-entry-warn .log-time { color: var(--warn-ink); box-shadow: inset -2px 0 0 var(--warn); }
+.log-entry-error .log-time { color: var(--err-ink); font-weight: 600; box-shadow: inset -2px 0 0 var(--err); }
+.log-entry-fatal .log-time { color: var(--err-ink); font-weight: 600; box-shadow: inset -2px 0 0 var(--level-fatal); }
+
+.log-service {
+  padding-left: 10px;
   color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.log-message {
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.log-expand {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted-2);
+  font-size: 9px;
   cursor: pointer;
-  padding: 0 4px;
-  font-size: 10px;
 }
 .log-expand:hover { color: var(--foreground); }
+
 .log-fields {
-  margin: 6px 0 0 80px;
-  padding: 8px 12px;
-  background: var(--surface-3);
-  border-radius: var(--radius-sm);
+  margin: 0;
+  padding: 8px 12px 10px calc(var(--gutter) + 12px);
+  border-top: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+  background: var(--surface-2);
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
-  font-size: 11px;
+  gap: 3px 14px;
+  font-size: 10.5px;
 }
 .log-fields .log-field { display: contents; }
-.log-fields dt { color: var(--muted-foreground); font-weight: 500; }
-.log-fields dd { color: var(--foreground); margin: 0; word-break: break-word; }
+.log-fields dt { color: var(--muted-foreground); }
+.log-fields dd { margin: 0; color: var(--foreground); word-break: break-word; }
 
-/* ─── Waterfall (Jaeger / Kibana APM style) ─── */
+/* ─── Level tag ───
+ * A word in its own colour. The filled chip was the same decision the status
+ * pill made in the trace list, and it loses for the same reason: across forty
+ * rows it was the loudest thing on screen and said the least. */
+.log-level {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 10px;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+.log-level-trace { color: var(--muted-2); }
+.log-level-debug { color: var(--level-debug); }
+.log-level-info { color: var(--muted-foreground); }
+.log-level-warn { color: var(--warn-ink); }
+.log-level-error { color: var(--err-ink); }
+.log-level-fatal { color: var(--level-fatal); }
+
+/* ─── Waterfall ───
+ * Same spine as every listing: the time gutter first, then the subject, then the
+ * bar, then the value. Here the gutter carries each span's offset from the trace
+ * start, so the timeline can be read numerically and not only by eye — and a
+ * span's position sits in exactly the place the trace list, the log stream and
+ * this screen all agree on.
+ *
+ * Two accessories were removed on purpose: the critical-path diamond and the
+ * "!" badge on failing bars. The bar is already red and the gutter stamp is
+ * already red; a third marker said the same thing a third time.
+ */
 .waterfall {
-  --wf-label: 300px;
-  --wf-dur: 88px;
+  --wf-label: 260px;
+  --wf-dur: 74px;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-size: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
 }
 
-/* time axis + tick labels */
+/* Axis: tick labels over the track, headers in the meta face. */
 .waterfall-axis {
   display: grid;
-  grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
+  grid-template-columns: var(--gutter) var(--wf-label) 1fr var(--wf-dur);
   align-items: center;
-  height: 30px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 26px;
+  background: var(--background);
+  border-bottom: 1px solid var(--rule);
   color: var(--muted-foreground);
 }
-.waterfall-axis-label {
-  padding-left: 14px;
-  font-size: 10.5px;
+.waterfall-axis-offset {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  background: var(--surface-2);
+  border-right: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+}
+.waterfall-axis-label {
+  padding-left: 12px;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 .waterfall-axis-track { position: relative; height: 100%; }
 .waterfall-tick {
@@ -514,61 +604,90 @@
   transform: translateX(-50%);
   padding: 0 3px;
   font-size: 10px;
+  font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
 }
 .waterfall-tick.is-first { transform: none; }
 .waterfall-tick.is-last { transform: translateX(-100%); }
 .waterfall-axis-dur {
-  padding-right: 14px;
+  padding-right: 12px;
   text-align: right;
-  font-size: 10.5px;
+  font-size: 10px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
-.waterfall-empty { padding: 24px 14px; text-align: center; color: var(--muted-foreground); }
+.waterfall-empty {
+  padding: 40px 18px;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
 
 .span-row {
   display: grid;
-  grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
+  grid-template-columns: var(--gutter) var(--wf-label) 1fr var(--wf-dur);
   align-items: center;
-  height: 30px;
+  height: var(--row);
   background: var(--background);
-  cursor: default;
   border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+  cursor: default;
 }
 .waterfall-body .span-row:last-child { border-bottom: 0; }
 .span-row[data-clickable] { cursor: pointer; }
 .span-row[data-clickable]:hover { background: var(--surface-2); }
 .span-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
-.span-row-error { background: color-mix(in oklch, var(--err) 6%, var(--card)); }
-.span-row-selected { background: color-mix(in oklch, var(--primary) 9%, var(--card)); }
-.span-row-selected[data-clickable]:hover { background: color-mix(in oklch, var(--primary) 13%, var(--card)); }
+
+/* The offset gutter. Failing spans stamp it red; the selected span claims it
+ * with the signal colour and a solid edge. No row tint in either case — the
+ * axis carries the state so the bars stay the only coloured shapes. */
+.span-offset {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  background: var(--surface-2);
+  border-right: 1px solid var(--rule);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-2);
+}
+.span-row[data-clickable]:hover .span-offset { color: var(--fg-2); }
+.span-row-error .span-offset { color: var(--err-ink); font-weight: 600; }
+.span-row-selected .span-offset {
+  color: var(--primary);
+  box-shadow: inset -2px 0 0 var(--primary);
+}
+.span-row-selected { background: color-mix(in oklch, var(--primary) 5%, var(--background)); }
+.span-row-selected[data-clickable]:hover {
+  background: color-mix(in oklch, var(--primary) 9%, var(--background));
+}
 
 .span-label {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
   min-width: 0;
   overflow: hidden;
-  padding-left: calc(14px + var(--depth, 0) * 15px);
-  padding-right: 12px;
+  padding-left: calc(12px + var(--depth, 0) * 13px);
+  padding-right: 10px;
 }
-.span-crit-tick {
-  position: absolute;
-  left: 4px;
-  width: 5px;
-  height: 5px;
-  background: var(--primary);
+.span-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 1px;
-  rotate: 45deg;
+  background: var(--svc, var(--muted-2));
   flex: none;
 }
-.span-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--svc, var(--muted-2)); flex: none; }
-.span-service { color: var(--muted-foreground); flex: none; }
-.span-name { color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.span-row-crit .span-name { font-weight: 600; }
+.span-service { color: var(--muted-foreground); font-size: 11px; flex: none; }
+.span-name {
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.span-row-crit .span-name { font-weight: 500; }
 
 .span-track {
   position: relative;
@@ -580,38 +699,43 @@
   position: absolute;
   top: 50%;
   translate: 0 -50%;
-  height: 13px;
+  height: 10px;
+  min-width: 2px;
+  border-radius: 2px;
   background: var(--svc, var(--muted-2));
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.06);
 }
 .span-bar-error { background: var(--err); }
-.span-bar-flag {
-  position: absolute;
-  right: -3px;
-  top: 50%;
-  translate: 50% -50%;
-  display: grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--card);
-  border-radius: 50%;
-  background: var(--err);
-  color: oklch(1 0 0);
-  font-family: system-ui, sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-}
+
 .span-duration {
-  padding-right: 14px;
+  padding-right: 12px;
+  text-align: right;
   color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  font-size: 11.5px;
 }
 .span-duration-unit { margin-left: 1px; color: var(--muted-2); font-size: 0.85em; }
 .span-duration.is-slow { color: var(--slow-ink); }
 .span-duration.is-error { color: var(--err-ink); font-weight: 600; }
+
+/* Log markers on the span track — a warn or error log where it happened.
+ * Positioned against the track, so the offset stays in trace coordinates. */
+.span-marker {
+  position: absolute;
+  top: 50%;
+  translate: -50% -50%;
+  width: 3px;
+  height: 18px;
+  border-radius: 1px;
+  background: var(--mk, var(--muted-2));
+  box-shadow: 0 0 0 1px var(--background);
+  cursor: help;
+}
+.span-marker-warn { --mk: var(--warn); }
+.span-marker-error { --mk: var(--err); }
+.span-marker-fatal { --mk: var(--level-fatal); }
+.span-marker-info,
+.span-marker-debug,
+.span-marker-trace { --mk: var(--muted-2); height: 12px; }
 
 /* ─── Dashboard grid ─── */
 .dashboard-panel {
@@ -643,75 +767,152 @@
   overflow: auto;
 }
 
-/* ─── App shell (Tessera-specific — separate from primitives) ─── */
+/* ─── App shell (Tessera-specific — separate from primitives) ───
+ * A 52px icon rail, not a labelled sidebar. An operator who lives in this tool
+ * for a shift does not need "Traces / Logs / Services" spelled out on every
+ * screen; they need the pixels. Labels arrive on hover and focus. */
 .app-shell {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  grid-template-rows: 48px 1fr;
+  grid-template-columns: var(--rail) 1fr;
+  grid-template-rows: 44px 1fr;
   grid-template-areas:
-    'topnav topnav'
-    'sidebar main';
+    'rail topnav'
+    'rail main';
   height: 100vh;
   background: var(--background);
 }
 
-.app-topnav {
-  grid-area: topnav;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--background);
-  z-index: 10;
-}
-.app-topnav-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--foreground);
-  text-decoration: none;
-}
-.app-topnav-spacer { flex: 1; }
-
+/* ─── Rail ─── */
 .app-sidebar {
-  grid-area: sidebar;
-  border-right: 1px solid var(--border);
-  background: var(--background);
-  padding: 12px 8px;
-  overflow-y: auto;
+  grid-area: rail;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-.app-sidebar-section {
-  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  color: var(--muted-foreground);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 80ms ease, color 80ms ease;
-}
-.app-sidebar-section:hover {
+  gap: 2px;
+  padding: 9px 0;
+  /* Tinted ground rather than another outlined box: the shell needs figure and
+   * ground, or the whole app is nothing but lines. */
   background: var(--surface-2);
+  border-right: 1px solid var(--border-2);
+  z-index: 20;
+}
+.app-sidebar-brand {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 10px;
   color: var(--foreground);
 }
-.app-sidebar-section.is-active {
-  background: var(--accent);
-  color: var(--accent-foreground);
+.app-sidebar-section {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: color 90ms ease, background 90ms ease;
 }
 .app-sidebar-section svg {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
 }
+.app-sidebar-section:hover {
+  color: var(--foreground);
+  background: var(--surface-3);
+}
+.app-sidebar-section:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+/* Current section: a signal bar on the rail's inner edge. The rail is the only
+ * place in the app that answers "where am I", so it says it once and clearly. */
+.app-sidebar-section.is-active {
+  color: var(--foreground);
+  background: var(--background);
+}
+.app-sidebar-section.is-active::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  background: var(--primary);
+}
+/* The name arrives when asked for; the rail stays 52px. */
+.app-sidebar-section > span {
+  position: absolute;
+  left: calc(100% + 8px);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--foreground);
+  color: var(--background);
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 90ms ease;
+  z-index: 30;
+}
+.app-sidebar-section:hover > span,
+.app-sidebar-section:focus-visible > span {
+  opacity: 1;
+}
+
+/* ─── Top bar ─── */
+.app-topnav {
+  grid-area: topnav;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border-2);
+  background: var(--background);
+  z-index: 10;
+}
+.app-topnav-spacer { flex: 1; }
+
+/* The breadcrumb is a path in the data face: this is a location, not prose. */
+.app-path {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.app-path b { color: var(--foreground); font-weight: 500; }
+.app-path .sep { color: var(--border-2); }
+.app-path .id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Health is a dot and a word. Never a card. */
+.app-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.app-health i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--idle);
+}
+.app-health[data-status='healthy'] i { background: var(--ok); }
+.app-health[data-status='degraded'] i { background: var(--warn); }
+.app-health[data-status='unhealthy'] i { background: var(--err); }
 
 .app-main {
   grid-area: main;
@@ -723,22 +924,313 @@
   background: var(--background);
 }
 
+/* ─── Page ───
+ * No max-width and no page-level card. A trace with forty spans wants the whole
+ * window; centring it inside a 1280px column throws away the timeline. */
 .page {
-  padding: 24px 32px;
-  max-width: 1280px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 .page-header {
-  margin-bottom: 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 13px 18px 11px;
+  border-bottom: 1px solid var(--border);
 }
 .page-title {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  margin: 0;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   color: var(--foreground);
-  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .page-subtitle {
-  font-size: 13px;
+  min-width: 0;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11.5px;
   color: var(--muted-foreground);
 }
-.page-body { display: flex; flex-direction: column; gap: 16px; }
+.page-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── Filter strip ───
+ * Filters read as the query they are: key=value, monospace, on one line. */
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.strip-spacer { flex: 1; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 21px;
+  padding: 0 7px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--foreground);
+}
+.chip-key { color: var(--muted-foreground); }
+.chip-key::after { content: '='; color: var(--muted-2); }
+.chip-clear {
+  margin-left: 6px;
+  padding: 0 1px;
+  border: 0;
+  background: none;
+  color: var(--muted-2);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.chip-clear:hover { color: var(--err); }
+
+/* Segmented range control: one unit divided by hairlines, not three buttons. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--background);
+}
+.seg > button {
+  padding: 4px 9px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.seg > button:first-child { border-left: 0; }
+.seg > button:hover { color: var(--foreground); background: var(--surface-2); }
+.seg > button[aria-pressed='true'] { background: var(--foreground); color: var(--background); }
+.seg > button:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+/* =========================================================================
+ * Listing — the shared table language, and the time gutter
+ *
+ * Every screen that lists events uses this. The first column is always time,
+ * always the same width, always monospace, separated by the one strong vertical
+ * rule in the app. The point is muscle memory: wherever you are, the answer to
+ * "when" sits in the same place, and a failing row states it in red on the axis
+ * you are already reading.
+ * ========================================================================= */
+.listing {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+}
+.listing thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 26px;
+  padding: 0 10px;
+  text-align: left;
+  white-space: nowrap;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  background: var(--background);
+  border-bottom: 1px solid var(--rule);
+}
+.listing tbody tr {
+  height: var(--row);
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+.listing tbody tr:hover { background: var(--surface-2); }
+.listing td {
+  padding: 0 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The gutter: tinted ground plus the strong rule. This is the app's spine. */
+.listing .col-when {
+  width: var(--gutter);
+  min-width: var(--gutter);
+  text-align: right;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  background: var(--surface-2);
+  border-right: 1px solid var(--rule);
+}
+.listing tbody tr:hover .col-when { color: var(--fg-2); }
+.listing tbody tr[data-status='error'] .col-when { color: var(--err-ink); font-weight: 600; }
+.listing tbody tr[data-current='true'] .col-when {
+  color: var(--primary);
+  box-shadow: inset -2px 0 0 var(--primary);
+}
+
+/* Primary cell: service muted, operation in ink, one line. */
+.cell-subject {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+.cell-subject .svc {
+  flex: none;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.cell-subject .op {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+/* Latency track.
+ *
+ * The first attempt put the bar inside the subject cell as an underline. That
+ * cell absorbs all the slack in the table, so at full width the "bar" was a
+ * 700px rule under the row and stopped reading as a quantity at all. It has its
+ * own track now, immediately right of the subject and bounded, which is also
+ * where the table's slack goes — so there is no dead gap in the middle either.
+ *
+ * The scale is relative to the slowest row on screen, because the question a
+ * list answers is "which of these is slow", not "how slow in absolute terms".
+ */
+.cell-track { padding-right: 16px; }
+.cell-track > i {
+  display: block;
+  height: 4px;
+  width: calc(var(--share, 0) * 1%);
+  min-width: 2px;
+  border-radius: 2px;
+  background: var(--muted-2);
+  opacity: 0.55;
+}
+tr[data-slow='true'] .cell-track > i { background: var(--slow); opacity: 0.9; }
+tr[data-status='error'] .cell-track > i { background: var(--err); opacity: 0.95; }
+
+.cell-num {
+  text-align: right;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+/* Status as a word in its own colour, not a filled lozenge. Across forty rows
+ * the pastel pills were the loudest thing on screen and said the least. */
+.tag {
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tag-ok { color: var(--ok-ink); }
+.tag-error { color: var(--err-ink); }
+.tag-unset { color: var(--muted-2); }
+
+/* Service dots: a fixed-width strip so the column stays aligned. */
+.svc-dots { display: inline-flex; gap: 3px; }
+.svc-dots > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--svc, var(--muted-2));
+}
+
+/* ─── Empty and loading ───
+ * An empty screen is an instruction, not a shrug. A loading screen shows the
+ * shape of what is coming — including the gutter — instead of grey lozenges. */
+.blank {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 40px 18px;
+  max-width: 62ch;
+}
+.blank-title { font-size: 13.5px; color: var(--foreground); }
+.blank-body { font-size: 13px; line-height: 1.55; color: var(--muted-foreground); }
+.blank-body kbd {
+  padding: 0 4px;
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--fg-2);
+}
+
+.loading-rows { display: flex; flex-direction: column; }
+.loading-rows > i {
+  position: relative;
+  display: block;
+  height: var(--row);
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0 var(--gutter),
+    transparent var(--gutter)
+  );
+}
+.loading-rows > i::before {
+  content: '';
+  position: absolute;
+  left: var(--gutter);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--rule);
+}
+.loading-rows > i::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--gutter) + 12px);
+  top: 50%;
+  translate: 0 -50%;
+  height: 7px;
+  width: var(--w, 30%);
+  border-radius: 2px;
+  background: var(--surface-3);
+  animation: row-pulse 1.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes row-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-rows > i::after { animation: none; }
+}

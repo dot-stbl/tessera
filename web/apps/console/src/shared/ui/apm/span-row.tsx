@@ -1,4 +1,16 @@
-import { type CSSProperties, type ReactNode } from 'react';
+import { type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+
+/**
+ * A log emitted inside this span, drawn on its track. Lets the waterfall answer
+ * "when in this span did it start going wrong" without leaving the timeline —
+ * the backend already computes the offsets.
+ */
+export interface SpanRowMarker {
+  /** Offset from trace start, ms — same origin as `startOffsetMs`. */
+  offsetMs: number;
+  level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  message: string;
+}
 import { cn } from '@/shared/lib/utils';
 
 export interface SpanRowProps {
@@ -22,7 +34,20 @@ export interface SpanRowProps {
   onClick?: () => void;
   /** Indicate this span is currently selected (highlighted). */
   isSelected?: boolean;
+  /** Warn/error logs emitted inside this span, drawn as ticks on the track. */
+  markers?: SpanRowMarker[];
   children?: ReactNode;
+}
+
+/**
+ * Offset from the trace start, for the time gutter. Kept short enough for a 62px
+ * column: sub-second offsets in ms, the rest in seconds with one decimal. The
+ * root reads `0` rather than `+0ms`, because the root *is* the origin.
+ */
+export function formatOffset(offsetMs: number): string {
+  if (offsetMs <= 0) return '0';
+  if (offsetMs < 1000) return `+${Math.round(offsetMs)}ms`;
+  return `+${(offsetMs / 1000).toFixed(1)}s`;
 }
 
 /**
@@ -70,6 +95,7 @@ export function SpanRow({
   isCritical = false,
   onClick,
   isSelected = false,
+  markers,
 }: SpanRowProps) {
   const offsetPct = traceDurationMs > 0 ? (startOffsetMs / traceDurationMs) * 100 : 0;
   const widthPct = traceDurationMs > 0 ? Math.max((durationMs / traceDurationMs) * 100, 0.4) : 0;
@@ -79,6 +105,16 @@ export function SpanRow({
     '--depth': depth,
     '--svc': `var(--svc-${serviceColorIndex(service)})`,
   } as CSSProperties;
+
+  // The row already advertised role="button" and took focus, then did nothing
+  // when a key was pressed. Enter and Space are what that contract promises.
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!onClick) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  }
 
   return (
     <div
@@ -91,11 +127,16 @@ export function SpanRow({
       style={style}
       data-clickable={onClick ? '' : undefined}
       onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      aria-pressed={onClick ? isSelected : undefined}
     >
+      {/* The time gutter: this span's offset from the trace start. Same column,
+          same width, same face as the "when" column in every other listing, so
+          "where in time am I" is answered in one place across the app. */}
+      <div className="span-offset">{formatOffset(startOffsetMs)}</div>
       <div className="span-label">
-        {isCritical && <span className="span-crit-tick" aria-hidden="true" />}
         <span className="span-dot" aria-hidden="true" />
         <span className="span-service">{service}</span>
         <span className="span-name">{name}</span>
@@ -104,13 +145,19 @@ export function SpanRow({
         <div
           className={cn('span-bar', isError && 'span-bar-error')}
           style={{ marginLeft: `${offsetPct}%`, width: `${widthPct}%` }}
-        >
-          {isError && (
-            <span className="span-bar-flag" aria-label="error">
-              !
-            </span>
-          )}
-        </div>
+        />
+        {/* Markers sit on the track, not the bar, so their offsets stay in
+            trace coordinates rather than the span's own width. */}
+        {markers?.map((marker) => (
+          <span
+            key={`${marker.offsetMs}-${marker.message}`}
+            className={cn('span-marker', `span-marker-${marker.level}`)}
+            style={{
+              left: `${traceDurationMs > 0 ? (marker.offsetMs / traceDurationMs) * 100 : 0}%`,
+            }}
+            title={`${marker.level.toUpperCase()} · ${marker.message}`}
+          />
+        ))}
       </div>
       <div
         className={cn(

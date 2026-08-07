@@ -13,8 +13,8 @@ export type { TimeFormatProps } from './time-format';
 export { TraceId } from './trace-id';
 export type { TraceIdProps } from './trace-id';
 
-export { SpanRow } from './span-row';
-export type { SpanRowProps } from './span-row';
+export { SpanRow, formatOffset, serviceColorIndex } from './span-row';
+export type { SpanRowProps, SpanRowMarker } from './span-row';
 
 export { Waterfall } from './waterfall';
 export type { WaterfallProps, WaterfallSpan } from './waterfall';
