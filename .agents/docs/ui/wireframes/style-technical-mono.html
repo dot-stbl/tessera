@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tessera · Style study — Technical Mono (now / next)</title>
+  <style>
+    /* =====================================================================
+     * Tessera · style study: "Technical Mono" (code-brutalism, приглушённый)
+     *
+     * Одна и та же разметка рендерится дважды:
+     *   .v-now  — текущие токены Tessera (снято с apps/console/src/index.css)
+     *   .v-next — предлагаемый стиль
+     * Почти вся разница — значения токенов; структурные правки помечены
+     * комментарием STRUCTURAL и их ровно 7.
+     * ===================================================================== */
+
+    /* ─── page chrome (не часть DS — только для этого документа) ─── */
+    :root {
+      --doc-bg: oklch(97.5% 0.003 250);
+      --doc-fg: oklch(20% 0.01 250);
+      --doc-muted: oklch(52% 0.012 250);
+      --doc-border: oklch(89% 0.004 250);
+      --doc-card: oklch(100% 0 0);
+      --doc-accent: oklch(45% 0.19 27);
+      --mono: "JetBrains Mono", "Cascadia Mono", "IBM Plex Mono", ui-monospace, monospace;
+      --sans: "Segoe UI", system-ui, sans-serif;
+    }
+    html[data-doc="dark"] {
+      --doc-bg: oklch(14% 0.01 250);
+      --doc-fg: oklch(93% 0.006 250);
+      --doc-muted: oklch(64% 0.012 250);
+      --doc-border: oklch(27% 0.012 250);
+      --doc-card: oklch(18% 0.012 250);
+      --doc-accent: oklch(72% 0.19 27);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0 0 96px;
+      background: var(--doc-bg);
+      color: var(--doc-fg);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .doc { max-width: 1520px; margin: 0 auto; padding: 0 28px; }
+
+    .doc-hero {
+      border-bottom: 1px solid var(--doc-border);
+      padding: 44px 0 28px;
+      margin-bottom: 36px;
+      display: flex;
+      align-items: flex-end;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .doc-hero h1 {
+      font-size: 30px;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+      font-weight: 650;
+    }
+    .doc-hero p { margin: 0; color: var(--doc-muted); max-width: 62ch; }
+    .doc-hero .spacer { flex: 1; }
+    .doc-kicker {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--doc-accent);
+      margin-bottom: 10px;
+    }
+    .doc-toggle {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: transparent;
+      color: var(--doc-fg);
+      border: 1px solid var(--doc-border);
+      padding: 7px 12px;
+      cursor: pointer;
+    }
+    .doc-toggle:hover { border-color: var(--doc-accent); color: var(--doc-accent); }
+
+    section { margin-bottom: 56px; }
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      border-bottom: 1px solid var(--doc-border);
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+    .sec-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--doc-muted);
+    }
+    .sec-head h2 { font-size: 17px; margin: 0; font-weight: 620; letter-spacing: -0.01em; }
+    .sec-head .hint { margin-left: auto; color: var(--doc-muted); font-size: 12.5px; }
+
+    /* пары before/after */
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .pair.stack { grid-template-columns: 1fr; }
+    @media (max-width: 1180px) { .pair { grid-template-columns: 1fr; } }
+    .slot { min-width: 0; }
+    .slot-label {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--doc-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .slot-label::after { content: ""; flex: 1; height: 1px; background: var(--doc-border); }
+    .slot-label.is-next { color: var(--doc-accent); }
+    .frame { border: 1px solid var(--doc-border); overflow: hidden; }
+    .notes {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      font-size: 12.5px;
+      color: var(--doc-muted);
+    }
+    .notes li { padding-left: 16px; position: relative; margin-bottom: 3px; }
+    .notes li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      font-family: var(--mono);
+      color: var(--doc-accent);
+    }
+    .notes.plain li::before { content: "·"; color: var(--doc-muted); }
+
+    code, .code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: color-mix(in oklch, var(--doc-fg) 7%, transparent);
+      padding: 1px 5px;
+    }
+    pre {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.65;
+      background: var(--doc-card);
+      border: 1px solid var(--doc-border);
+      padding: 16px 18px;
+      overflow-x: auto;
+      margin: 0;
+      tab-size: 2;
+    }
+    pre .c { color: var(--doc-muted); }
+    pre .del { color: oklch(55% 0.18 25); }
+    pre .add { color: oklch(48% 0.14 150); }
+    html[data-doc="dark"] pre .add { color: oklch(74% 0.15 150); }
+
+    table.spec { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.spec th, table.spec td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--doc-border);
+      vertical-align: top;
+    }
+    table.spec th {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--doc-muted);
+      font-weight: 600;
+    }
+    table.spec td:first-child { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+    table.spec tr:last-child td { border-bottom: 0; }
+    .verdict { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .verdict { grid-template-columns: 1fr; } .pair { grid-template-columns: 1fr; } }
+    .verdict > div { border: 1px solid var(--doc-border); padding: 16px 18px; background: var(--doc-card); }
+    .verdict h3 {
+      margin: 0 0 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .verdict ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--doc-fg); }
+    .verdict li { margin-bottom: 6px; }
+    .verdict .take h3 { color: oklch(45% 0.14 150); }
+    html[data-doc="dark"] .verdict .take h3 { color: oklch(74% 0.15 150); }
+    .verdict .drop h3 { color: oklch(50% 0.18 25); }
+    html[data-doc="dark"] .verdict .drop h3 { color: oklch(74% 0.18 25); }
+
+    /* =====================================================================
+     * DEMO TOKENS
+     * ===================================================================== */
+
+    .demo {
+      font-size: 13px;
+      line-height: 1.5;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--f-ui);
+    }
+
+    /* ─── .v-now : сегодняшняя Tessera ─── */
+    .v-now {
+      --bg: oklch(1 0 0);
+      --card: oklch(1 0 0);
+      --s2: oklch(97% 0.006 250);
+      --s3: oklch(95% 0.008 240);
+      --fg: oklch(14.1% 0.005 286);
+      --fg-2: oklch(35% 0.018 240);
+      --muted: oklch(55.2% 0.016 286);
+      --border: oklch(92% 0.004 286);
+      --border-2: oklch(85% 0.008 240);
+      --grid: oklch(55% 0.02 260 / 0.14);
+      --primary: oklch(50.5% 0.213 27.5);
+      --primary-fg: oklch(97.1% 0.013 17);
+      --ok-ink: oklch(45% 0.13 145);   --ok-bg: oklch(95% 0.03 145);  --ok-bd: transparent;
+      --err: oklch(58% 0.20 25);
+      --err-ink: oklch(50% 0.17 25);   --err-bg: oklch(96% 0.03 25);  --err-bd: transparent;
+      --slow-ink: oklch(45% 0.12 50);  --slow-bg: oklch(96% 0.04 50); --slow-bd: transparent;
+      --warn: oklch(72% 0.15 75);
+      --info-ink: oklch(58% 0.10 230); --info-bg: oklch(96% 0.04 230);
+      --svc-1: oklch(60% 0.12 250);
+      --svc-2: oklch(60% 0.10 190);
+      --svc-3: oklch(58% 0.13 300);
+      --svc-4: oklch(62% 0.10 220);
+
+      --f-ui: "Segoe UI", system-ui, sans-serif;
+      --f-data: "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
+      /* мета-слой (лейблы, заголовки колонок, бейджи) — сегодня это тот же sans */
+      --f-label: var(--f-ui);
+      --label-tr: uppercase;
+      --label-ls: 0.04em;
+      --label-w: 600;
+
+      --r: 7px;          /* --radius: 0.45rem */
+      --r-sm: 4px;
+      --r-pill: 999px;
+      --r-bar: 3px;
+      --bar-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.06);
+      --row-h: 32px;
+      --err-row-bg: color-mix(in oklch, var(--err) 6%, var(--card));
+      --err-row-rule: 0px;
+      --panel-shadow: 0 1px 2px oklch(0 0 0 / 0.04);
+      --grid-bg: none;
+    }
+    html[data-doc="dark"] .v-now {
+      --bg: oklch(17% 0.012 250);
+      --card: oklch(21% 0.014 250);
+      --s2: oklch(25% 0.015 250);
+      --s3: oklch(28% 0.016 250);
+      --fg: oklch(94% 0.006 250);
+      --fg-2: oklch(82% 0.008 250);
+      --muted: oklch(66% 0.012 250);
+      --border: oklch(30% 0.012 250);
+      --border-2: oklch(38% 0.014 250);
+      --grid: oklch(1 0 0 / 0.06);
+      --primary: oklch(70% 0.20 25);
+      --primary-fg: oklch(17% 0.012 250);
+      --ok-ink: oklch(82% 0.14 145);   --ok-bg: oklch(28% 0.05 145);
+      --err: oklch(72% 0.20 25);
+      --err-ink: oklch(82% 0.17 25);   --err-bg: oklch(28% 0.06 25);
+      --slow-ink: oklch(82% 0.14 50);  --slow-bg: oklch(28% 0.06 50);
+      --info-ink: oklch(72% 0.10 230); --info-bg: oklch(22% 0.025 230);
+      --svc-1: oklch(70% 0.12 250);
+      --svc-2: oklch(72% 0.10 190);
+      --svc-3: oklch(70% 0.13 300);
+      --svc-4: oklch(74% 0.10 220);
+      --panel-shadow: 0 1px 2px oklch(0 0 0 / 0.3);
+    }
+
+    /* ─── .v-next : Technical Mono ─── */
+    .v-next {
+      /* off-white / near-black вместо чистых #fff/#000 */
+      --bg: oklch(98.6% 0.002 250);
+      --card: oklch(100% 0 0);
+      --s2: oklch(96.4% 0.003 250);
+      --s3: oklch(93.8% 0.004 250);
+      --fg: oklch(17% 0.008 250);
+      --fg-2: oklch(38% 0.010 250);
+      --muted: oklch(56% 0.010 250);
+      --border: oklch(88.5% 0.004 250);   /* контраст выше: линия теперь несёт структуру */
+      --border-2: oklch(78% 0.006 250);
+      --grid: oklch(50% 0.01 250 / 0.11);
+      --primary: oklch(45% 0.19 27);      /* единственный акцент */
+      --primary-fg: oklch(99% 0.005 27);
+      --ok-ink: oklch(43% 0.13 150);   --ok-bg: transparent;  --ok-bd: oklch(72% 0.10 150);
+      --err: oklch(52% 0.20 25);
+      --err-ink: oklch(46% 0.19 25);   --err-bg: transparent; --err-bd: oklch(70% 0.14 25);
+      --slow-ink: oklch(45% 0.13 60);  --slow-bg: transparent; --slow-bd: oklch(75% 0.11 60);
+      --warn: oklch(65% 0.14 70);
+      --info-ink: oklch(48% 0.09 245); --info-bg: transparent;
+      /* сервисные цвета: та же шкала, chroma −20% — они больше не конкурируют с акцентом */
+      --svc-1: oklch(54% 0.09 250);
+      --svc-2: oklch(54% 0.08 190);
+      --svc-3: oklch(52% 0.10 300);
+      --svc-4: oklch(56% 0.08 220);
+
+      --f-ui: "Geist", "Segoe UI", system-ui, sans-serif;
+      --f-data: "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
+      --f-label: var(--f-data);   /* ← ГЛАВНЫЙ переключатель стиля */
+      --label-tr: uppercase;
+      --label-ls: 0.09em;
+      --label-w: 500;
+
+      --r: 0px;
+      --r-sm: 0px;
+      --r-pill: 1px;
+      --r-bar: 0px;
+      --bar-shadow: none;
+      --row-h: 28px;
+      --err-row-bg: transparent;
+      --err-row-rule: 2px;
+      --panel-shadow: none;
+      --grid-bg:
+        linear-gradient(to right, var(--grid) 0 1px, transparent 1px 100%),
+        linear-gradient(to bottom, var(--grid) 0 1px, transparent 1px 100%);
+    }
+    html[data-doc="dark"] .v-next {
+      --bg: oklch(15.5% 0.008 250);
+      --card: oklch(18.5% 0.010 250);
+      --s2: oklch(21.5% 0.010 250);
+      --s3: oklch(25% 0.012 250);
+      --fg: oklch(93% 0.005 250);
+      --fg-2: oklch(79% 0.008 250);
+      --muted: oklch(62% 0.010 250);
+      --border: oklch(31% 0.010 250);
+      --border-2: oklch(42% 0.012 250);
+      --grid: oklch(1 0 0 / 0.07);
+      --primary: oklch(70% 0.19 27);
+      --primary-fg: oklch(15.5% 0.008 250);
+      --ok-ink: oklch(80% 0.13 150);   --ok-bd: oklch(50% 0.10 150);
+      --err: oklch(70% 0.19 25);
+      --err-ink: oklch(80% 0.16 25);   --err-bd: oklch(48% 0.14 25);
+      --slow-ink: oklch(80% 0.13 60);  --slow-bd: oklch(50% 0.11 60);
+      --info-ink: oklch(74% 0.08 245);
+      --svc-1: oklch(72% 0.09 250);
+      --svc-2: oklch(74% 0.08 190);
+      --svc-3: oklch(72% 0.10 300);
+      --svc-4: oklch(76% 0.08 220);
+    }
+
+    /* =====================================================================
+     * DEMO COMPONENTS — единая разметка, всё через токены
+     * ===================================================================== */
+
+    .demo .mono { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+    .demo .label {
+      font-family: var(--f-label);
+      text-transform: var(--label-tr);
+      letter-spacing: var(--label-ls);
+      font-weight: var(--label-w);
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    /* topnav */
+    .d-topnav {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 12px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .d-brand { display: flex; align-items: center; gap: 8px; font-weight: 650; letter-spacing: -0.02em; }
+    .v-next .d-brand { font-family: var(--f-data); font-weight: 600; letter-spacing: 0.02em; }
+    .d-mark { width: 13px; height: 13px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
+    .d-mark i { background: var(--fg); display: block; border-radius: calc(var(--r-sm) / 3); }
+    .d-mark i.r { background: var(--primary); }
+    .d-nav { display: flex; gap: 2px; }
+    .d-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 4px 9px;
+      border-radius: var(--r-sm);
+      font-size: 12.5px;
+    }
+    .d-nav a.on { color: var(--fg); background: var(--s2); font-weight: 550; }
+    /* STRUCTURAL 1 — активный таб: подложка → нижнее правило акцентом */
+    .v-next .d-nav a {
+      font-family: var(--f-label);
+      text-transform: var(--label-tr);
+      letter-spacing: var(--label-ls);
+      font-size: 10.5px;
+      padding: 4px 8px;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .v-next .d-nav a.on { background: transparent; border-bottom-color: var(--primary); color: var(--fg); }
+    .d-spacer { flex: 1; }
+    .d-btn {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--fg);
+      padding: 4px 10px;
+      border-radius: var(--r-sm);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: default;
+    }
+    .v-next .d-btn {
+      font-family: var(--f-label);
+      text-transform: var(--label-tr);
+      letter-spacing: var(--label-ls);
+      font-size: 10.5px;
+      border-color: var(--border-2);
+    }
+    .d-btn-primary { background: var(--primary); color: var(--primary-fg); border-color: transparent; }
+    .v-next .d-btn-primary { border-color: var(--primary); }
+    .d-range {
+      font-family: var(--f-data);
+      font-size: 11px;
+      border: 1px solid var(--border);
+      background: var(--s2);
+      color: var(--fg);
+      padding: 4px 8px;
+      border-radius: var(--r-sm);
+      cursor: default;
+    }
+
+    /* filters */
+    .d-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .d-field {
+      height: 26px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: var(--r-sm);
+      padding: 0 8px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .d-field.q { flex: 1; min-width: 180px; font-family: var(--f-data); font-size: 11.5px; }
+    .d-chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+    .d-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 21px;
+      padding: 0 8px;
+      border-radius: var(--r-pill);
+      background: var(--s2);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--fg-2);
+    }
+    /* STRUCTURAL 2 — фильтр-чип: капсула → «ключ=значение» моно-тег */
+    .v-next .d-chip {
+      background: transparent;
+      border-color: var(--border-2);
+      font-family: var(--f-data);
+      font-size: 10.5px;
+      padding: 0 6px;
+      gap: 0;
+    }
+    .v-next .d-chip .k::after { content: "="; color: var(--muted); }
+    .d-chip .k { color: var(--muted); }
+    .d-chip b { font-weight: 500; color: var(--fg); }
+    .d-chip .x { color: var(--muted); }
+    .v-next .d-chip .x { margin-left: 6px; }
+    .d-kbd {
+      font-family: var(--f-data);
+      font-size: 10px;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--r-sm) * 0.75);
+      padding: 0 4px;
+      color: var(--muted);
+      background: var(--s2);
+    }
+
+    /* table */
+    .d-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .d-table thead th {
+      height: 26px;
+      text-align: left;
+      font-family: var(--f-label);
+      font-size: 10px;
+      font-weight: var(--label-w);
+      letter-spacing: var(--label-ls);
+      text-transform: var(--label-tr);
+      color: var(--muted);
+      background: var(--s2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 10px;
+    }
+    /* STRUCTURAL 3 — заголовок таблицы: плашка → голая линия */
+    .v-next .d-table thead th {
+      background: transparent;
+      border-bottom-color: var(--border-2);
+    }
+    .d-table tbody tr { height: var(--row-h); border-bottom: 1px solid var(--border); }
+    .d-table tbody tr:hover { background: var(--s2); }
+    .d-table tbody tr.sel { background: var(--s3); }
+    /* STRUCTURAL 4 — ошибка в строке: тонировка фона → 2px левое правило */
+    .d-table tbody tr.err-row { background: var(--err-row-bg); box-shadow: inset var(--err-row-rule) 0 0 var(--err); }
+    .d-table td { padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .d-pill {
+      display: inline-flex;
+      align-items: center;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: var(--r-pill);
+      border: 1px solid transparent;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    /* STRUCTURAL 5 — статус: пастельная заливка → ghost-тег (ink + 1px рамка) */
+    .v-next .d-pill {
+      font-family: var(--f-data);
+      letter-spacing: var(--label-ls);
+      font-weight: 500;
+      height: 17px;
+    }
+    .d-pill-ok  { background: var(--ok-bg);  color: var(--ok-ink);  border-color: var(--ok-bd); }
+    .d-pill-err { background: var(--err-bg); color: var(--err-ink); border-color: var(--err-bd); }
+    .d-tid { color: var(--primary); font-size: 12px; }
+    .v-next .d-tid { color: var(--fg-2); border-bottom: 1px dotted var(--border-2); }
+    .d-root { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .d-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+    /* STRUCTURAL 6 — маркер сервиса: круг → квадрат (2px), читается как «нода» */
+    .v-next .d-dot { border-radius: 0; width: 6px; height: 6px; }
+    .d-svc { color: var(--muted); }
+    .d-op { color: var(--fg); }
+    .d-durcell { display: flex; align-items: center; gap: 8px; }
+    .d-durbar { flex: 1; max-width: 110px; height: 6px; background: var(--s3); border-radius: var(--r-bar); overflow: hidden; }
+    .v-next .d-durbar { height: 4px; background: var(--s3); }
+    .d-durbar > i { display: block; height: 100%; background: var(--fg-2); opacity: 0.5; }
+    .d-durbar.slow > i { background: var(--slow-ink); opacity: 0.9; }
+    .d-durbar.err > i { background: var(--err); opacity: 0.9; }
+    .d-durval { width: 54px; text-align: right; font-size: 12px; }
+    .d-durval.err { color: var(--err-ink); }
+    .d-num { text-align: right; color: var(--fg-2); font-size: 12px; }
+    .d-svcdots { display: flex; gap: 3px; }
+    .d-svcdots span { width: 6px; height: 6px; border-radius: 50%; }
+    .v-next .d-svcdots span { border-radius: 0; }
+
+    /* waterfall */
+    .d-wf { --wf-label: 210px; --wf-dur: 70px; font-family: var(--f-data); font-size: 11.5px; }
+    .d-wf-axis {
+      display: grid;
+      grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
+      align-items: center;
+      height: 26px;
+      background: var(--s2);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .v-next .d-wf-axis { background: transparent; border-bottom-color: var(--border-2); }
+    .d-wf-axis > .lb { padding-left: 12px; font-size: 10px; text-transform: var(--label-tr); letter-spacing: var(--label-ls); }
+    .d-wf-axis > .tk { position: relative; height: 100%; }
+    .d-wf-axis .t { position: absolute; top: 6px; font-size: 9.5px; transform: translateX(-50%); }
+    .d-wf-axis > .du { padding-right: 12px; text-align: right; font-size: 10px; text-transform: var(--label-tr); letter-spacing: var(--label-ls); }
+    .d-span {
+      display: grid;
+      grid-template-columns: var(--wf-label) 1fr var(--wf-dur);
+      align-items: center;
+      height: var(--row-h);
+      border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+    }
+    .d-span:hover { background: var(--s2); }
+    .d-span.err { background: var(--err-row-bg); box-shadow: inset var(--err-row-rule) 0 0 var(--err); }
+    .d-span-lb {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      overflow: hidden;
+      padding-left: calc(12px + var(--depth, 0) * 14px);
+      padding-right: 10px;
+    }
+    .d-span-name { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .d-span-track {
+      position: relative;
+      height: 100%;
+      background-image: linear-gradient(to right, var(--grid) 0 1px, transparent 1px);
+      background-size: 25% 100%;
+    }
+    .d-bar {
+      position: absolute;
+      top: 50%;
+      translate: 0 -50%;
+      height: 12px;
+      background: var(--svc, var(--muted));
+      border-radius: var(--r-bar);
+      box-shadow: var(--bar-shadow);
+    }
+    /* STRUCTURAL 7 — span-бар: скруглённый «pill» → прямоугольник + hairline-обводка */
+    .v-next .d-bar { height: 10px; box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--fg) 22%, transparent); }
+    .d-bar.err { background: var(--err); }
+    .d-span-dur { padding-right: 12px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* logs */
+    .d-log { border-bottom: 1px solid var(--border); border-left: 3px solid var(--lvc, transparent); padding: 5px 12px; font-family: var(--f-data); font-size: 11.5px; }
+    .v-next .d-log { border-left-width: 2px; }
+    .d-log:hover { background: var(--s2); }
+    .d-log-row { display: flex; align-items: center; gap: 8px; }
+    .d-log .t { color: var(--fg-2); flex: none; min-width: 74px; }
+    .d-log .s { color: var(--muted); flex: none; min-width: 96px; }
+    .d-log .m { color: var(--fg); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .d-lvl {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 5px;
+      border-radius: var(--r-sm);
+      border: 1px solid transparent;
+      font-family: var(--f-data);
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      line-height: 1.35;
+      flex: none;
+      min-width: 42px;
+      justify-content: center;
+    }
+    .v-next .d-lvl { font-weight: 500; letter-spacing: var(--label-ls); }
+    .d-lvl-info  { background: var(--info-bg); color: var(--info-ink); }
+    .v-next .d-lvl-info  { border-color: color-mix(in oklch, var(--info-ink) 40%, transparent); }
+    .d-lvl-warn  { background: color-mix(in oklch, var(--warn) 14%, var(--card)); color: var(--slow-ink); }
+    .v-next .d-lvl-warn  { background: transparent; border-color: var(--slow-bd); }
+    .d-lvl-error { background: var(--err-bg); color: var(--err-ink); }
+    .v-next .d-lvl-error { border-color: var(--err-bd); }
+
+    /* panel + tiles */
+    .d-panelwrap { padding: 14px; background: var(--bg); display: grid; gap: 12px; }
+    /* STRUCTURAL bonus — плитки: 4 отдельные карточки → одна решётка на общих hairline */
+    .d-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .v-next .d-tiles { gap: 0; border: 1px solid var(--border); }
+    .d-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--panel-shadow);
+      padding: 10px 12px;
+    }
+    .v-next .d-tile { border: 0; border-right: 1px solid var(--border); border-radius: 0; }
+    .v-next .d-tile:last-child { border-right: 0; }
+    .d-tile .k { display: block; margin-bottom: 4px; }
+    .d-tile .v { font-family: var(--f-data); font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .d-tile .d { font-family: var(--f-data); font-size: 10.5px; color: var(--muted); }
+    .d-tile .d.up { color: var(--err-ink); }
+    .d-tile .d.dn { color: var(--ok-ink); }
+
+    .d-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--panel-shadow);
+      overflow: hidden;
+    }
+    .d-panel-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .d-panel-title { font-size: 12.5px; font-weight: 600; }
+    .v-next .d-panel-title { font-family: var(--f-label); text-transform: var(--label-tr); letter-spacing: var(--label-ls); font-size: 10.5px; font-weight: var(--label-w); color: var(--fg); }
+    .d-panel-body { padding: 10px 12px; }
+
+    /* page header */
+    .d-pagehead { padding: 18px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .d-pagetitle { font-size: 21px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 3px; }
+    .v-next .d-pagetitle { font-family: var(--f-data); font-size: 18px; font-weight: 500; letter-spacing: -0.005em; }
+    .d-pagesub { font-size: 12.5px; color: var(--muted); }
+    .v-next .d-pagesub { font-family: var(--f-data); font-size: 11px; }
+    .d-crumb { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+
+    /* shell (мини-экран) */
+    .d-shell { display: grid; grid-template-columns: 176px 1fr; grid-template-rows: 40px 1fr; height: 396px; background: var(--bg); }
+    .d-shell > .d-topnav { grid-column: 1 / -1; }
+    .d-side { border-right: 1px solid var(--border); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; background: var(--card); }
+    .v-next .d-side { background: transparent; background-image: var(--grid-bg); background-size: 16px 16px; }
+    .d-side-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 10px;
+      border-radius: var(--r-sm);
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+    .d-side-item.on { background: var(--s2); color: var(--fg); }
+    .v-next .d-side-item {
+      font-family: var(--f-label);
+      text-transform: var(--label-tr);
+      letter-spacing: var(--label-ls);
+      font-size: 10.5px;
+      font-weight: var(--label-w);
+      border-left: 2px solid transparent;
+      padding-left: 8px;
+      border-radius: 0;
+    }
+    .v-next .d-side-item.on { background: transparent; border-left-color: var(--primary); color: var(--fg); }
+    .d-side-sec { margin: 10px 0 4px; padding: 0 10px; }
+    .d-side-mark { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.5; flex: none; }
+    .v-next .d-side-mark { border-radius: 0; }
+    .d-main { overflow: hidden; display: flex; flex-direction: column; }
+    .d-scroll { flex: 1; overflow: auto; }
+    .d-foot {
+      height: 26px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .d-foot .mono { color: var(--fg-2); }
+    .d-foot .r { margin-left: auto; display: flex; gap: 5px; align-items: center; }
+
+    /* type specimen */
+    .d-spec { padding: 16px; background: var(--bg); display: grid; gap: 14px; }
+    .d-spec-row { display: grid; grid-template-columns: 92px 1fr; gap: 14px; align-items: baseline; }
+    .d-spec-row > .k { font-family: var(--f-data); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+    .d-spec h4 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.015em; }
+    .v-next .d-spec h4 { font-family: var(--f-data); font-weight: 500; font-size: 18px; letter-spacing: -0.005em; }
+    .d-swatches { display: flex; gap: 0; flex-wrap: wrap; }
+    .d-sw { width: 58px; }
+    .d-sw i { display: block; height: 34px; border: 1px solid oklch(50% 0 0 / 0.14); border-right: 0; }
+    .d-sw:last-child i { border-right: 1px solid oklch(50% 0 0 / 0.14); }
+    .d-sw span { display: block; font-family: var(--f-data); font-size: 8.5px; color: var(--muted); padding-top: 4px; letter-spacing: 0.02em; }
+  </style>
+</head>
+<body>
+<div class="doc">
+
+  <header class="doc-hero">
+    <div>
+      <div class="doc-kicker">Style study · technical mono</div>
+      <h1>Tessera: сейчас → «technical mono»</h1>
+      <p>
+        Слева — текущие токены (снято с <code>apps/console/src/index.css</code>). Справа — тот же
+        компонент на предлагаемых токенах. Разметка идентична: стиль почти целиком живёт
+        в переменных, структурных правок ровно 7 (помечены в CSS как <code>STRUCTURAL</code>).
+      </p>
+    </div>
+    <div class="spacer"></div>
+    <button class="doc-toggle" id="themeBtn" type="button">◐ light / dark</button>
+  </header>
+
+  <!-- ══════════════════════════════════ 01 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>Что именно меняется</h2>
+      <span class="hint">7 решений — всё остальное следствие</span>
+    </div>
+    <table class="spec">
+      <thead>
+        <tr><th style="width:150px">Слой</th><th style="width:33%">Сейчас</th><th style="width:33%">Technical mono</th><th>Зачем</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>--f-label</td>
+          <td>Onest / Geist (sans)</td>
+          <td>JetBrains Mono, UPPERCASE, ls .09em</td>
+          <td>Главный переключатель. Весь <b>мета-слой</b> (заголовки колонок, бейджи, лейблы, навигация) уходит в моно — контент остаётся в sans.</td>
+        </tr>
+        <tr>
+          <td>--radius</td>
+          <td><code>0.45rem</code> → 7px</td>
+          <td><code>0</code>; пилюли <code>1px</code></td>
+          <td>Плоскость + линия вместо «мягкой карточки». Данные выглядят как таблица, а не как виджеты.</td>
+        </tr>
+        <tr>
+          <td>--border</td>
+          <td>oklch(92%) — почти невидимая</td>
+          <td>oklch(88.5%) + <code>--border-2</code> как «сильная» линия</td>
+          <td>Линия начинает нести структуру; исчезает потребность в тенях и разных фонах панелей.</td>
+        </tr>
+        <tr>
+          <td>тени</td>
+          <td>карточки с <code>0 1px 2px</code></td>
+          <td>нет вообще</td>
+          <td>Глубина только через 1px-линию. Панели склеиваются в решётку на общих границах.</td>
+        </tr>
+        <tr>
+          <td>статусы</td>
+          <td>пастельная заливка <code>*-soft</code></td>
+          <td>ghost-тег: ink + 1px рамка</td>
+          <td>Снимает «леденцовый» шум с плотных таблиц; цвет остаётся, площадь цвета падает в ~5 раз.</td>
+        </tr>
+        <tr>
+          <td>акцент</td>
+          <td>красный + 6 сервисных + 6 status-цветов конкурируют</td>
+          <td>один акцент (deep red), сервисные −20% chroma</td>
+          <td>Красный снова означает «действие / ошибка», а не «просто бренд».</td>
+        </tr>
+        <tr>
+          <td>плотность</td>
+          <td>row 32px</td>
+          <td>row 28px, tabular-nums везде</td>
+          <td>+4 строки на экран; моно-цифры выравниваются в колонку без ручной ширины.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════════════════════ 02 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>Типографика и палитра</h2>
+      <span class="hint">два регистра: sans для контента, mono для мета-слоя</span>
+    </div>
+    <div class="pair">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <div class="d-spec">
+              <div class="d-spec-row"><span class="k">title</span><h4>POST /checkout</h4></div>
+              <div class="d-spec-row"><span class="k">label</span><span class="label">Duration · p95 latency · Services</span></div>
+              <div class="d-spec-row"><span class="k">body</span><span>Root span failed with 500 after the payment gateway timed out.</span></div>
+              <div class="d-spec-row"><span class="k">data</span><span class="mono">1.25s · 23 spans · a1b2c3d4e5f6</span></div>
+              <div class="d-spec-row"><span class="k">palette</span>
+                <div class="d-swatches">
+                  <div class="d-sw"><i style="background:var(--primary)"></i><span>primary</span></div>
+                  <div class="d-sw"><i style="background:var(--err)"></i><span>err</span></div>
+                  <div class="d-sw"><i style="background:var(--ok-ink)"></i><span>ok</span></div>
+                  <div class="d-sw"><i style="background:var(--warn)"></i><span>warn</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-1)"></i><span>svc-1</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-2)"></i><span>svc-2</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-3)"></i><span>svc-3</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-4)"></i><span>svc-4</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="notes plain">
+          <li>лейбл и контент — один шрифт, различаются только размером</li>
+          <li>8 насыщенных цветов одного веса — глаз не знает, что важнее</li>
+        </ul>
+      </div>
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <div class="d-spec">
+              <div class="d-spec-row"><span class="k">title</span><h4>POST /checkout</h4></div>
+              <div class="d-spec-row"><span class="k">label</span><span class="label">Duration · p95 latency · Services</span></div>
+              <div class="d-spec-row"><span class="k">body</span><span>Root span failed with 500 after the payment gateway timed out.</span></div>
+              <div class="d-spec-row"><span class="k">data</span><span class="mono">1.25s · 23 spans · a1b2c3d4e5f6</span></div>
+              <div class="d-spec-row"><span class="k">palette</span>
+                <div class="d-swatches">
+                  <div class="d-sw"><i style="background:var(--primary)"></i><span>primary</span></div>
+                  <div class="d-sw"><i style="background:var(--err)"></i><span>err</span></div>
+                  <div class="d-sw"><i style="background:var(--ok-ink)"></i><span>ok</span></div>
+                  <div class="d-sw"><i style="background:var(--warn)"></i><span>warn</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-1)"></i><span>svc-1</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-2)"></i><span>svc-2</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-3)"></i><span>svc-3</span></div>
+                  <div class="d-sw"><i style="background:var(--svc-4)"></i><span>svc-4</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>заголовок — моно: «этот текст сгенерирован системой», а не написан маркетингом</li>
+          <li>лейблы визуально отделены от контента шрифтом, а не размером</li>
+          <li>сервисные цвета глуше акцента → иерархия читается без легенды</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 03 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Атомы: nav, кнопки, фильтр-чипы, статусы</h2>
+      <span class="hint">капсулы → теги «ключ=значение»</span>
+    </div>
+    <div class="pair">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <header class="d-topnav">
+              <div class="d-brand"><span class="d-mark"><i></i><i class="r"></i><i></i><i></i></span>Tessera</div>
+              <nav class="d-nav"><a class="on" href="#">Traces</a><a href="#">Logs</a><a href="#">Services</a></nav>
+              <div class="d-spacer"></div>
+              <button class="d-range" type="button">Last 1h · 13:20–14:20</button>
+              <button class="d-btn" type="button">Refresh</button>
+              <button class="d-btn d-btn-primary" type="button">Save view</button>
+            </header>
+            <div class="d-filters">
+              <select class="d-field"><option>All services</option><option selected>checkout-api</option></select>
+              <select class="d-field"><option>Any status</option><option selected>Error</option></select>
+              <input class="d-field q" type="search" placeholder="operation or free text…  e.g. POST /checkout" />
+              <span class="d-kbd">/</span>
+              <div class="d-chips">
+                <span class="d-chip"><span class="k">service</span><b>checkout-api</b><span class="x">×</span></span>
+                <span class="d-chip"><span class="k">status</span><b>error</b><span class="x">×</span></span>
+                <span class="d-chip"><span class="k">minDuration</span><b>500ms</b><span class="x">×</span></span>
+              </div>
+              <div class="d-chips" style="padding-top:2px">
+                <span class="d-pill d-pill-ok">OK</span>
+                <span class="d-pill d-pill-err">ERROR</span>
+                <span class="d-lvl d-lvl-info">INFO</span>
+                <span class="d-lvl d-lvl-warn">WARN</span>
+                <span class="d-lvl d-lvl-error">ERROR</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <header class="d-topnav">
+              <div class="d-brand"><span class="d-mark"><i></i><i class="r"></i><i></i><i></i></span>Tessera</div>
+              <nav class="d-nav"><a class="on" href="#">Traces</a><a href="#">Logs</a><a href="#">Services</a></nav>
+              <div class="d-spacer"></div>
+              <button class="d-range" type="button">Last 1h · 13:20–14:20</button>
+              <button class="d-btn" type="button">Refresh</button>
+              <button class="d-btn d-btn-primary" type="button">Save view</button>
+            </header>
+            <div class="d-filters">
+              <select class="d-field"><option>All services</option><option selected>checkout-api</option></select>
+              <select class="d-field"><option>Any status</option><option selected>Error</option></select>
+              <input class="d-field q" type="search" placeholder="operation or free text…  e.g. POST /checkout" />
+              <span class="d-kbd">/</span>
+              <div class="d-chips">
+                <span class="d-chip"><span class="k">service</span><b>checkout-api</b><span class="x">×</span></span>
+                <span class="d-chip"><span class="k">status</span><b>error</b><span class="x">×</span></span>
+                <span class="d-chip"><span class="k">minDuration</span><b>500ms</b><span class="x">×</span></span>
+              </div>
+              <div class="d-chips" style="padding-top:2px">
+                <span class="d-pill d-pill-ok">OK</span>
+                <span class="d-pill d-pill-err">ERROR</span>
+                <span class="d-lvl d-lvl-info">INFO</span>
+                <span class="d-lvl d-lvl-warn">WARN</span>
+                <span class="d-lvl d-lvl-error">ERROR</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>чип теперь читается как выражение запроса: <code>service=checkout-api</code> — то же, что уйдёт в URL и в YAML-дашборд</li>
+          <li>активный таб — правило акцентом снизу, а не заливка (заливка конкурировала с hover строк)</li>
+          <li>статусы стали ghost-тегами: в таблице из 50 строк это разница между «шумно» и «спокойно»</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 04 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Traces list — плотная таблица</h2>
+      <span class="hint">главный экран: где стиль или окупается, или мешает</span>
+    </div>
+    <div class="pair">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <table class="d-table">
+              <thead><tr>
+                <th style="width:78px">Status</th><th style="width:112px">Trace</th><th>Root</th>
+                <th style="width:170px">Duration</th><th style="width:56px;text-align:right">Spans</th><th style="width:70px">Svc</th>
+              </tr></thead>
+              <tbody>
+                <tr class="sel err-row">
+                  <td><span class="d-pill d-pill-err">ERROR</span></td>
+                  <td class="mono d-tid">a1b2c3d4e5f6…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· POST /checkout</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar err"><i style="width:14%"></i></div><span class="mono d-durval err">1.25s</span></div></td>
+                  <td class="mono d-num">23</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-1)"></span><span style="background:var(--svc-2)"></span><span style="background:var(--svc-3)"></span></div></td>
+                </tr>
+                <tr class="err-row">
+                  <td><span class="d-pill d-pill-err">ERROR</span></td>
+                  <td class="mono d-tid">f67890abcdef…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-op">· Charge</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar err"><i style="width:100%"></i></div><span class="mono d-durval err">8.93s</span></div></td>
+                  <td class="mono d-num">19</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-3)"></span><span style="background:var(--svc-1)"></span></div></td>
+                </tr>
+                <tr>
+                  <td><span class="d-pill d-pill-ok">OK</span></td>
+                  <td class="mono d-tid">b2c3d4e5f678…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· GET /cart</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar"><i style="width:1%"></i></div><span class="mono d-durval">89ms</span></div></td>
+                  <td class="mono d-num">5</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-1)"></span></div></td>
+                </tr>
+                <tr>
+                  <td><span class="d-pill d-pill-ok">OK</span></td>
+                  <td class="mono d-tid">c3d4e5f67890…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">frontend-proxy</span><span class="d-op">· ingress</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar"><i style="width:4.6%"></i></div><span class="mono d-durval">412ms</span></div></td>
+                  <td class="mono d-num">12</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-4)"></span><span style="background:var(--svc-1)"></span></div></td>
+                </tr>
+                <tr>
+                  <td><span class="d-pill d-pill-ok">OK</span></td>
+                  <td class="mono d-tid">e5f67890abcd…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-op">· SELECT orders</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar"><i style="width:1.7%"></i></div><span class="mono d-durval">156ms</span></div></td>
+                  <td class="mono d-num">7</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-2)"></span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <table class="d-table">
+              <thead><tr>
+                <th style="width:78px">Status</th><th style="width:112px">Trace</th><th>Root</th>
+                <th style="width:170px">Duration</th><th style="width:56px;text-align:right">Spans</th><th style="width:70px">Svc</th>
+              </tr></thead>
+              <tbody>
+                <tr class="sel err-row">
+                  <td><span class="d-pill d-pill-err">ERROR</span></td>
+                  <td class="mono d-tid">a1b2c3d4e5f6…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· POST /checkout</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar err"><i style="width:14%"></i></div><span class="mono d-durval err">1.25s</span></div></td>
+                  <td class="mono d-num">23</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-1)"></span><span style="background:var(--svc-2)"></span><span style="background:var(--svc-3)"></span></div></td>
+                </tr>
+                <tr class="err-row">
+                  <td><span class="d-pill d-pill-err">ERROR</span></td>
+                  <td class="mono d-tid">f67890abcdef…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-op">· Charge</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar err"><i style="width:100%"></i></div><span class="mono d-durval err">8.93s</span></div></td>
+                  <td class="mono d-num">19</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-3)"></span><span style="background:var(--svc-1)"></span></div></td>
+                </tr>
+                <tr>
+                  <td><span class="d-pill d-pill-ok">OK</span></td>
+                  <td class="mono d-tid">b2c3d4e5f678…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· GET /cart</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar"><i style="width:1%"></i></div><span class="mono d-durval">89ms</span></div></td>
+                  <td class="mono d-num">5</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-1)"></span></div></td>
+                </tr>
+                <tr>
+                  <td><span class="d-pill d-pill-ok">OK</span></td>
+                  <td class="mono d-tid">c3d4e5f67890…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">frontend-proxy</span><span class="d-op">· ingress</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar"><i style="width:4.6%"></i></div><span class="mono d-durval">412ms</span></div></td>
+                  <td class="mono d-num">12</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-4)"></span><span style="background:var(--svc-1)"></span></div></td>
+                </tr>
+                <tr>
+                  <td><span class="d-pill d-pill-ok">OK</span></td>
+                  <td class="mono d-tid">e5f67890abcd…</td>
+                  <td><div class="d-root"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-op">· SELECT orders</span></div></td>
+                  <td><div class="d-durcell"><div class="d-durbar"><i style="width:1.7%"></i></div><span class="mono d-durval">156ms</span></div></td>
+                  <td class="mono d-num">7</td>
+                  <td><div class="d-svcdots"><span style="background:var(--svc-2)"></span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>ошибка помечена <b>2px левым правилом</b>, а не тонировкой фона — hover и «выбранная строка» перестают конфликтовать с семантикой</li>
+          <li>trace-id больше не красный: акцент зарезервирован под действия. Кликабельность — dotted underline</li>
+          <li>шапка колонок без плашки: одна линия <code>--border-2</code> вместо серой полосы</li>
+          <li>row 32→28px: на 900px высоты это 28 строк вместо 24</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 05 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2>Waterfall</h2>
+      <span class="hint">схема, а не диаграмма — самый выигрышный экран</span>
+    </div>
+    <div class="pair">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <div class="d-wf">
+              <div class="d-wf-axis">
+                <div class="lb">Service · Operation</div>
+                <div class="tk"><span class="t" style="left:0;transform:none">0</span><span class="t" style="left:25%">310ms</span><span class="t" style="left:50%">625ms</span><span class="t" style="left:75%">940ms</span><span class="t" style="left:100%;transform:translateX(-100%)">1.25s</span></div>
+                <div class="du">Duration</div>
+              </div>
+              <div class="d-span err" style="--depth:0"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-span-name">POST /checkout</span></div><div class="d-span-track"><div class="d-bar err" style="left:0;width:100%"></div></div><div class="d-span-dur">1.25s</div></div>
+              <div class="d-span" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-span-name">SELECT cart</span></div><div class="d-span-track"><div class="d-bar" style="left:3%;width:9%;--svc:var(--svc-2)"></div></div><div class="d-span-dur">112ms</div></div>
+              <div class="d-span" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">pricing</span><span class="d-span-name">GET /quote</span></div><div class="d-span-track"><div class="d-bar" style="left:13%;width:14%;--svc:var(--svc-4)"></div></div><div class="d-span-dur">178ms</div></div>
+              <div class="d-span err" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-span-name">POST /charges</span></div><div class="d-span-track"><div class="d-bar err" style="left:28%;width:69%"></div></div><div class="d-span-dur">862ms</div></div>
+              <div class="d-span" style="--depth:2"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-span-name">tls handshake</span></div><div class="d-span-track"><div class="d-bar" style="left:29%;width:11%;--svc:var(--svc-3)"></div></div><div class="d-span-dur">136ms</div></div>
+              <div class="d-span" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-span-name">UPDATE orders</span></div><div class="d-span-track"><div class="d-bar" style="left:97%;width:3%;--svc:var(--svc-2)"></div></div><div class="d-span-dur">38ms</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <div class="d-wf">
+              <div class="d-wf-axis">
+                <div class="lb">Service · Operation</div>
+                <div class="tk"><span class="t" style="left:0;transform:none">0</span><span class="t" style="left:25%">310ms</span><span class="t" style="left:50%">625ms</span><span class="t" style="left:75%">940ms</span><span class="t" style="left:100%;transform:translateX(-100%)">1.25s</span></div>
+                <div class="du">Duration</div>
+              </div>
+              <div class="d-span err" style="--depth:0"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-span-name">POST /checkout</span></div><div class="d-span-track"><div class="d-bar err" style="left:0;width:100%"></div></div><div class="d-span-dur">1.25s</div></div>
+              <div class="d-span" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-span-name">SELECT cart</span></div><div class="d-span-track"><div class="d-bar" style="left:3%;width:9%;--svc:var(--svc-2)"></div></div><div class="d-span-dur">112ms</div></div>
+              <div class="d-span" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">pricing</span><span class="d-span-name">GET /quote</span></div><div class="d-span-track"><div class="d-bar" style="left:13%;width:14%;--svc:var(--svc-4)"></div></div><div class="d-span-dur">178ms</div></div>
+              <div class="d-span err" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-span-name">POST /charges</span></div><div class="d-span-track"><div class="d-bar err" style="left:28%;width:69%"></div></div><div class="d-span-dur">862ms</div></div>
+              <div class="d-span" style="--depth:2"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-span-name">tls handshake</span></div><div class="d-span-track"><div class="d-bar" style="left:29%;width:11%;--svc:var(--svc-3)"></div></div><div class="d-span-dur">136ms</div></div>
+              <div class="d-span" style="--depth:1"><div class="d-span-lb"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-span-name">UPDATE orders</span></div><div class="d-span-track"><div class="d-bar" style="left:97%;width:3%;--svc:var(--svc-2)"></div></div><div class="d-span-dur">38ms</div></div>
+            </div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>прямоугольные бары с hairline-обводкой: границу спана видно точно, короткие спаны (38ms) больше не превращаются в кружок</li>
+          <li>квадратный маркер сервиса = «нода» — тот же язык, что в service map</li>
+          <li>вертикальные gridlines остались: они и есть «blueprint», ради которого стиль вообще берётся</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 06 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <h2>Logs stream</h2>
+      <span class="hint">уровень: заливка → ghost-тег, гуттер остаётся</span>
+    </div>
+    <div class="pair">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <div class="d-log" style="--lvc:var(--err)"><div class="d-log-row"><span class="t">14:20:03.418</span><span class="d-lvl d-lvl-error">ERROR</span><span class="s">checkout-api</span><span class="m">payment gateway timeout after 8000ms trace_id=a1b2c3d4e5f6</span></div></div>
+            <div class="d-log" style="--lvc:var(--warn)"><div class="d-log-row"><span class="t">14:20:03.402</span><span class="d-lvl d-lvl-warn">WARN</span><span class="s">stripe</span><span class="m">retry 2/3 for POST /charges (idempotency_key=ik_9f2…)</span></div></div>
+            <div class="d-log" style="--lvc:var(--info-ink)"><div class="d-log-row"><span class="t">14:20:02.991</span><span class="d-lvl d-lvl-info">INFO</span><span class="s">checkout-api</span><span class="m">cart validated · items=3 total=149.97 currency=EUR</span></div></div>
+            <div class="d-log" style="--lvc:var(--info-ink)"><div class="d-log-row"><span class="t">14:20:02.874</span><span class="d-lvl d-lvl-info">INFO</span><span class="s">pricing</span><span class="m">quote resolved from cache · ttl=42s</span></div></div>
+            <div class="d-log" style="--lvc:var(--info-ink)"><div class="d-log-row"><span class="t">14:20:02.630</span><span class="d-lvl d-lvl-info">INFO</span><span class="s">frontend-proxy</span><span class="m">POST /checkout 500 1254ms upstream=checkout-api</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <div class="d-log" style="--lvc:var(--err)"><div class="d-log-row"><span class="t">14:20:03.418</span><span class="d-lvl d-lvl-error">ERROR</span><span class="s">checkout-api</span><span class="m">payment gateway timeout after 8000ms trace_id=a1b2c3d4e5f6</span></div></div>
+            <div class="d-log" style="--lvc:var(--warn)"><div class="d-log-row"><span class="t">14:20:03.402</span><span class="d-lvl d-lvl-warn">WARN</span><span class="s">stripe</span><span class="m">retry 2/3 for POST /charges (idempotency_key=ik_9f2…)</span></div></div>
+            <div class="d-log" style="--lvc:var(--info-ink)"><div class="d-log-row"><span class="t">14:20:02.991</span><span class="d-lvl d-lvl-info">INFO</span><span class="s">checkout-api</span><span class="m">cart validated · items=3 total=149.97 currency=EUR</span></div></div>
+            <div class="d-log" style="--lvc:var(--info-ink)"><div class="d-log-row"><span class="t">14:20:02.874</span><span class="d-lvl d-lvl-info">INFO</span><span class="s">pricing</span><span class="m">quote resolved from cache · ttl=42s</span></div></div>
+            <div class="d-log" style="--lvc:var(--info-ink)"><div class="d-log-row"><span class="t">14:20:02.630</span><span class="d-lvl d-lvl-info">INFO</span><span class="s">frontend-proxy</span><span class="m">POST /checkout 500 1254ms upstream=checkout-api</span></div></div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>левый гуттер — единственный носитель «залитого» цвета: он и так был лучшим сканером</li>
+          <li>тег уровня фиксированной ширины (моно) → ровная колонка без <code>min-width</code> на глаз</li>
+          <li>лог и так был моно — тут стиль ничего не ломает, только приводит остальное к нему</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 07 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">07</span>
+      <h2>Панели и KPI-плитки</h2>
+      <span class="hint">4 карточки → одна решётка на общих hairline</span>
+    </div>
+    <div class="pair">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <div class="d-panelwrap">
+              <div class="d-tiles">
+                <div class="d-tile"><span class="k label">Requests</span><div class="v">12.4k</div><div class="d up">▲ 8.2%</div></div>
+                <div class="d-tile"><span class="k label">Error rate</span><div class="v">2.31%</div><div class="d up">▲ 0.4pp</div></div>
+                <div class="d-tile"><span class="k label">p95 latency</span><div class="v">412<span style="font-size:11px;color:var(--muted)">ms</span></div><div class="d dn">▼ 12ms</div></div>
+                <div class="d-tile"><span class="k label">Services</span><div class="v">14</div><div class="d">2 degraded</div></div>
+              </div>
+              <div class="d-panel">
+                <div class="d-panel-head"><span class="d-panel-title">Top operations by error rate</span><div class="d-spacer" style="flex:1"></div><span class="label">last 1h</span></div>
+                <div class="d-panel-body">
+                  <table class="d-table">
+                    <thead><tr><th>Operation</th><th style="width:82px;text-align:right">Errors</th><th style="width:82px;text-align:right">p95</th></tr></thead>
+                    <tbody>
+                      <tr><td class="mono">POST /checkout</td><td class="mono d-num">184</td><td class="mono d-num">1.25s</td></tr>
+                      <tr><td class="mono">POST /charges</td><td class="mono d-num">96</td><td class="mono d-num">862ms</td></tr>
+                      <tr><td class="mono">GET /quote</td><td class="mono d-num">11</td><td class="mono d-num">178ms</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <div class="d-panelwrap">
+              <div class="d-tiles">
+                <div class="d-tile"><span class="k label">Requests</span><div class="v">12.4k</div><div class="d up">▲ 8.2%</div></div>
+                <div class="d-tile"><span class="k label">Error rate</span><div class="v">2.31%</div><div class="d up">▲ 0.4pp</div></div>
+                <div class="d-tile"><span class="k label">p95 latency</span><div class="v">412<span style="font-size:11px;color:var(--muted)">ms</span></div><div class="d dn">▼ 12ms</div></div>
+                <div class="d-tile"><span class="k label">Services</span><div class="v">14</div><div class="d">2 degraded</div></div>
+              </div>
+              <div class="d-panel">
+                <div class="d-panel-head"><span class="d-panel-title">Top operations by error rate</span><div class="d-spacer" style="flex:1"></div><span class="label">last 1h</span></div>
+                <div class="d-panel-body">
+                  <table class="d-table">
+                    <thead><tr><th>Operation</th><th style="width:82px;text-align:right">Errors</th><th style="width:82px;text-align:right">p95</th></tr></thead>
+                    <tbody>
+                      <tr><td class="mono">POST /checkout</td><td class="mono d-num">184</td><td class="mono d-num">1.25s</td></tr>
+                      <tr><td class="mono">POST /charges</td><td class="mono d-num">96</td><td class="mono d-num">862ms</td></tr>
+                      <tr><td class="mono">GET /quote</td><td class="mono d-num">11</td><td class="mono d-num">178ms</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>плитки склеены общими линиями — читаются как одна «шкала прибора», а не четыре независимых виджета</li>
+          <li>заголовок панели ушёл в моно-лейбл: панель = именованный блок схемы</li>
+          <li>это же правило даёт бесплатную сетку для dashboards-as-code: панели стыкуются без зазоров</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 08 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">08</span>
+      <h2>Экран целиком</h2>
+      <span class="hint">shell + sidebar + таблица + статус-бар</span>
+    </div>
+    <div class="pair stack">
+      <div class="slot">
+        <div class="slot-label">сейчас</div>
+        <div class="frame">
+          <div class="demo v-now">
+            <div class="d-shell">
+              <header class="d-topnav">
+                <div class="d-brand"><span class="d-mark"><i></i><i class="r"></i><i></i><i></i></span>Tessera</div>
+                <div class="d-spacer"></div>
+                <button class="d-range" type="button">Last 1h · 13:20–14:20</button>
+                <button class="d-btn" type="button">Refresh</button>
+              </header>
+              <aside class="d-side">
+                <div class="d-side-sec label">Explore</div>
+                <div class="d-side-item on"><span class="d-side-mark"></span>Traces</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Logs</div>
+                <div class="d-side-sec label">Inventory</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Services</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Dashboards</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Health</div>
+              </aside>
+              <div class="d-main">
+                <div class="d-pagehead">
+                  <div class="d-crumb"><span class="label">Explore</span><span class="label">/</span><span class="label">Traces</span></div>
+                  <h3 class="d-pagetitle">Traces</h3>
+                  <div class="d-pagesub">1 284 traces · 31 errors · checkout-api</div>
+                </div>
+                <div class="d-filters">
+                  <input class="d-field q" type="search" placeholder="operation or free text…" />
+                  <span class="d-chip"><span class="k">service</span><b>checkout-api</b><span class="x">×</span></span>
+                  <span class="d-chip"><span class="k">status</span><b>error</b><span class="x">×</span></span>
+                </div>
+                <div class="d-scroll">
+                  <table class="d-table">
+                    <thead><tr><th style="width:78px">Status</th><th style="width:112px">Trace</th><th>Root</th><th style="width:150px">Duration</th><th style="width:52px;text-align:right">Spans</th></tr></thead>
+                    <tbody>
+                      <tr class="err-row"><td><span class="d-pill d-pill-err">ERROR</span></td><td class="mono d-tid">a1b2c3d4e5f6…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· POST /checkout</span></div></td><td><div class="d-durcell"><div class="d-durbar err"><i style="width:14%"></i></div><span class="mono d-durval err">1.25s</span></div></td><td class="mono d-num">23</td></tr>
+                      <tr class="err-row"><td><span class="d-pill d-pill-err">ERROR</span></td><td class="mono d-tid">f67890abcdef…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-op">· Charge</span></div></td><td><div class="d-durcell"><div class="d-durbar err"><i style="width:100%"></i></div><span class="mono d-durval err">8.93s</span></div></td><td class="mono d-num">19</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">b2c3d4e5f678…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· GET /cart</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:1%"></i></div><span class="mono d-durval">89ms</span></div></td><td class="mono d-num">5</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">c3d4e5f67890…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">frontend-proxy</span><span class="d-op">· ingress</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:4.6%"></i></div><span class="mono d-durval">412ms</span></div></td><td class="mono d-num">12</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">e5f67890abcd…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-op">· SELECT orders</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:1.7%"></i></div><span class="mono d-durval">156ms</span></div></td><td class="mono d-num">7</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">7890abcdef01…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">pricing</span><span class="d-op">· GET /quote</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:2%"></i></div><span class="mono d-durval">178ms</span></div></td><td class="mono d-num">9</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <footer class="d-foot">
+                  <span><span class="mono">1 284</span> traces · errors <span class="mono">31</span></span>
+                  <span class="r"><span class="d-kbd">j</span><span class="d-kbd">k</span> move <span class="d-kbd">↵</span> open <span class="d-kbd">/</span> filter</span>
+                </footer>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slot">
+        <div class="slot-label is-next">technical mono</div>
+        <div class="frame">
+          <div class="demo v-next">
+            <div class="d-shell">
+              <header class="d-topnav">
+                <div class="d-brand"><span class="d-mark"><i></i><i class="r"></i><i></i><i></i></span>Tessera</div>
+                <div class="d-spacer"></div>
+                <button class="d-range" type="button">Last 1h · 13:20–14:20</button>
+                <button class="d-btn" type="button">Refresh</button>
+              </header>
+              <aside class="d-side">
+                <div class="d-side-sec label">Explore</div>
+                <div class="d-side-item on"><span class="d-side-mark"></span>Traces</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Logs</div>
+                <div class="d-side-sec label">Inventory</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Services</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Dashboards</div>
+                <div class="d-side-item"><span class="d-side-mark"></span>Health</div>
+              </aside>
+              <div class="d-main">
+                <div class="d-pagehead">
+                  <div class="d-crumb"><span class="label">Explore</span><span class="label">/</span><span class="label">Traces</span></div>
+                  <h3 class="d-pagetitle">Traces</h3>
+                  <div class="d-pagesub">1 284 traces · 31 errors · checkout-api</div>
+                </div>
+                <div class="d-filters">
+                  <input class="d-field q" type="search" placeholder="operation or free text…" />
+                  <span class="d-chip"><span class="k">service</span><b>checkout-api</b><span class="x">×</span></span>
+                  <span class="d-chip"><span class="k">status</span><b>error</b><span class="x">×</span></span>
+                </div>
+                <div class="d-scroll">
+                  <table class="d-table">
+                    <thead><tr><th style="width:78px">Status</th><th style="width:112px">Trace</th><th>Root</th><th style="width:150px">Duration</th><th style="width:52px;text-align:right">Spans</th></tr></thead>
+                    <tbody>
+                      <tr class="err-row"><td><span class="d-pill d-pill-err">ERROR</span></td><td class="mono d-tid">a1b2c3d4e5f6…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· POST /checkout</span></div></td><td><div class="d-durcell"><div class="d-durbar err"><i style="width:14%"></i></div><span class="mono d-durval err">1.25s</span></div></td><td class="mono d-num">23</td></tr>
+                      <tr class="err-row"><td><span class="d-pill d-pill-err">ERROR</span></td><td class="mono d-tid">f67890abcdef…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-3)"></span><span class="d-svc">stripe</span><span class="d-op">· Charge</span></div></td><td><div class="d-durcell"><div class="d-durbar err"><i style="width:100%"></i></div><span class="mono d-durval err">8.93s</span></div></td><td class="mono d-num">19</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">b2c3d4e5f678…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-1)"></span><span class="d-svc">checkout-api</span><span class="d-op">· GET /cart</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:1%"></i></div><span class="mono d-durval">89ms</span></div></td><td class="mono d-num">5</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">c3d4e5f67890…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">frontend-proxy</span><span class="d-op">· ingress</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:4.6%"></i></div><span class="mono d-durval">412ms</span></div></td><td class="mono d-num">12</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">e5f67890abcd…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-2)"></span><span class="d-svc">postgres</span><span class="d-op">· SELECT orders</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:1.7%"></i></div><span class="mono d-durval">156ms</span></div></td><td class="mono d-num">7</td></tr>
+                      <tr><td><span class="d-pill d-pill-ok">OK</span></td><td class="mono d-tid">7890abcdef01…</td><td><div class="d-root"><span class="d-dot" style="background:var(--svc-4)"></span><span class="d-svc">pricing</span><span class="d-op">· GET /quote</span></div></td><td><div class="d-durcell"><div class="d-durbar"><i style="width:2%"></i></div><span class="mono d-durval">178ms</span></div></td><td class="mono d-num">9</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <footer class="d-foot">
+                  <span><span class="mono">1 284</span> traces · errors <span class="mono">31</span></span>
+                  <span class="r"><span class="d-kbd">j</span><span class="d-kbd">k</span> move <span class="d-kbd">↵</span> open <span class="d-kbd">/</span> filter</span>
+                </footer>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li>sidebar: активный пункт — левое правило акцентом; лёгкая blueprint-сетка живёт только в пустой зоне навигации, никогда под данными</li>
+          <li>крошки/лейблы моно → «путь», а не «текст»</li>
+          <li>заголовок страницы моно-medium: страница выглядит как срез системы, а не как раздел SaaS</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 09 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">09</span>
+      <h2>Что берём и что не берём</h2>
+      <span class="hint">полный брутализм на APM ломает читаемость</span>
+    </div>
+    <div class="verdict">
+      <div class="take">
+        <h3>берём</h3>
+        <ul>
+          <li>моно-мета-слой (лейблы, колонки, бейджи, крошки, nav);</li>
+          <li><code>--radius: 0</code>, никаких теней, hairline как основной структурный приём;</li>
+          <li>ghost-теги для статусов и уровней; цвет остаётся, площадь падает;</li>
+          <li>один акцент; сервисная палитра тише акцента;</li>
+          <li>чипы фильтров как <code>key=value</code> — язык URL/YAML виден в UI;</li>
+          <li>blueprint-сетка только в пустых зонах (навигация, empty state, waterfall gridlines).</li>
+        </ul>
+      </div>
+      <div class="drop">
+        <h3>не берём</h3>
+        <ul>
+          <li>моно для длинного текста (сообщения ошибок, описания) — падает скорость чтения;</li>
+          <li>чёрные 2px рамки и offset-тени неубрутализма — на 30 строках это визуальный шум;</li>
+          <li>underlined-blue ссылки и системный Times — «сырой» брутализм, не наш регистр;</li>
+          <li>полный отказ от заливок: левый гуттер логов и выделение строки остаются заливкой;</li>
+          <li>UPPERCASE в данных (имена сервисов, операции) — ломает узнаваемость значений;</li>
+          <li>сетку под таблицами и waterfall — конкурирует с gridlines оси времени.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ 10 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">10</span>
+      <h2>Патч токенов</h2>
+      <span class="hint">apps/console/src/index.css — точки изменения</span>
+    </div>
+    <pre><span class="c">/* ── :root ─────────────────────────────────────────────── */</span>
+<span class="del">- --radius: 0.45rem;</span>
+<span class="add">+ --radius: 0;                     /* pills → 1px, bars → 0 */</span>
+<span class="add">+ --radius-pill: 1px;</span>
+
+<span class="c">/* off-white / near-black вместо чистых #fff/#000 */</span>
+<span class="del">- --background: oklch(1 0 0);</span>
+<span class="add">+ --background: oklch(98.6% 0.002 250);</span>
+<span class="del">- --foreground: oklch(0.141 0.005 285.823);</span>
+<span class="add">+ --foreground: oklch(17% 0.008 250);</span>
+
+<span class="c">/* линия несёт структуру → контраст выше */</span>
+<span class="del">- --border: oklch(0.92 0.004 286.32);</span>
+<span class="add">+ --border: oklch(88.5% 0.004 250);</span>
+<span class="add">+ --border-2: oklch(78% 0.006 250);</span>
+
+<span class="c">/* status: soft-заливки становятся рамками */</span>
+<span class="add">+ --ok-bd:   oklch(72% 0.10 150);</span>
+<span class="add">+ --err-bd:  oklch(70% 0.14 25);</span>
+<span class="add">+ --slow-bd: oklch(75% 0.11 60);</span>
+
+<span class="c">/* сервисная палитра: chroma −20%, тише единственного акцента */</span>
+<span class="del">- --svc-1: oklch(0.60 0.12 250);  --svc-2: oklch(0.60 0.10 190);</span>
+<span class="add">+ --svc-1: oklch(0.54 0.09 250);  --svc-2: oklch(0.54 0.08 190);</span>
+
+<span class="c">/* ── @theme inline — новый мета-слой ────────────────────── */</span>
+<span class="add">+ --font-label: var(--font-mono);   /* главный переключатель стиля */</span>
+<span class="add">+ --tracking-label: 0.09em;</span>
+
+<span class="c">/* ── компоненты: 7 структурных правок ───────────────────── */</span>
+<span class="c">  1. .app-sidebar-section.is-active  фон → border-left 2px accent</span>
+<span class="c">  2. фильтр-чип                      capsule → key=value моно-тег</span>
+<span class="c">  3. thead th                        bg: surface-2 → transparent + border-2</span>
+<span class="c">  4. .span-row-error / tr.err-row    тонировка → inset 2px 0 0 var(--err)</span>
+<span class="c">  5. .pill-*, .log-level-*           soft-заливка → ink + 1px рамка</span>
+<span class="c">  6. .span-dot / service dot         border-radius: 50% → 0</span>
+<span class="c">  7. .span-bar                       radius 3px → 0, inset hairline 22%</span>
+<span class="c">  +  .dashboard-panel                 gap-решётка → общие границы (gap: 0)</span>
+</pre>
+    <ul class="notes">
+      <li>файлы: <code>apps/console/src/index.css</code> (токены + 7 правил), <code>components/ui/badge</code>·<code>pill</code> (ghost-вариант), <code>app-shell</code> (sidebar rule), <code>waterfall</code> (bar/dot)</li>
+      <li>Ladle-каталог покажет регресс по всем ~110 примитивам сразу — прогонять после патча токенов, до правок компонентов</li>
+      <li>риски: контраст ghost-тегов на <code>--card</code> в тёмной теме (проверить AA для <code>--ok-ink</code>), и <code>radius: 0</code> у Base UI popover/select — там скругление приходит из shadcn-слоя</li>
+    </ul>
+  </section>
+
+</div>
+
+<script>
+  // 3-состояний не нужно: локальный документ, простой тумблер поверх prefers-color-scheme
+  const btn = document.getElementById('themeBtn');
+  const start = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-doc', start);
+  btn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-doc') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-doc', next);
+  });
+</script>
+</body>
+</html>

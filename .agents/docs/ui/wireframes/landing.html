@@ -1,0 +1,1576 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tessera — click a span, see its logs</title>
+  <meta name="description" content="Self-hosted UI for OpenTelemetry traces, logs and metrics. Select a span, get the log lines that carry its id." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Onest:wght@300..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Всё, что прячется до появления в кадре, прячется только при живом JS:
+       без скрипта страница просто читается статичной, ничего не теряется. -->
+  <script>document.documentElement.className = 'js';</script>
+  <style>
+    /* =====================================================================
+     * Tessera · landing
+     *
+     * Register: dark, atmospheric, large radii, generous space (ref feel).
+     * Palette:  Tessera — near-black blue-tinted ground + one deep red.
+     * Type:     the product's own faces (Geist display / Onest body /
+     *           JetBrains Mono for values), per DESIGN.md §4.
+     * Signature: one real incident as the page's spine — the middle section
+     *           is a timeline with elapsed stamps, and the hero waterfall
+     *           draws in on load in span order, the way data actually lands.
+     * Mono is reserved for real values: timestamps, durations, ids, config.
+     * ===================================================================== */
+
+    :root {
+      /* ── ground ── */
+      --ink:    oklch(12.5% 0.014 258);
+      --ink-2:  oklch(16% 0.015 258);
+      --ink-3:  oklch(20% 0.016 258);
+      --line:   oklch(100% 0 0 / 0.08);
+      --line-2: oklch(100% 0 0 / 0.15);
+      --fg:     oklch(97% 0.003 258);
+      --fg-2:   oklch(77% 0.010 258);
+      --fg-3:   oklch(59% 0.012 258);
+
+      /* ── paper ── */
+      --paper:   oklch(96.8% 0.004 258);
+      --paper-2: oklch(100% 0 0);
+      --paper-3: oklch(95.4% 0.014 25);
+      --l-fg:    oklch(15% 0.010 258);
+      --l-fg-2:  oklch(40% 0.010 258);
+      --l-fg-3:  oklch(55% 0.010 258);
+      --l-line:  oklch(0% 0 0 / 0.09);
+
+      /* ── accent ── */
+      --red:      oklch(64% 0.21 26);
+      --red-hot:  oklch(71% 0.20 26);
+      --red-deep: oklch(45% 0.19 27);
+      --glow:     oklch(62% 0.22 26 / 0.38);
+
+      /* ── semantic, inside the mock only ── */
+      --ok:    oklch(78% 0.14 150);
+      --warn:  oklch(82% 0.14 70);
+      --err:   oklch(72% 0.19 25);
+      --svc-1: oklch(72% 0.09 250);
+      --svc-2: oklch(74% 0.08 190);
+      --svc-3: oklch(72% 0.10 300);
+      --svc-4: oklch(76% 0.08 220);
+
+      --display: "Geist", "Segoe UI", system-ui, sans-serif;
+      --body:    "Onest", "Segoe UI", system-ui, sans-serif;
+      --val:     "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
+
+      --r-xl: 30px;
+      --r-lg: 22px;
+      --r-md: 14px;
+      --r-sm: 9px;
+      --maxw: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--ink);
+      color: var(--fg);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.62;
+      font-weight: 350;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 3px; }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 26px; position: relative; }
+    @media (max-width: 640px) { .wrap { padding: 0 18px; } }
+
+    /* ── type ── */
+    h1, h2, h3 {
+      font-family: var(--display);
+      font-weight: 450;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin: 0;
+    }
+    h1 { font-size: clamp(40px, 6.1vw, 78px); letter-spacing: -0.038em; line-height: 1.0; }
+    h2 { font-size: clamp(29px, 3.6vw, 46px); }
+    h3 { font-size: 20px; letter-spacing: -0.022em; line-height: 1.28; font-weight: 500; }
+    p { margin: 0; }
+    /* реальные значения — всегда моно, подогнан по x-height к окружающему тексту */
+    .v {
+      font-family: var(--val);
+      font-size: 0.86em;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      font-variant-numeric: tabular-nums;
+    }
+    .lede { font-size: clamp(16.5px, 1.3vw, 19px); line-height: 1.6; color: var(--fg-2); }
+    .light .lede { color: var(--l-fg-2); }
+    .label {
+      font-family: var(--val);
+      font-size: 11.5px;
+      letter-spacing: 0.02em;
+      color: var(--fg-3);
+    }
+    .light .label { color: var(--l-fg-3); }
+
+    /* ── buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--body);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 13px 23px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--red); color: oklch(13% 0.02 26); }
+    .btn-primary:hover { background: var(--red-hot); box-shadow: 0 6px 30px -8px var(--glow); }
+    .btn-ghost {
+      background: oklch(100% 0 0 / 0.05);
+      border-color: var(--line-2);
+      color: var(--fg);
+      backdrop-filter: blur(10px);
+    }
+    .btn-ghost:hover { background: oklch(100% 0 0 / 0.1); }
+    .light .btn-ghost { background: var(--paper-2); border-color: var(--l-line); color: var(--l-fg); }
+    .btn-sm { padding: 9px 17px; font-size: 14px; }
+
+    /* ── blooms (2, не 3) ── */
+    /* screen: пересекающиеся блики складывают свет, а не мутят друг друга */
+    .bloom { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(96px); mix-blend-mode: screen; opacity: 0.82; z-index: 0; }
+    .bloom-red  { background: radial-gradient(circle, oklch(56% 0.22 26 / 0.5), transparent 68%); }
+    .bloom-cool { background: radial-gradient(circle, oklch(50% 0.09 255 / 0.42), transparent 70%); }
+
+    .mark { display: block; flex: none; }
+    .mark .t { fill: currentColor; }
+    .mark .a { fill: var(--red); }
+
+    /* =====================================================================
+     * nav
+     * ===================================================================== */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      /* 0.9, а не 0.74: над светлыми секциями более прозрачная полоса мутнеет в серое */
+      background: oklch(12.5% 0.014 258 / 0.9);
+      backdrop-filter: blur(16px) saturate(140%);
+      border-bottom: 1px solid oklch(100% 0 0 / 0.055);
+    }
+    .nav-in { display: flex; align-items: center; gap: 26px; height: 64px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 21px; height: 21px; }
+    .brand b { font-family: var(--display); font-size: 17px; font-weight: 500; letter-spacing: -0.025em; }
+    .nav-links { display: flex; gap: 24px; margin-left: 12px; }
+    .nav-links a { font-size: 14.5px; color: var(--fg-2); transition: color 120ms; }
+    .nav-links a:hover { color: var(--fg); }
+    .nav-sp { flex: 1; }
+    @media (max-width: 920px) { .nav-links { display: none; } }
+
+    /* =====================================================================
+     * hero
+     * ===================================================================== */
+    .hero { position: relative; padding: 86px 0 0; overflow: hidden; }
+    .hero .b1 { width: 760px; height: 600px; left: -200px; top: -300px; }
+    .hero .b2 { width: 560px; height: 470px; right: -150px; top: -110px; opacity: 0.85; }
+    .hero-copy { position: relative; z-index: 1; max-width: 830px; }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--val);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      color: var(--fg-3);
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-copy h1 { margin: 26px 0 22px; }
+    .hero-copy h1 em { font-style: normal; color: var(--red); }
+    .hero-copy .lede { max-width: 62ch; }
+    .hero-act { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+    .cmd {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--val);
+      font-size: 13px;
+      color: var(--fg-2);
+      background: oklch(0% 0 0 / 0.3);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 11px 18px;
+    }
+    .cmd .p { color: var(--red); }
+
+    /* ── product card ── */
+    .shot-wrap { position: relative; z-index: 1; padding-top: 58px; }
+    .shot-halo {
+      position: absolute;
+      left: 10%; right: 10%; top: 110px; height: 240px;
+      background: radial-gradient(ellipse at center, var(--glow), transparent 70%);
+      filter: blur(74px);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .shot {
+      position: relative;
+      border-radius: var(--r-xl);
+      border: 1px solid var(--line-2);
+      background: linear-gradient(180deg, var(--ink-2), oklch(13.5% 0.014 258));
+      box-shadow:
+        inset 0 1px 0 0 oklch(100% 0 0 / 0.06),
+        0 40px 90px -34px oklch(0% 0 0 / 0.85),
+        0 0 110px -46px var(--glow);
+      overflow: hidden;
+    }
+    .shot-bar { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
+    .shot-bar .dots { display: flex; gap: 6px; }
+    .shot-bar .dots i { width: 9px; height: 9px; border-radius: 50%; background: oklch(100% 0 0 / 0.13); }
+    .shot-bar .url {
+      font-family: var(--val);
+      font-size: 12px;
+      color: var(--fg-3);
+      background: oklch(0% 0 0 / 0.3);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 14px;
+      flex: 1;
+      max-width: 470px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .shot-bar .url b { color: var(--fg-2); font-weight: 400; }
+    .shot-bar .rng { margin-left: auto; font-family: var(--val); font-size: 11.5px; color: var(--fg-3); }
+
+    /* =====================================================================
+     * UI mock
+     * ===================================================================== */
+    .ui { font-family: var(--val); font-size: 12px; }
+    .ui-top { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; padding: 13px 18px; border-bottom: 1px solid var(--line); }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11.5px;
+      border: 1px solid var(--line-2);
+      border-radius: 999px;
+      padding: 3px 11px;
+      color: var(--fg-2);
+    }
+    .chip .k { color: var(--fg-3); }
+    .chip .k::after { content: ":"; margin-right: 4px; }
+    .ui-top .sp { flex: 1; }
+    .ui-top .meta { font-size: 11.5px; color: var(--fg-3); }
+
+    /* 236px, а не 208: на 208 «checkout-api POST /checkout» обрезался в «POST /che…» */
+    .wf { --lbw: 236px; --dw: 64px; padding: 6px 0 8px; }
+    .only-narrow { display: none; }
+    /* На телефоне метка спана не влезает целиком: имя сервиса уходит, потому что
+     * цветной квадрат его уже кодирует, а операция — единственное, что нельзя
+     * потерять. Средние тики оси тоже снимаются: на узком треке они слипались. */
+    @media (max-width: 620px) {
+      /* 152px: на 126 обрезались «UPDATE orders» и «tls handshake» даже без сервиса */
+      .wf { --lbw: 152px; --dw: 54px; font-size: 10.5px; }
+      .sp-svc { display: none; }
+      .hide-narrow { display: none; }
+      .only-narrow { display: inline; }
+      .shot .wf-axis .tk span:nth-child(2),
+      .shot .wf-axis .tk span:nth-child(4) { display: none; }
+    }
+    .wf-axis, .sp-row { display: grid; grid-template-columns: var(--lbw) 1fr var(--dw); align-items: center; }
+    .wf-axis { height: 27px; color: var(--fg-3); font-size: 10.5px; }
+    .wf-axis .l { padding-left: 18px; }
+    .wf-axis .tk { position: relative; height: 100%; }
+    .wf-axis .tk span { position: absolute; top: 8px; transform: translateX(-50%); }
+    .wf-axis .d { padding-right: 18px; text-align: right; }
+    .sp-row { height: 31px; border-radius: 8px; }
+    .sp-row.sel {
+      background: linear-gradient(90deg, oklch(64% 0.21 26 / 0.15), oklch(64% 0.21 26 / 0.01));
+      box-shadow: inset 2px 0 0 var(--red);
+    }
+    .sp-lb {
+      display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden;
+      padding-right: 10px;
+      padding-left: calc(18px + var(--d, 0) * 14px);
+    }
+    .sq { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+    .sp-svc { color: var(--fg-3); flex: none; }
+    .sp-nm { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-tr { position: relative; height: 100%; }
+    .bar {
+      position: absolute; top: 50%; translate: 0 -50%;
+      height: 11px; border-radius: 4px;
+      background: var(--sv, var(--fg-3));
+      transform-origin: left center;
+    }
+    .bar.err { background: linear-gradient(90deg, var(--err), var(--red)); box-shadow: 0 0 18px -3px oklch(72% 0.19 25 / 0.55); }
+    .sp-du { padding-right: 18px; text-align: right; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+    .sp-du.err { color: var(--err); }
+
+    .seam {
+      display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+      margin: 4px 12px 10px;
+      padding: 9px 14px;
+      border-radius: var(--r-md);
+      background: linear-gradient(90deg, oklch(64% 0.21 26 / 0.12), oklch(64% 0.21 26 / 0.01));
+      border: 1px solid oklch(64% 0.21 26 / 0.2);
+    }
+    .seam .ar { color: var(--red); }
+    .seam .txt { font-family: var(--body); font-size: 12.5px; color: var(--fg-2); }
+    .seam .sp { flex: 1; }
+    .seam .n { font-size: 11.5px; color: var(--fg-3); }
+
+    .log { display: flex; align-items: center; gap: 9px; padding: 5px 18px; font-size: 11.5px; }
+    .log .t { color: var(--fg-3); flex: none; }
+    .log .s { color: var(--fg-3); flex: none; min-width: 86px; }
+    .log .m { color: var(--fg-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lvl { font-size: 9.5px; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 999px; flex: none; min-width: 46px; text-align: center; }
+    .lvl-i { color: oklch(80% 0.09 245); background: oklch(80% 0.09 245 / 0.12); }
+    .lvl-w { color: var(--warn); background: oklch(82% 0.14 70 / 0.12); }
+    .lvl-e { color: var(--err); background: oklch(72% 0.19 25 / 0.14); }
+
+    /* min-width:0 на элементах сетки + minmax(0,…) на дорожках: без этого
+     * авто-минимум колонки равен min-content содержимого и распирает страницу */
+    .ui-split { display: grid; grid-template-columns: minmax(0, 1fr) 262px; }
+    .ui-split > * { min-width: 0; }
+    @media (max-width: 940px) { .ui-split { grid-template-columns: minmax(0, 1fr); } .ui-side { border-left: 0 !important; border-top: 1px solid var(--line); } }
+    .ui-side { border-left: 1px solid var(--line); }
+    .ui-side .h { padding: 13px 16px 8px; font-family: var(--body); font-size: 12.5px; color: var(--fg-3); }
+    .kv { padding: 0 16px 12px; display: grid; gap: 8px; }
+    .kv-row { display: grid; grid-template-columns: 76px 1fr; gap: 10px; font-size: 11px; }
+    .kv-row dt { color: var(--fg-3); }
+    .kv-row dd { margin: 0; color: var(--fg-2); word-break: break-all; }
+    .kv-row dd.err { color: var(--err); }
+    .exc {
+      margin: 0 16px 16px;
+      padding: 11px 13px;
+      border-radius: var(--r-sm);
+      background: oklch(72% 0.19 25 / 0.08);
+      border: 1px solid oklch(72% 0.19 25 / 0.2);
+      font-size: 10.5px;
+      line-height: 1.6;
+      color: var(--err);
+    }
+
+    /* лог-поток гаснет к низу: последняя строка недочитана, потому что их больше */
+    .log-list {
+      padding-bottom: 14px;
+      -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+    }
+
+    /* ── движение стартует при входе в кадр, не на load ── */
+    @keyframes draw { from { transform: scaleX(0); opacity: 0.35; } to { transform: scaleX(1); opacity: 1; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+
+    .js .shot .bar { transform: scaleX(0); }
+    .js .shot .seam, .js .shot .log { opacity: 0; }
+    .shot.is-in .bar  { animation: draw 480ms cubic-bezier(0.2, 0.75, 0.2, 1) both; animation-delay: calc(140ms + var(--i, 0) * 95ms); }
+    .shot.is-in .seam { animation: rise 400ms ease-out both; animation-delay: 800ms; }
+    .shot.is-in .log  { animation: rise 340ms ease-out both; animation-delay: calc(900ms + var(--i, 0) * 70ms); }
+
+    /* Всё ниже первого экрана проявляется по входу в кадр; порядок задаёт сама прокрутка.
+     * Скрытие снимается через :not(.is-in), а не более «сильным» правилом поверх:
+     * иначе `.js .rows > div` (0,2,1) побеждает `.js .is-in` (0,2,0) и строки
+     * остаются невидимыми навсегда. */
+    .js .lead:not(.is-in),
+    .js .vis:not(.is-in),
+    .js .pane:not(.is-in),
+    .js .rows > div:not(.is-in),
+    .js .layers > div:not(.is-in),
+    .js .bound:not(.is-in) { opacity: 0; transform: translateY(10px); }
+    .js .is-in { transition: opacity 420ms ease-out, transform 460ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .js .shot .bar { transform: none; }
+      .js .shot .seam, .js .shot .log { opacity: 1; }
+      .shot.is-in .bar, .shot.is-in .seam, .shot.is-in .log { animation: none; }
+      .js .lead:not(.is-in),
+      .js .vis:not(.is-in),
+      .js .pane:not(.is-in),
+      .js .rows > div:not(.is-in),
+      .js .layers > div:not(.is-in),
+      .js .bound:not(.is-in) { opacity: 1; transform: none; }
+      .js .is-in { transition: none; }
+    }
+
+    /* =====================================================================
+     * compat
+     * ===================================================================== */
+    .compat { position: relative; z-index: 1; padding: 72px 0 94px; }
+    .compat .label { display: block; margin-bottom: 20px; }
+    .compat-row { display: flex; align-items: baseline; gap: 12px 34px; flex-wrap: wrap; }
+    .compat-row span { font-family: var(--display); font-size: 17px; font-weight: 400; letter-spacing: -0.022em; color: var(--fg-2); }
+    .compat-row span.later { color: var(--fg-3); border-bottom: 1px dashed var(--line-2); padding-bottom: 2px; }
+    .compat .foot { margin-top: 20px; font-size: 13px; color: var(--fg-3); }
+    .compat .foot a { color: var(--fg-2); border-bottom: 1px solid var(--line-2); }
+
+    /* =====================================================================
+     * секции
+     * ===================================================================== */
+    .to-light { height: 130px; background: linear-gradient(to bottom, var(--ink), var(--paper)); }
+    .to-dark  { height: 130px; background: linear-gradient(to bottom, var(--paper), var(--ink)); }
+    .light { background: var(--paper); color: var(--l-fg); }
+    .dark  { background: var(--ink); color: var(--fg); }
+    .band     { padding: 92px 0; }
+    .band-tail { padding: 0 0 100px; }
+    @media (max-width: 760px) { .band { padding: 66px 0; } .band-tail { padding-bottom: 70px; } }
+
+    .lead { max-width: 700px; }
+    .lead h2 { margin: 16px 0 16px; }
+    .lead .label { display: block; }
+
+    /* =====================================================================
+     * приколотый экран + прокручиваемые шаги
+     * Шаги — реальная последовательность работы, поэтому со штампами времени;
+     * приколотый экран меняет состояние на том шаге, который читают.
+     * ===================================================================== */
+    .pinned {
+      margin-top: 44px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+      gap: 54px;
+      align-items: start;
+    }
+    .pinned > * { min-width: 0; }
+    /* центр карточки совпадает с центром вьюпорта — там же, где читаемый шаг,
+     * иначе текст висит ниже экрана и пустота выглядит ошибкой, а не воздухом.
+     * max() — чтобы на низких окнах карточка не уезжала под навигацию. */
+    .pin-col { position: sticky; top: max(88px, calc(50vh - 230px)); }
+    .steps-col { list-style: none; margin: 0; padding: 0; }
+    .steps-col .step {
+      /* 50vh, а не 74: на 74 шаг из трёх строк тонул в пустоте по 250px сверху и снизу */
+      min-height: 50vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 26px 0;
+      border-top: 1px solid var(--l-line);
+      opacity: 0.4;
+      transition: opacity 320ms ease;
+    }
+    .steps-col .step:first-child { border-top: 0; }
+    .steps-col .step.is-on { opacity: 1; }
+    .steps-col .stamp { font-family: var(--val); font-size: 13px; color: var(--red-deep); }
+    .steps-col .el { font-family: var(--val); font-size: 11.5px; color: var(--l-fg-3); margin-left: 11px; }
+    .steps-col h3 { margin: 15px 0 10px; }
+    .steps-col p { font-size: 16px; color: var(--l-fg-2); max-width: 46ch; }
+    .steps-col code { font-family: var(--val); font-size: 13.5px; background: oklch(0% 0 0 / 0.05); padding: 1px 5px; border-radius: 5px; }
+    @media (max-width: 940px) {
+      .pinned { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+      .pin-col { position: static; }
+      .steps-col .step { min-height: 0; opacity: 1; padding: 22px 0; }
+    }
+
+    /* ── экран приложения на светлой странице ── */
+    .scr {
+      border-radius: var(--r-lg);
+      border: 1px solid oklch(0% 0 0 / 0.12);
+      background: linear-gradient(180deg, var(--ink-2), oklch(13% 0.014 258));
+      color: var(--fg);
+      overflow: hidden;
+      box-shadow: 0 26px 60px -34px oklch(0% 0 0 / 0.5);
+      transition: box-shadow 320ms ease;
+    }
+    .scr[data-step="4"] { box-shadow: 0 26px 60px -34px oklch(0% 0 0 / 0.5), 0 0 0 1px oklch(64% 0.21 26 / 0.4); }
+    .scr-bar { display: flex; align-items: center; gap: 11px; padding: 11px 15px; border-bottom: 1px solid var(--line); }
+    .scr-bar .dots { display: flex; gap: 5px; flex: none; }
+    .scr-bar .dots i { width: 8px; height: 8px; border-radius: 50%; background: oklch(100% 0 0 / 0.13); }
+    .scr-bar .url {
+      font-family: var(--val);
+      font-size: 11px;
+      color: var(--fg-3);
+      background: oklch(0% 0 0 / 0.3);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 12px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: border-color 320ms ease;
+    }
+    .scr-bar .url b { color: var(--fg-2); font-weight: 400; }
+    .scr[data-step="4"] .scr-bar .url { border-color: oklch(64% 0.21 26 / 0.45); }
+    .scr-copied {
+      font-family: var(--val);
+      font-size: 10.5px;
+      color: var(--red);
+      border: 1px solid oklch(64% 0.21 26 / 0.4);
+      border-radius: 999px;
+      padding: 3px 9px;
+      flex: none;
+      opacity: 0;
+      transition: opacity 280ms ease;
+    }
+    .scr[data-step="4"] .scr-copied { opacity: 1; }
+
+    /* waterfall внутри карточки — в CSS, а не инлайном: инлайн нельзя перебить медиа-запросом */
+    .scr .wf { --lbw: 214px; --dw: 58px; font-size: 11px; }
+    /* 430px на узком: там шов переносится в две строки и логи не влезали в 352 */
+    .scr-body { position: relative; height: 424px; }
+    @media (max-width: 620px) {
+      .scr .wf { --lbw: 152px; --dw: 52px; font-size: 10.5px; }
+      .scr-body { height: 460px; }
+    }
+    .scr-view { position: absolute; inset: 0; opacity: 0; transition: opacity 340ms ease; pointer-events: none; }
+    .scr[data-step="1"] .scr-list { opacity: 1; }
+    .scr:not([data-step="1"]) .scr-wf { opacity: 1; }
+
+    /* trace list */
+    .tr-head, .tr-row { display: grid; grid-template-columns: 62px 1fr 104px; align-items: center; gap: 10px; padding: 0 15px; }
+    .tr-head { height: 26px; font-family: var(--val); font-size: 10.5px; color: var(--fg-3); border-bottom: 1px solid var(--line); }
+    .tr-row { height: 34px; font-family: var(--val); font-size: 11.5px; border-bottom: 1px solid oklch(100% 0 0 / 0.04); }
+    .tr-row.err { box-shadow: inset 2px 0 0 var(--err); }
+    .tr-pill { font-size: 9.5px; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 999px; text-align: center; }
+    .tr-pill.ok { color: var(--ok); background: oklch(78% 0.14 150 / 0.12); }
+    .tr-pill.er { color: var(--err); background: oklch(72% 0.19 25 / 0.14); }
+    .tr-root { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .tr-root .sv { color: var(--fg-3); flex: none; }
+    .tr-root .op { color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; }
+    .tr-dur { display: flex; align-items: center; gap: 8px; justify-content: flex-end; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+    .tr-dur .g { flex: 1; max-width: 64px; height: 4px; border-radius: 2px; background: oklch(100% 0 0 / 0.08); position: relative; }
+    .tr-dur .g i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--fg-3); }
+    .tr-dur.er .g i { background: var(--err); }
+    /* Медиа-запрос стоит ПОСЛЕ базовых .tr-* правил намеренно: при равной
+     * специфичности выигрывает то, что ниже в файле. На телефоне мини-бар
+     * длительности уступает место операции — иначе все 11 строк в «…». */
+    @media (max-width: 620px) {
+      .tr-head, .tr-row { grid-template-columns: 52px 1fr 62px; }
+      .tr-dur .g { display: none; }
+    }
+
+    /* selection + correlation, только на шагах 3–4 */
+    .scr[data-step="3"] .sp-row[data-sel],
+    .scr[data-step="4"] .sp-row[data-sel] {
+      background: linear-gradient(90deg, oklch(64% 0.21 26 / 0.15), oklch(64% 0.21 26 / 0.01));
+      box-shadow: inset 2px 0 0 var(--red);
+    }
+    .scr:not([data-step="1"]) .bar { animation: draw 460ms cubic-bezier(0.2, 0.75, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 85ms); }
+    .scr-corr { opacity: 0; transition: opacity 320ms ease; }
+    .scr[data-step="3"] .scr-corr, .scr[data-step="4"] .scr-corr { opacity: 1; }
+    .scr[data-step="3"] .scr-corr .log,
+    .scr[data-step="4"] .scr-corr .log { animation: rise 300ms ease-out both; animation-delay: calc(120ms + var(--i, 0) * 70ms); }
+    .scr-hint {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 158px;
+      display: grid;
+      place-items: center;
+      font-family: var(--body);
+      font-size: 12.5px;
+      color: var(--fg-3);
+      opacity: 0;
+      transition: opacity 280ms ease;
+    }
+    .scr[data-step="2"] .scr-hint { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .scr:not([data-step="1"]) .bar,
+      .scr[data-step="3"] .scr-corr .log,
+      .scr[data-step="4"] .scr-corr .log { animation: none; }
+    }
+
+    /* ── фичи ── */
+    .feat {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 58px;
+      align-items: center;
+      padding: 70px 0;
+      border-top: 1px solid var(--l-line);
+    }
+    .feat > * { min-width: 0; }
+    @media (max-width: 940px) { .feat { grid-template-columns: minmax(0, 1fr); gap: 34px; padding: 50px 0; } .feat .vis { order: 2; } }
+    .feat h2 { font-size: clamp(26px, 2.6vw, 36px); margin-bottom: 14px; }
+    .feat .label { display: block; margin-bottom: 13px; color: var(--red-deep); }
+    .feat p { font-size: 16px; color: var(--l-fg-2); }
+    .feat p + p { margin-top: 13px; }
+    .feat code { font-family: var(--val); font-size: 13.5px; background: oklch(0% 0 0 / 0.05); padding: 1px 5px; border-radius: 5px; }
+    /* факты как строки атрибутов — язык самого продукта, не маркетинговый список */
+    .facts { margin-top: 22px; display: grid; }
+    .facts > div {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 18px;
+      padding: 10px 0;
+      border-top: 1px solid var(--l-line);
+      font-size: 14.5px;
+    }
+    @media (max-width: 560px) { .facts > div { grid-template-columns: 1fr; gap: 3px; } }
+    .facts dt { font-family: var(--val); font-size: 12px; color: var(--l-fg-3); padding-top: 3px; }
+    .facts dd { margin: 0; color: var(--l-fg-2); }
+    .vis {
+      border-radius: var(--r-lg);
+      border: 1px solid var(--l-line);
+      background: var(--paper-2);
+      padding: 24px;
+      box-shadow: 0 1px 2px oklch(0% 0 0 / 0.03), 0 22px 52px -32px oklch(0% 0 0 / 0.2);
+    }
+    .vis.tint { background: linear-gradient(158deg, var(--paper-3), var(--paper-2) 62%); }
+    .vis svg { display: block; width: 100%; height: auto; }
+    .g-box { fill: none; stroke: oklch(0% 0 0 / 0.17); stroke-width: 1.2; }
+    .g-box-a { stroke: var(--red-deep); }
+    .g-fill { fill: oklch(0% 0 0 / 0.03); }
+    .g-t { font-family: var(--display); font-size: 9.2px; font-weight: 500; fill: var(--l-fg); }
+    .g-s { font-family: var(--val); font-size: 7.6px; fill: var(--l-fg-3); }
+    .g-l { stroke: oklch(0% 0 0 / 0.2); stroke-width: 1.2; fill: none; }
+    .g-l-a { stroke: var(--red-deep); stroke-width: 1.4; }
+    .g-dash { stroke-dasharray: 4 4; }
+    .g-ar { fill: oklch(0% 0 0 / 0.34); }
+    .g-ar-a { fill: var(--red-deep); }
+
+    /* ── код-панели ── */
+    .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+    .pair > * { min-width: 0; }
+    @media (max-width: 940px) { .pair { grid-template-columns: minmax(0, 1fr); } }
+    .pane {
+      border-radius: var(--r-lg);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--ink-2), oklch(13% 0.014 258));
+      overflow: hidden;
+      box-shadow: 0 28px 64px -40px oklch(0% 0 0 / 0.8);
+    }
+    .pane-head {
+      display: flex; align-items: center; gap: 11px;
+      padding: 12px 17px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--val);
+      font-size: 12px;
+      color: var(--fg-3);
+    }
+    .pane-head .sp { flex: 1; }
+    .pane-head .st { font-family: var(--body); font-size: 11.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--fg-2); }
+    pre {
+      margin: 0; padding: 17px;
+      font-family: var(--val); font-size: 12.5px; line-height: 1.7;
+      overflow-x: auto; color: var(--fg-2);
+      tab-size: 2;
+    }
+    pre .c { color: var(--fg-3); }
+    pre .k { color: oklch(80% 0.11 40); }
+    pre .s { color: oklch(80% 0.09 200); }
+    pre .r { color: var(--err); }
+    pre .g { color: var(--ok); }
+
+    .prev { padding: 17px; display: grid; gap: 11px; }
+    .prev-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
+    .prev-p { border-radius: var(--r-md); border: 1px solid var(--line); background: oklch(100% 0 0 / 0.025); padding: 12px 13px; }
+    .prev-p .l { font-family: var(--body); font-size: 12px; color: var(--fg-3); }
+    .prev-p .n { font-family: var(--val); font-size: 22px; letter-spacing: -0.03em; margin-top: 4px; }
+    .prev-p .n s { text-decoration: none; font-size: 11.5px; color: var(--fg-3); }
+    .prev-p .n.hot { color: var(--err); }
+    .spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-top: 9px; }
+    .spark i { flex: 1; border-radius: 3px 3px 0 0; background: oklch(100% 0 0 / 0.11); }
+    .spark i.hi { background: linear-gradient(180deg, var(--red), oklch(48% 0.18 26)); }
+
+    /* три слоя доставки — строки, не карточки */
+    .layers { margin-top: 20px; border-top: 1px solid var(--line); }
+    .layers > div {
+      display: grid;
+      grid-template-columns: 122px 190px 1fr;
+      gap: 24px;
+      align-items: baseline;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    @media (max-width: 780px) { .layers > div { grid-template-columns: 1fr; gap: 5px; } }
+    .layers .f { font-family: var(--val); font-size: 12.5px; color: var(--red); }
+    .layers .t { font-family: var(--display); font-size: 16px; font-weight: 450; letter-spacing: -0.02em; }
+    .layers .d { font-size: 14.5px; color: var(--fg-2); }
+    .layers code { font-family: var(--val); font-size: 12.5px; color: var(--fg); background: oklch(100% 0 0 / 0.06); padding: 1px 5px; border-radius: 5px; }
+
+    /* ── статус ── */
+    .rows { display: grid; }
+    .rows > div {
+      display: grid;
+      grid-template-columns: 172px 116px 1fr;
+      gap: 24px;
+      align-items: start;
+      padding: 22px 0;
+      border-top: 1px solid var(--l-line);
+    }
+    .rows > div:last-child { border-bottom: 1px solid var(--l-line); }
+    @media (max-width: 860px) { .rows > div { grid-template-columns: 1fr; gap: 9px; } }
+    .rows .nm { font-family: var(--display); font-size: 17px; font-weight: 450; letter-spacing: -0.022em; }
+    .rows p { font-size: 14.5px; color: var(--l-fg-2); }
+    .rows code { font-family: var(--val); font-size: 12.5px; background: oklch(0% 0 0 / 0.05); padding: 1px 5px; border-radius: 5px; white-space: nowrap; }
+    .st-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--val); font-size: 12px; white-space: nowrap; }
+    .st-tag i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+    .st-now  { color: oklch(42% 0.12 150); }
+    .st-now  i { background: oklch(58% 0.14 150); }
+    .st-soon { color: oklch(45% 0.12 70); }
+    .st-soon i { background: oklch(72% 0.14 70); }
+    .st-plan { color: var(--l-fg-3); }
+    .st-plan i { background: var(--l-fg-3); opacity: 0.5; }
+
+    .bound {
+      margin-top: 34px;
+      border-radius: var(--r-lg);
+      border: 1px solid var(--l-line);
+      background: linear-gradient(140deg, var(--paper-3), var(--paper-2) 60%);
+      padding: 24px 26px;
+      font-size: 15.5px;
+      color: var(--l-fg-2);
+    }
+    .bound b { color: var(--l-fg); font-weight: 500; }
+
+    /* ── финал ── */
+    .end { position: relative; overflow: hidden; padding: 108px 0 116px; }
+    .end .b1 { width: 820px; height: 480px; left: 46%; translate: -50% 0; top: -150px; opacity: 0.75; }
+    .end .b2 { width: 540px; height: 320px; right: -140px; bottom: -110px; opacity: 0.5; }
+    .end .in { position: relative; z-index: 1; max-width: 720px; }
+    .end h2 { margin-bottom: 18px; }
+    .end .lede { max-width: 540px; margin-bottom: 32px; }
+    .end .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .term {
+      margin-top: 34px;
+      max-width: 566px;
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      background: oklch(0% 0 0 / 0.32);
+      padding: 15px 17px;
+      font-family: var(--val);
+      font-size: 12.5px;
+      line-height: 1.85;
+    }
+    .term .in-line { color: var(--fg); }
+    .term .in-line::before { content: "$ "; color: var(--red); }
+    .term .out { color: var(--fg-3); padding-left: 14px; }
+    .term .out b { color: var(--fg-2); font-weight: 400; }
+
+    /* ── footer ── */
+    .foot { border-top: 1px solid var(--line); padding: 52px 0 42px; }
+    .foot-in { display: flex; gap: 42px; flex-wrap: wrap; }
+    .foot-brand { min-width: 250px; max-width: 310px; }
+    .foot-brand .r { display: flex; align-items: center; gap: 10px; margin-bottom: 13px; }
+    .foot-brand .mark { width: 21px; height: 21px; }
+    .foot-brand b { font-family: var(--display); font-size: 17px; font-weight: 500; letter-spacing: -0.025em; }
+    .foot-brand p { font-size: 13.5px; color: var(--fg-3); }
+    .foot-sp { flex: 1; }
+    .foot-col { display: grid; gap: 10px; align-content: start; min-width: 132px; }
+    .foot-col .h { font-size: 13px; color: var(--fg); font-weight: 500; }
+    .foot-col a { font-size: 13.5px; color: var(--fg-3); }
+    .foot-col a:hover { color: var(--fg-2); }
+    .foot-btm { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--fg-3); line-height: 1.7; }
+    .foot-btm b { color: var(--fg-2); font-weight: 400; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════ nav -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">
+      <svg class="mark" viewBox="0 0 80 80" role="img" aria-label="Tessera">
+        <rect class="t" x="22" y="8"  width="16" height="16" rx="2"/>
+        <rect class="t" x="52" y="34" width="16" height="16" rx="2"/>
+        <rect class="t" x="12" y="56" width="16" height="16" rx="2"/>
+        <rect class="a" x="31" y="56" width="16" height="16" rx="2"/>
+      </svg>
+      <b>Tessera</b>
+    </a>
+    <nav class="nav-links">
+      <a href="#incident">How it works</a>
+      <a href="#correlation">Correlation</a>
+      <a href="#providers">Providers</a>
+      <a href="#as-code">Dashboards</a>
+      <a href="#status">What works today</a>
+    </nav>
+    <div class="nav-sp"></div>
+    <a class="btn btn-ghost btn-sm" href="https://github.com/dot-stbl/tessera">GitHub</a>
+    <a class="btn btn-primary btn-sm" href="#install">Install</a>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════ hero -->
+<section class="hero dark" id="top">
+  <div class="bloom bloom-red b1"></div>
+  <div class="bloom bloom-cool b2"></div>
+
+  <div class="wrap">
+    <div class="hero-copy">
+      <span class="hero-tag">Self-hosted · OpenTelemetry · MIT</span>
+      <h1>Click a span.<br />See <em>its</em> logs.</h1>
+      <p class="lede">
+        Tessera reads the traces, logs and metrics you already collect. Select a span and you get the
+        log lines carrying <span class="v">span_id</span> — not the lines that happen to sit near it
+        in time.
+      </p>
+      <div class="hero-act">
+        <a class="btn btn-primary" href="#install">Install</a>
+        <a class="btn btn-ghost" href="#incident">How it works</a>
+        <span class="cmd"><span class="p">$</span> docker compose up -d</span>
+      </div>
+    </div>
+
+    <div class="shot-wrap">
+      <div class="shot-halo"></div>
+      <div class="shot">
+        <div class="shot-bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="url">localhost:1990<b>/traces/a1b2c3d4e5f67890?span=7f3a91c4</b></span>
+          <span class="rng">14:20:03 · last 1h</span>
+        </div>
+
+        <div class="ui">
+          <div class="ui-top">
+            <span class="chip"><span class="k">service</span>checkout-api</span>
+            <span class="chip"><span class="k">status</span>error</span>
+            <span class="chip"><span class="k">duration</span>&gt; 500ms</span>
+            <span class="sp"></span>
+            <span class="meta">23 spans · 5 services · 1.25s</span>
+          </div>
+
+          <div class="ui-split">
+            <div>
+              <div class="wf">
+                <div class="wf-axis">
+                  <span class="l"><span class="hide-narrow">Service · operation</span><span class="only-narrow">Operation</span></span>
+                  <span class="tk">
+                    <span style="left:0;transform:none">0</span>
+                    <span style="left:25%">310ms</span>
+                    <span style="left:50%">625ms</span>
+                    <span style="left:75%">940ms</span>
+                    <span style="left:100%;transform:translateX(-100%)">1.25s</span>
+                  </span>
+                  <span class="d">Dur</span>
+                </div>
+
+                <div class="sp-row" style="--d:0">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-1)"></span><span class="sp-svc">checkout-api</span><span class="sp-nm">POST /checkout</span></div>
+                  <div class="sp-tr"><div class="bar err" style="--i:0;left:0;width:100%"></div></div>
+                  <div class="sp-du err">1.25s</div>
+                </div>
+                <div class="sp-row" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-2)"></span><span class="sp-svc">postgres</span><span class="sp-nm">SELECT cart</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:1;left:3%;width:9%;--sv:var(--svc-2)"></div></div>
+                  <div class="sp-du">112ms</div>
+                </div>
+                <div class="sp-row" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-4)"></span><span class="sp-svc">pricing</span><span class="sp-nm">GET /quote</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:2;left:13%;width:14%;--sv:var(--svc-4)"></div></div>
+                  <div class="sp-du">178ms</div>
+                </div>
+                <div class="sp-row sel" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-3)"></span><span class="sp-svc">stripe</span><span class="sp-nm">POST /charges</span></div>
+                  <div class="sp-tr"><div class="bar err" style="--i:3;left:28%;width:69%"></div></div>
+                  <div class="sp-du err">862ms</div>
+                </div>
+                <div class="sp-row" style="--d:2">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-3)"></span><span class="sp-svc">stripe</span><span class="sp-nm">tls handshake</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:4;left:29%;width:11%;--sv:var(--svc-3)"></div></div>
+                  <div class="sp-du">136ms</div>
+                </div>
+                <div class="sp-row" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-2)"></span><span class="sp-svc">postgres</span><span class="sp-nm">UPDATE orders</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:5;left:97%;width:3%;--sv:var(--svc-2)"></div></div>
+                  <div class="sp-du">38ms</div>
+                </div>
+              </div>
+
+              <div class="seam">
+                <span class="ar">↳</span>
+                <span class="txt">Logs for the selected span</span>
+                <span class="chip"><span class="k">span_id</span>7f3a91c4</span>
+                <span class="sp"></span>
+                <span class="n">6 entries</span>
+              </div>
+
+              <div class="log-list">
+                <div class="log" style="--i:0">
+                  <span class="t">14:20:02.556</span><span class="lvl lvl-i">INFO</span><span class="s">stripe</span>
+                  <span class="m">POST /v1/charges amount=14997 currency=eur key=ik_9f2c</span>
+                </div>
+                <div class="log" style="--i:1">
+                  <span class="t">14:20:03.402</span><span class="lvl lvl-w">WARN</span><span class="s">stripe</span>
+                  <span class="m">retry 2/3 after connect timeout (8000ms budget)</span>
+                </div>
+                <div class="log" style="--i:2">
+                  <span class="t">14:20:03.418</span><span class="lvl lvl-e">ERROR</span><span class="s">stripe</span>
+                  <span class="m">gateway timeout · no response within 8000ms</span>
+                </div>
+                <div class="log" style="--i:3">
+                  <span class="t">14:20:03.419</span><span class="lvl lvl-e">ERROR</span><span class="s">checkout-api</span>
+                  <span class="m">order 8842 rolled back · payment stage failed</span>
+                </div>
+                <div class="log" style="--i:4">
+                  <span class="t">14:20:03.421</span><span class="lvl lvl-i">INFO</span><span class="s">checkout-api</span>
+                  <span class="m">responded 500 · order 8842 left in state=pending_payment</span>
+                </div>
+              </div>
+            </div>
+
+            <aside class="ui-side">
+              <div class="h">Selected span</div>
+              <div class="kv">
+                <div class="kv-row"><dt>name</dt><dd>POST /charges</dd></div>
+                <div class="kv-row"><dt>service</dt><dd>stripe</dd></div>
+                <div class="kv-row"><dt>kind</dt><dd>CLIENT</dd></div>
+                <div class="kv-row"><dt>status</dt><dd class="err">ERROR</dd></div>
+                <div class="kv-row"><dt>span_id</dt><dd>7f3a91c4</dd></div>
+                <div class="kv-row"><dt>peer</dt><dd>api.stripe.com:443</dd></div>
+                <div class="kv-row"><dt>http.status</dt><dd>504</dd></div>
+              </div>
+              <div class="exc">
+                exception.type<br />TimeoutRejectedException<br /><br />
+                exception.message<br />HTTP request timed out after 8000ms
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap compat">
+    <span class="label">Works against</span>
+    <div class="compat-row">
+      <span>OpenTelemetry</span>
+      <span>VictoriaTraces</span>
+      <span>VictoriaLogs</span>
+      <span>VictoriaMetrics</span>
+      <span>Prometheus</span>
+      <span class="later">Jaeger</span>
+      <span class="later">Tempo</span>
+      <span class="later">Loki</span>
+    </div>
+    <p class="foot">Underlined names are designed for, not shipped — see <a href="#status">what works today</a>.</p>
+  </div>
+</section>
+
+<div class="to-light"></div>
+
+<!-- ══════════════════════════════════════════════════ incident timeline -->
+<section class="light band" id="incident">
+  <div class="wrap">
+    <div class="lead">
+      <span class="label">One request, start to finish</span>
+      <h2>From alert to cause in four moves.</h2>
+      <p class="lede">
+        Checkout starts returning <span class="v">500</span>. Four moves, in the order you would
+        actually make them.
+      </p>
+    </div>
+
+    <div class="pinned">
+      <div class="pin-col">
+        <div class="scr" id="demo" data-step="1">
+          <div class="scr-bar">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="url">localhost:1990<b id="demoUrl">/traces?service=checkout-api&amp;from=-1h</b></span>
+            <span class="scr-copied">link copied</span>
+          </div>
+
+          <div class="scr-body">
+            <!-- шаг 1 · список трейсов -->
+            <div class="scr-view scr-list">
+              <div class="tr-head"><span>Status</span><span>Root</span><span style="text-align:right">Duration</span></div>
+              <div class="tr-row err">
+                <span class="tr-pill er">ERROR</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-1)"></span><span class="sv">checkout-api</span><span class="op">POST /checkout</span></span>
+                <span class="tr-dur er"><span class="g"><i style="width:100%"></i></span>1.25s</span>
+              </div>
+              <div class="tr-row err">
+                <span class="tr-pill er">ERROR</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-3)"></span><span class="sv">stripe</span><span class="op">POST /charges</span></span>
+                <span class="tr-dur er"><span class="g"><i style="width:69%"></i></span>862ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-4)"></span><span class="sv">frontend-proxy</span><span class="op">ingress</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:33%"></i></span>412ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-4)"></span><span class="sv">pricing</span><span class="op">GET /quote</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:14%"></i></span>178ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-2)"></span><span class="sv">postgres</span><span class="op">SELECT orders</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:12%"></i></span>156ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-1)"></span><span class="sv">checkout-api</span><span class="op">GET /cart</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:7%"></i></span>89ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-4)"></span><span class="sv">frontend-proxy</span><span class="op">ingress</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:24%"></i></span>298ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-1)"></span><span class="sv">checkout-api</span><span class="op">POST /checkout</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:16%"></i></span>203ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-4)"></span><span class="sv">pricing</span><span class="op">GET /quote</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:10%"></i></span>121ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-3)"></span><span class="sv">stripe</span><span class="op">GET /v1/customers</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:5%"></i></span>64ms</span>
+              </div>
+              <div class="tr-row">
+                <span class="tr-pill ok">OK</span>
+                <span class="tr-root"><span class="sq" style="background:var(--svc-2)"></span><span class="sv">postgres</span><span class="op">INSERT order_items</span></span>
+                <span class="tr-dur"><span class="g"><i style="width:3%"></i></span>41ms</span>
+              </div>
+            </div>
+
+            <!-- шаги 2–4 · waterfall, затем логи выбранного спана -->
+            <div class="scr-view scr-wf">
+              <div class="wf">
+                <div class="wf-axis">
+                  <span class="l"><span class="hide-narrow">Service · operation</span><span class="only-narrow">Operation</span></span>
+                  <span class="tk">
+                    <span style="left:0;transform:none">0</span>
+                    <span style="left:50%">625ms</span>
+                    <span style="left:100%;transform:translateX(-100%)">1.25s</span>
+                  </span>
+                  <span class="d">Dur</span>
+                </div>
+                <div class="sp-row" style="--d:0">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-1)"></span><span class="sp-svc">checkout-api</span><span class="sp-nm">POST /checkout</span></div>
+                  <div class="sp-tr"><div class="bar err" style="--i:0;left:0;width:100%"></div></div>
+                  <div class="sp-du err">1.25s</div>
+                </div>
+                <div class="sp-row" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-2)"></span><span class="sp-svc">postgres</span><span class="sp-nm">SELECT cart</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:1;left:3%;width:9%;--sv:var(--svc-2)"></div></div>
+                  <div class="sp-du">112ms</div>
+                </div>
+                <div class="sp-row" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-4)"></span><span class="sp-svc">pricing</span><span class="sp-nm">GET /quote</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:2;left:13%;width:14%;--sv:var(--svc-4)"></div></div>
+                  <div class="sp-du">178ms</div>
+                </div>
+                <div class="sp-row" data-sel style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-3)"></span><span class="sp-svc">stripe</span><span class="sp-nm">POST /charges</span></div>
+                  <div class="sp-tr"><div class="bar err" style="--i:3;left:28%;width:69%"></div></div>
+                  <div class="sp-du err">862ms</div>
+                </div>
+                <div class="sp-row" style="--d:2">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-3)"></span><span class="sp-svc">stripe</span><span class="sp-nm">tls handshake</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:4;left:29%;width:11%;--sv:var(--svc-3)"></div></div>
+                  <div class="sp-du">136ms</div>
+                </div>
+                <div class="sp-row" style="--d:1">
+                  <div class="sp-lb"><span class="sq" style="background:var(--svc-2)"></span><span class="sp-svc">postgres</span><span class="sp-nm">UPDATE orders</span></div>
+                  <div class="sp-tr"><div class="bar" style="--i:5;left:97%;width:3%;--sv:var(--svc-2)"></div></div>
+                  <div class="sp-du">38ms</div>
+                </div>
+              </div>
+
+              <div class="scr-hint">Select a span to load its logs</div>
+
+              <div class="scr-corr">
+                <div class="seam">
+                  <span class="ar">↳</span>
+                  <span class="txt">Logs for the selected span</span>
+                  <span class="chip"><span class="k">span_id</span>7f3a91c4</span>
+                  <span class="sp"></span>
+                  <span class="n">6 entries</span>
+                </div>
+                <div class="log-list">
+                  <div class="log" style="--i:0">
+                    <span class="t">14:20:02.556</span><span class="lvl lvl-i">INFO</span><span class="m">POST /v1/charges amount=14997 key=ik_9f2c</span>
+                  </div>
+                  <div class="log" style="--i:1">
+                    <span class="t">14:20:03.402</span><span class="lvl lvl-w">WARN</span><span class="m">retry 2/3 after connect timeout</span>
+                  </div>
+                  <div class="log" style="--i:2">
+                    <span class="t">14:20:03.418</span><span class="lvl lvl-e">ERROR</span><span class="m">gateway timeout · no response within 8000ms</span>
+                  </div>
+                  <div class="log" style="--i:3">
+                    <span class="t">14:20:03.419</span><span class="lvl lvl-e">ERROR</span><span class="m">order 8842 rolled back</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ol class="steps-col">
+        <li class="step is-on" data-step="1">
+          <div><span class="stamp">14:20:03</span><span class="el">alert fires</span></div>
+          <h3>Narrow to the failing requests</h3>
+          <p>Filter by service, status and duration. Error traces and latency outliers come first, so
+          you are reading the request that broke instead of a sample of healthy ones.</p>
+        </li>
+        <li class="step" data-step="2">
+          <div><span class="stamp">+8s</span><span class="el">trace open</span></div>
+          <h3>Read the waterfall</h3>
+          <p>The span tree is rebuilt on the server from flat spans, so nesting and timing hold up.
+          The span that owns the latency is visible before you read a single attribute.</p>
+        </li>
+        <li class="step" data-step="3">
+          <div><span class="stamp">+19s</span><span class="el">span selected</span></div>
+          <h3>Read that span's logs</h3>
+          <p>Selecting the span loads the log lines that carry its <code>span_id</code>. The retry,
+          the timeout and the rollback, in order, without a second query to write.</p>
+        </li>
+        <li class="step" data-step="4">
+          <div><span class="stamp">+27s</span><span class="el">cause named</span></div>
+          <h3>Hand the link to someone else</h3>
+          <p>The trace id, the selected span and the time range live in the URL, so the link you paste
+          into the incident channel opens on exactly what you were looking at.</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ correlation / providers -->
+<section class="light" id="correlation">
+  <div class="wrap">
+    <div class="feat">
+      <div>
+        <span class="label">Correlation</span>
+        <h2>An id, not a time window.</h2>
+        <p>
+          OpenTelemetry already writes <code>trace_id</code> and <code>span_id</code> onto every log
+          record emitted inside a span. Tessera reads exactly that field. There is no matching
+          window to tune and no clock skew to correct for.
+        </p>
+        <dl class="facts">
+          <div><dt>per trace</dt><dd>Every log carrying the trace id, in time order</dd></div>
+          <div><dt>per span</dt><dd>Narrowed to one span id, which is what the panel above shows</dd></div>
+          <div><dt>errors</dt><dd>Keyed off <code>status.code</code>, with <code>exception.*</code> events pulled out</dd></div>
+          <div><dt>no id</dt><dd>Listed separately. A log without a span id is never folded in as if it had one</dd></div>
+        </dl>
+      </div>
+      <div class="vis">
+        <svg viewBox="0 0 400 236" role="img" aria-label="A span carries trace_id and span_id. Log records carry the same ids, so the join is exact. Records without a span id are kept separate.">
+          <rect class="g-box g-box-a" x="14" y="14" width="372" height="62" rx="10"/>
+          <text class="g-t" x="30" y="35">Span · stripe POST /charges</text>
+          <text class="g-s" x="30" y="51">trace_id = a1b2c3d4e5f67890</text>
+          <text class="g-s" x="30" y="64">span_id  = 7f3a91c4</text>
+
+          <path class="g-l g-l-a" d="M200 76 L200 104"/>
+          <path class="g-ar g-ar-a" d="M200 104 l-4 -7 h8 z"/>
+          <text class="g-s" x="210" y="95" style="fill:var(--red-deep)">exact join</text>
+
+          <rect class="g-box g-fill" x="14" y="110" width="372" height="112" rx="10"/>
+          <text class="g-t" x="30" y="129">Log records</text>
+
+          <rect class="g-box" x="28" y="138" width="344" height="23" rx="6"/>
+          <text class="g-s" x="38" y="153">span_id 7f3a91c4 · WARN retry 2/3 after connect timeout</text>
+
+          <rect class="g-box" x="28" y="166" width="344" height="23" rx="6"/>
+          <text class="g-s" x="38" y="181">span_id 7f3a91c4 · ERROR gateway timeout after 8000ms</text>
+
+          <rect class="g-box g-dash" x="28" y="194" width="344" height="21" rx="6"/>
+          <text class="g-s" x="38" y="209" style="opacity:.62">no span_id · kept separate</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="feat" id="providers">
+      <div class="vis tint">
+        <svg viewBox="0 0 400 236" role="img" aria-label="Modules talk to provider interfaces in the shared kernel. The Victoria provider ships today; Jaeger, Tempo and Loki plug into the same interfaces.">
+          <rect class="g-box" x="14" y="12" width="372" height="44" rx="10"/>
+          <text class="g-t" x="30" y="31">Modules · traces · logs · discovery · health</text>
+          <text class="g-s" x="30" y="46">unit-tested against mocks, no vendor in scope</text>
+
+          <path class="g-l" d="M200 56 L200 80"/><path class="g-ar" d="M200 80 l-4 -7 h8 z"/>
+
+          <rect class="g-box g-box-a" x="14" y="86" width="372" height="44" rx="10"/>
+          <text class="g-t" x="30" y="105" style="fill:var(--red-deep)">Provider interfaces · OTel domain model</text>
+          <text class="g-s" x="30" y="120">ITraceProvider · ILogProvider · IDiscoveryProvider · IHealthProvider</text>
+
+          <path class="g-l" d="M96 130 L96 156"/><path class="g-ar" d="M96 156 l-4 -7 h8 z"/>
+          <path class="g-l g-dash" d="M290 130 L290 156"/><path class="g-ar" d="M290 156 l-4 -7 h8 z"/>
+
+          <rect class="g-box" x="14" y="162" width="164" height="58" rx="10"/>
+          <text class="g-t" x="28" y="181">Victoria</text>
+          <text class="g-s" x="28" y="196">jaeger api · logsql · promql</text>
+          <text class="g-s" x="28" y="209">ships today</text>
+
+          <rect class="g-box g-dash" x="208" y="162" width="178" height="58" rx="10"/>
+          <text class="g-t" x="222" y="181" style="opacity:.72">Jaeger · Tempo · Loki</text>
+          <text class="g-s" x="222" y="196">same four interfaces</text>
+          <text class="g-s" x="222" y="209">no module changes</text>
+        </svg>
+      </div>
+      <div>
+        <span class="label">Providers</span>
+        <h2>Nothing above the provider knows it is Victoria.</h2>
+        <p>
+          Modules consume four interfaces from the shared kernel, and each provider maps its own wire
+          format into the OpenTelemetry domain model. Error detection, grouping, log linking and
+          dependency extraction are written once, above that line.
+        </p>
+        <p>
+          Adding a backend means one new project. Architecture tests fail the build if a module ever
+          reaches for a vendor directly.
+        </p>
+        <dl class="facts">
+          <div><dt>reads</dt><dd>Standard APIs only — Jaeger query, LogsQL, PromQL</dd></div>
+          <div><dt>writes</dt><dd>Nothing. No ingest, no telemetry storage, no query rewriting</dd></div>
+          <div><dt>secrets</dt><dd>Provider tokens stay server-side; the browser never receives one</dd></div>
+          <div><dt>topology</dt><dd>Service dependencies derived from spans, not from a vendor endpoint</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="to-dark"></div>
+
+<!-- ══════════════════════════════════════════════════ dashboards as code -->
+<section class="dark band" id="as-code">
+  <div class="wrap">
+    <div class="lead">
+      <span class="label">Next milestone · not shipped</span>
+      <h2>Dashboards you can review in a pull request.</h2>
+      <p class="lede">
+        You write what you want on screen — a row of three panels, a query, a threshold. Layout is
+        computed, the schema validates in CI, and a failed check tells you which values are allowed.
+      </p>
+    </div>
+
+    <div class="pair" style="margin-top:44px">
+      <div class="pane">
+        <div class="pane-head">dashboards/checkout.yaml <span class="sp"></span><span class="st">schema validated</span></div>
+        <pre><span class="k">apiVersion</span>: tessera/v1
+<span class="k">kind</span>: Dashboard
+<span class="k">metadata</span>:
+  <span class="k">name</span>: checkout
+<span class="k">spec</span>:
+  <span class="k">variables</span>:
+    - <span class="k">name</span>: service
+      <span class="k">from</span>: services        <span class="c"># discovered from spans</span>
+      <span class="k">default</span>: <span class="s">checkout-api</span>
+  <span class="k">rows</span>:
+    - <span class="k">title</span>: Golden signals
+      <span class="k">panels</span>:                <span class="c"># no grid coordinates</span>
+        - <span class="k">stat</span>: <span class="s">rate</span>
+          <span class="k">query</span>: <span class="s">sum(rate(http_requests_total[5m]))</span>
+        - <span class="k">stat</span>: <span class="s">errors</span>
+          <span class="k">thresholds</span>: [{ <span class="k">gt</span>: 0.01, <span class="k">level</span>: warn }]
+        - <span class="k">stat</span>: <span class="s">p95</span></pre>
+      </div>
+      <div class="pane">
+        <div class="pane-head">tessera apply --dry-run <span class="sp"></span><span class="st">preview</span></div>
+        <div class="prev">
+          <div class="prev-row">
+            <div class="prev-p"><div class="l">Rate</div><div class="n">142<s>/s</s></div></div>
+            <div class="prev-p"><div class="l">Errors</div><div class="n hot">2.31<s>%</s></div></div>
+            <div class="prev-p"><div class="l">p95</div><div class="n">412<s>ms</s></div></div>
+          </div>
+          <div class="prev-p">
+            <div class="l">Latency · checkout-api</div>
+            <div class="spark">
+              <i style="height:26%"></i><i style="height:38%"></i><i style="height:31%"></i>
+              <i style="height:49%"></i><i style="height:41%"></i><i style="height:64%"></i>
+              <i style="height:55%"></i><i style="height:77%"></i><i class="hi" style="height:100%"></i>
+              <i style="height:61%"></i><i style="height:47%"></i><i style="height:39%"></i>
+              <i style="height:44%"></i><i style="height:32%"></i><i style="height:36%"></i>
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--line)">
+          <pre style="font-size:12px"><span class="g">ok</span>  checkout.yaml · 2 rows · 4 panels · layout resolved
+
+<span class="r">err</span> broken.yaml:14 · level = <span class="s">"warning"</span>
+    <span class="c">allowed: info, warn, error</span>
+    <span class="c">closest match: warn</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="layers">
+      <div>
+        <span class="f">llms.txt</span>
+        <span class="t">What this instance is</span>
+        <span class="d">Which providers are wired, where the schema lives, what the API exposes.</span>
+      </div>
+      <div>
+        <span class="f">skill</span>
+        <span class="t">How to work an incident here</span>
+        <span class="d">Narrow the range, find error traces, open the slow span, read its logs, name the suspect.</span>
+      </div>
+      <div>
+        <span class="f">mcp</span>
+        <span class="t">The same handlers the UI calls</span>
+        <span class="d"><code>search_traces</code>, <code>logs_for_span</code>, <code>apply_dashboard</code> — one implementation behind both surfaces.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="to-light"></div>
+
+<!-- ══════════════════════════════════════════════════ install -->
+<section class="light band" id="install">
+  <div class="wrap">
+    <div class="lead">
+      <span class="label">Install</span>
+      <h2>Point it at what you already run.</h2>
+      <p class="lede">
+        One container, one config file, one port. Endpoints and tokens are read server-side.
+      </p>
+    </div>
+
+    <div class="pair" style="margin-top:44px">
+      <div class="pane">
+        <div class="pane-head">docker-compose.yml <span class="sp"></span><span class="st">ships today</span></div>
+        <pre><span class="k">services</span>:
+  <span class="k">tessera</span>:
+    <span class="k">image</span>: ghcr.io/dot-stbl/tessera:latest
+    <span class="k">ports</span>: [<span class="s">"1990:1990"</span>]
+    <span class="k">volumes</span>:
+      - ./tessera.toml:/etc/tessera/tessera.toml:ro
+      - tessera-data:/var/lib/tessera
+    <span class="k">environment</span>:
+      TESSERA__ADMIN__TOKEN: <span class="s">${TESSERA_ADMIN_TOKEN}</span>
+
+<span class="c"># the full stack — three victoria containers plus</span>
+<span class="c"># an otel collector — lives in /compose</span></pre>
+      </div>
+      <div class="pane">
+        <div class="pane-head">/etc/tessera/tessera.toml <span class="sp"></span><span class="st">ships today</span></div>
+        <pre>[<span class="k">server</span>]
+port = 1990
+
+[<span class="k">providers.victoria</span>]
+traces  = <span class="s">"http://victoriatraces:10428"</span>
+logs    = <span class="s">"http://victorialogs:9428"</span>
+metrics = <span class="s">"http://victoriametrics:8428"</span>
+<span class="c"># token = { env = "VICTORIA_TOKEN" } — never inline a secret</span>
+
+[<span class="k">auth</span>]
+provider = <span class="s">"guest"</span>  <span class="c"># guest · admin-bearer · ldap · keycloak</span>
+
+[<span class="k">storage</span>]
+<span class="c"># sqlite, ui preferences only — no telemetry lands here</span>
+path = <span class="s">"/var/lib/tessera/tessera.db"</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ status -->
+<section class="light band-tail" id="status">
+  <div class="wrap">
+    <div class="lead" style="margin-bottom:34px">
+      <span class="label">Status</span>
+      <h2>What works today.</h2>
+      <p class="lede">
+        Tessera is pre-1.0. The backend is finished and tested; the console is being wired to it.
+        Anything below marked <em>designed</em> is on this page as a plan, not a feature.
+      </p>
+    </div>
+
+    <div class="rows">
+      <div>
+        <span class="nm">Backend</span>
+        <span class="st-tag st-now"><i></i> Ships today</span>
+        <p>Traces, logs, discovery and health · Victoria provider over Jaeger query, LogsQL and
+        PromQL · server-side span-tree reconstruction · typed errors as ProblemDetails · retry and
+        timeout policies. 119 unit tests, no build warnings.</p>
+      </div>
+      <div>
+        <span class="nm">Platform</span>
+        <span class="st-tag st-now"><i></i> Ships today</span>
+        <p>TOML config with environment overrides · filesystem layout for Linux and Windows · four
+        auth providers, including LDAP and Keycloak · SQLite for UI preferences · OpenTelemetry
+        self-telemetry · the SPA bundled into the host image.</p>
+      </div>
+      <div>
+        <span class="nm">Console</span>
+        <span class="st-tag st-soon"><i></i> Being wired</span>
+        <p>The four moves above, against live data: generated API client, trace explorer, waterfall,
+        per-span logs, service inventory. The design system exists — around 110 primitives and a
+        component catalogue; screens are moving off mock data.</p>
+      </div>
+      <div>
+        <span class="nm">Metrics, dashboards</span>
+        <span class="st-tag st-plan"><i></i> Designed</span>
+        <p>PromQL panels, dashboards as typed YAML, JSON Schema and a validator that lists allowed
+        values, <code>apply --dry-run</code>, render preview.</p>
+      </div>
+      <div>
+        <span class="nm">Second provider</span>
+        <span class="st-tag st-plan"><i></i> Designed</span>
+        <p>Jaeger, Tempo or Loki behind the same four interfaces. The claim above is worth something
+        once the module code does not move to add one.</p>
+      </div>
+      <div>
+        <span class="nm">Alerting</span>
+        <span class="st-tag st-plan"><i></i> Last</span>
+        <p>Deliberately last. Alertmanager and Grafana alerts already cover this, and a half-built
+        alert engine is worse than none.</p>
+      </div>
+    </div>
+
+    <div class="bound">
+      <b>Out of scope on purpose:</b> ingest, telemetry storage, anomaly detection, RUM, synthetic
+      monitoring, cost attribution. Tessera reads what your stack already holds, and that boundary is
+      what keeps it small enough to trust.
+    </div>
+  </div>
+</section>
+
+<div class="to-dark"></div>
+
+<!-- ══════════════════════════════════════════════════ end -->
+<section class="dark end">
+  <div class="bloom bloom-red b1"></div>
+  <div class="bloom bloom-cool b2"></div>
+  <div class="wrap in">
+    <h2>Run it against your own traces.</h2>
+    <p class="lede">
+      Pre-1.0, MIT, no account and no hosted tier. Bring the endpoints you already have.
+    </p>
+    <div class="row">
+      <a class="btn btn-primary" href="https://github.com/dot-stbl/tessera">Get the image</a>
+      <a class="btn btn-ghost" href="#install">Read the config</a>
+    </div>
+    <div class="term">
+      <div class="in-line">docker compose up -d</div>
+      <div class="out">tessera ready on <b>http://localhost:1990</b></div>
+      <div class="out">providers: victoriatraces, victorialogs, victoriametrics <b>ok</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ footer -->
+<footer class="dark foot">
+  <div class="wrap foot-in">
+    <div class="foot-brand">
+      <div class="r">
+        <svg class="mark" viewBox="0 0 80 80" role="img" aria-label="Tessera">
+          <rect class="t" x="22" y="8"  width="16" height="16" rx="2"/>
+          <rect class="t" x="52" y="34" width="16" height="16" rx="2"/>
+          <rect class="t" x="12" y="56" width="16" height="16" rx="2"/>
+          <rect class="a" x="31" y="56" width="16" height="16" rx="2"/>
+        </svg>
+        <b>Tessera</b>
+      </div>
+      <p><em>tessera</em> — Latin for the single tile a mosaic is made of. Four tiles, one of them the
+      event you were looking for.</p>
+    </div>
+    <div class="foot-sp"></div>
+    <div class="foot-col">
+      <span class="h">Product</span>
+      <a href="#incident">How it works</a>
+      <a href="#correlation">Correlation</a>
+      <a href="#providers">Providers</a>
+      <a href="#as-code">Dashboards</a>
+    </div>
+    <div class="foot-col">
+      <span class="h">Docs</span>
+      <a href="#install">Install</a>
+      <a href="#">Configuration</a>
+      <a href="#">API reference</a>
+      <a href="#">Writing a provider</a>
+    </div>
+    <div class="foot-col">
+      <span class="h">Source</span>
+      <a href="https://github.com/dot-stbl/tessera">GitHub</a>
+      <a href="#">Issues</a>
+      <a href="#">Changelog</a>
+      <a href="#">MIT licence</a>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="foot-btm">
+      by <b>.stbl</b> · self-hosted · MIT<br />
+      Not affiliated with VictoriaMetrics, Grafana Labs or the OpenTelemetry project. Product names
+      describe API compatibility only.
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var narrow = window.matchMedia('(max-width: 940px)');
+    var hasIO = 'IntersectionObserver' in window;
+
+    /* ── всё ниже первого экрана проявляется при входе в кадр ── */
+    var revealTargets = document.querySelectorAll('.lead, .vis, .pane, .rows > div, .layers > div, .bound, .shot');
+    if (hasIO) {
+      var revealer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          revealer.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+      Array.prototype.forEach.call(revealTargets, function (el) { revealer.observe(el); });
+    } else {
+      Array.prototype.forEach.call(revealTargets, function (el) { el.classList.add('is-in'); });
+    }
+
+    /* ── приколотый экран следует за тем шагом, который читают ── */
+    var screenEl = document.getElementById('demo');
+    var urlEl = document.getElementById('demoUrl');
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.steps-col .step'));
+    if (!screenEl || !urlEl || !steps.length) return;
+
+    var paths = {
+      '1': '/traces?service=checkout-api&from=-1h',
+      '2': '/traces/a1b2c3d4e5f67890',
+      '3': '/traces/a1b2c3d4e5f67890?span=7f3a91c4',
+      '4': '/traces/a1b2c3d4e5f67890?span=7f3a91c4&from=1754575203000'
+    };
+
+    function show(step) {
+      if (screenEl.dataset.step === step) return;
+      screenEl.dataset.step = step;
+      urlEl.textContent = paths[step];
+      steps.forEach(function (s) { s.classList.toggle('is-on', s.dataset.step === step); });
+    }
+
+    var watcher = null;
+    function watch() {
+      if (watcher || !hasIO) return;
+      watcher = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) show(entry.target.dataset.step);
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      steps.forEach(function (s) { watcher.observe(s); });
+    }
+
+    function sync() {
+      if (narrow.matches) {
+        /* узкий экран: экран не прикалывается, поэтому показываем состояние,
+           ради которого страница существует — выбранный спан и его логи */
+        if (watcher) { watcher.disconnect(); watcher = null; }
+        show('3');
+        steps.forEach(function (s) { s.classList.add('is-on'); });
+      } else {
+        show('1');
+        steps.forEach(function (s) { s.classList.toggle('is-on', s.dataset.step === '1'); });
+        watch();
+      }
+    }
+
+    sync();
+    if (narrow.addEventListener) narrow.addEventListener('change', sync);
+  })();
+</script>
+
+</body>
+</html>
