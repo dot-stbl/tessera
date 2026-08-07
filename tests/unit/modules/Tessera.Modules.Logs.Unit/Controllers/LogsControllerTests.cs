@@ -30,7 +30,7 @@ public sealed class LogsControllerTests
         var provider = Substitute.For<ILogProvider>();
         var logEntry = new LogEntry(
             Timestamp: 1L,
-            Level: LogLevel.Information,
+            Level: LogLevel.Info,
             Service: "api-gateway",
             TraceId: null,
             SpanId: null,

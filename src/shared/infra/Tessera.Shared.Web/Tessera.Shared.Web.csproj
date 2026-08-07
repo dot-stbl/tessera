@@ -8,9 +8,18 @@
     <InternalsVisibleTo Include="Tessera.Host.UnitTests" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.OpenApi" Version="2.4.1" PrivateAssets="all" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.*" PrivateAssets="all" />
+    <!--
+      No PrivateAssets here. These are runtime dependencies, not build-time
+      tooling: AddTesseraWebInfrastructure/UseTesseraOpenApi resolve types from
+      them while the host is running. PrivateAssets="all" stopped them being
+      copied into Tessera.Host's output, so the solution compiled and the unit
+      tests passed while the host threw FileNotFoundException for
+      Microsoft.AspNetCore.OpenApi on the first line of composition. Keep
+      PrivateAssets for analyzers and source generators only.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.4.1" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.*" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Remove="Meziantou.Analyzer"/>

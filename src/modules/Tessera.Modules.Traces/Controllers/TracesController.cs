@@ -59,7 +59,7 @@ public sealed class TracesController(
     ///     the handler runs.
     /// </summary>
     /// <exception cref="ProviderNotFoundException"></exception>
-    [HttpGet(ApiRoutes.Trace)]
+    [HttpGet(ApiRoutes.TraceByIdRelative)]
     [EndpointSummary("Request view: trace + correlated logs (degradable)")]
     [ProducesResponseType<GetTraceResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<GetTraceResponse>> GetAsync(

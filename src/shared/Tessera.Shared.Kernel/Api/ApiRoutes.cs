@@ -40,11 +40,36 @@ public static class ApiRoutes
     /// <summary>Trace search.</summary>
     public const string Traces = Base + "/traces";
 
-    /// <summary>Trace detail by id (with reconstructed span tree). <c>:length(32)</c> matches Tessera's 32-char hex trace-id convention.</summary>
+    /// <summary>
+    ///     Trace detail by id (with reconstructed span tree), as an absolute
+    ///     path — for integration tests, link generation and documentation.
+    ///     <c>:length(32)</c> matches Tessera's 32-char hex trace-id convention.
+    ///     <para>
+    ///         Do <b>not</b> put this on a method of a controller already routed
+    ///         at <see cref="Traces" />: MVC concatenates class and method
+    ///         templates, which produced the live endpoint
+    ///         <c>api/v1/traces/api/v1/traces/{traceId}</c>. Use
+    ///         <see cref="TraceByIdRelative" /> there.
+    ///     </para>
+    /// </summary>
     public const string Trace = Base + "/traces/{traceId:length(32)}";
+
+    /// <summary>
+    ///     The trace-detail template relative to <see cref="Traces" />, for
+    ///     <c>[HttpGet]</c> on a controller whose <c>[Route]</c> is already
+    ///     <see cref="Traces" />. Kept in the same file as <see cref="Trace" />
+    ///     so the two cannot drift.
+    /// </summary>
+    public const string TraceByIdRelative = "{traceId:length(32)}";
 
     /// <summary>Logs correlated with a specific trace (sub-resource).</summary>
     public const string TraceLogs = Base + "/traces/{traceId:length(32)}/logs";
+
+    /// <summary>
+    ///     <see cref="TraceLogs" /> relative to <see cref="Traces" />, for the
+    ///     same reason as <see cref="TraceByIdRelative" />.
+    /// </summary>
+    public const string TraceLogsRelative = "{traceId:length(32)}/logs";
 
     /// <summary>Ad-hoc log search (LogsQL filter, MVP-02).</summary>
     public const string Logs = Base + "/logs";

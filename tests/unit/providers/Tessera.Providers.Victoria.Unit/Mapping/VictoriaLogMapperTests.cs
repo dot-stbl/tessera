@@ -70,16 +70,16 @@ public sealed class VictoriaLogMapperTests
     /// </summary>
     [Theory]
     [InlineData("ERROR", LogLevel.Error)]
-    [InlineData("WARN", LogLevel.Warning)]
-    [InlineData("WARNING", LogLevel.Warning)]
-    [InlineData("INFO", LogLevel.Information)]
-    [InlineData("INFORMATION", LogLevel.Information)]
+    [InlineData("WARN", LogLevel.Warn)]
+    [InlineData("WARNING", LogLevel.Warn)]
+    [InlineData("INFO", LogLevel.Info)]
+    [InlineData("INFORMATION", LogLevel.Info)]
     [InlineData("DEBUG", LogLevel.Debug)]
     [InlineData("TRACE", LogLevel.Trace)]
     [InlineData("FATAL", LogLevel.Fatal)]
     [InlineData("CRITICAL", LogLevel.Fatal)]
-    [InlineData("garbage", LogLevel.Information)]
-    [InlineData(null, LogLevel.Information)]
+    [InlineData("garbage", LogLevel.Info)]
+    [InlineData(null, LogLevel.Info)]
     public void ToLogLevel_MapsCommonValues(string? input, LogLevel expected)
     {
         Assert.Equal(expected, VictoriaLogMapper.ToLogLevel(input));
@@ -91,8 +91,8 @@ public sealed class VictoriaLogMapperTests
     [Theory]
     [InlineData(1, LogLevel.Trace)]
     [InlineData(5, LogLevel.Debug)]
-    [InlineData(9, LogLevel.Information)]
-    [InlineData(13, LogLevel.Warning)]
+    [InlineData(9, LogLevel.Info)]
+    [InlineData(13, LogLevel.Warn)]
     [InlineData(17, LogLevel.Error)]
     [InlineData(21, LogLevel.Fatal)]
     public void FromSeverityNumber_MapsBands(int number, LogLevel expected)

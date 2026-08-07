@@ -206,8 +206,8 @@ file static class DependencyGraphBuild
 
         client.Tags.TryGetValue(DbNameTag, out var dbName);
         var id = string.IsNullOrWhiteSpace(dbName)
-            ? string.Concat("db:", system)
-            : string.Concat("db:", system, ":", dbName);
+            ? $"db:{system}"
+            : $"db:{system}:{dbName}";
         var name = string.IsNullOrWhiteSpace(dbName) ? system : dbName;
 
         if (!nodes.ContainsKey(id))
@@ -243,7 +243,7 @@ file static class DependencyGraphBuild
             return false;
         }
 
-        var id = string.Concat("external:", peer);
+        var id = $"external:{peer}";
         if (!nodes.ContainsKey(id))
         {
             nodes[id] = new DependencyNode(id, peer, DependencyNodeKind.External);

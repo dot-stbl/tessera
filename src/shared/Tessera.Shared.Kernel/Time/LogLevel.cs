@@ -2,6 +2,15 @@ namespace Tessera.Shared.Kernel.Time;
 
 /// <summary>
 ///     Log severity level. Maps to OpenTelemetry LogLevel + syslog severity.
+///     <para>
+///         Member names are the OTel <c>SeverityText</c> spellings
+///         (<c>INFO</c> / <c>WARN</c>), not the .NET
+///         <c>Information</c> / <c>Warning</c> ones. They travel to the wire
+///         verbatim (camelCased) and every consumer — the TypeScript union and
+///         the <c>.log-level-*</c> CSS classes it composes by name — keys off
+///         those spellings, so renaming a member here silently unstyles a
+///         severity in the UI.
+///     </para>
 /// </summary>
 public enum LogLevel
 {
@@ -12,10 +21,10 @@ public enum LogLevel
     Debug = 1,
 
     /// <summary>Informational messages about normal operation.</summary>
-    Information = 2,
+    Info = 2,
 
     /// <summary>Recoverable abnormal conditions.</summary>
-    Warning = 3,
+    Warn = 3,
 
     /// <summary>Errors that prevented an operation from completing.</summary>
     Error = 4,

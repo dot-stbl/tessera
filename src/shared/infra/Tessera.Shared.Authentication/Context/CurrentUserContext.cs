@@ -39,8 +39,17 @@ public sealed class CurrentUserContext : ICurrentUserContext
         ?? principal?.FindFirstValue(ClaimTypes.Name);
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     Both spellings of the name claim are probed. A JWT with inbound claim
+    ///     mapping disabled carries the short <c>name</c>; LDAP and AdminBearer
+    ///     identities are built with <see cref="ClaimTypes.Name" />, the long
+    ///     WS-Federation URI. Checking only the short form let <c>cn</c> win for
+    ///     those identities, so an LDAP user's display name came out as their
+    ///     directory common name — <see cref="UserId" /> already probed both.
+    /// </remarks>
     public string? DisplayName => principal?.FindFirstValue("preferred_username")
         ?? principal?.FindFirstValue("name")
+        ?? principal?.FindFirstValue(ClaimTypes.Name)
         ?? principal?.FindFirstValue("cn")
         ?? UserId;
 

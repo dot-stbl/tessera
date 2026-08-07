@@ -131,7 +131,7 @@ internal static class VictoriaLogMapper
             return ToLogLevel(levelText);
         }
 
-        return LogLevel.Information;
+        return LogLevel.Info;
     }
 
     /// <summary>
@@ -143,34 +143,34 @@ internal static class VictoriaLogMapper
         {
             >= 1 and <= 4 => LogLevel.Trace,
             >= 5 and <= 8 => LogLevel.Debug,
-            >= 9 and <= 12 => LogLevel.Information,
-            >= 13 and <= 16 => LogLevel.Warning,
+            >= 9 and <= 12 => LogLevel.Info,
+            >= 13 and <= 16 => LogLevel.Warn,
             >= 17 and <= 20 => LogLevel.Error,
             >= 21 and <= 24 => LogLevel.Fatal,
-            _ => LogLevel.Information,
+            _ => LogLevel.Info,
         };
     }
 
     /// <summary>
     ///     Convert a LogsQL level string to the kernel's <see cref="LogLevel" />.
-    ///     Unknown / missing values map to <see cref="LogLevel.Information" />.
+    ///     Unknown / missing values map to <see cref="LogLevel.Info" />.
     /// </summary>
     public static LogLevel ToLogLevel(string? value)
     {
         if (value is null)
         {
-            return LogLevel.Information;
+            return LogLevel.Info;
         }
 
         return value.ToUpperInvariant() switch
         {
             "TRACE" => LogLevel.Trace,
             "DEBUG" => LogLevel.Debug,
-            "INFO" or "INFORMATION" => LogLevel.Information,
-            "WARN" or "WARNING" => LogLevel.Warning,
+            "INFO" or "INFORMATION" => LogLevel.Info,
+            "WARN" or "WARNING" => LogLevel.Warn,
             "ERROR" => LogLevel.Error,
             "FATAL" or "CRITICAL" => LogLevel.Fatal,
-            _ => LogLevel.Information,
+            _ => LogLevel.Info,
         };
     }
 

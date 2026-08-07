@@ -64,7 +64,7 @@ public sealed class RequestViewServiceTests
     {
         return new LogEntry(
             Timestamp: 1_050L,
-            Level: LogLevel.Information,
+            Level: LogLevel.Info,
             Service: "api",
             TraceId: AnyTraceId,
             SpanId: SpanA,

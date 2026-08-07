@@ -23,6 +23,7 @@ public static class WebInstallerExtensions
     ///         <item><c>AddProblemDetails</c> — RFC 9457 body for status-code-page branches (404/415/etc.).</item>
     ///         <item><c>AddExceptionHandler&lt;TesseraExceptionHandler&gt;</c> — translates ProviderException / NotFound / Timeout into ProblemDetails bodies.</item>
     ///         <item><c>AddOpenApi</c> + <see cref="ProblemDetailsResponsesTransformer" /> — auto-injects 400/404/409/500/502/503/504 onto every operation so per-endpoint [ProducesResponseType&lt;ProblemDetails&gt;] is redundant.</item>
+    ///         <item><see cref="WireShapeSchemaTransformer" /> — describes identifier wrappers and int64 as they actually serialize, so generated clients match the wire.</item>
     ///     </list>
     /// </summary>
     public static IServiceCollection AddTesseraWebInfrastructure(this IServiceCollection services)
@@ -30,7 +31,10 @@ public static class WebInstallerExtensions
         services.AddProblemDetails();
         services.AddExceptionHandler<TesseraExceptionHandler>();
         services.AddOpenApi(static options =>
-            options.AddOperationTransformer<ProblemDetailsResponsesTransformer>());
+        {
+            options.AddOperationTransformer<ProblemDetailsResponsesTransformer>()
+                .AddSchemaTransformer<WireShapeSchemaTransformer>();
+        });
         return services;
     }
 

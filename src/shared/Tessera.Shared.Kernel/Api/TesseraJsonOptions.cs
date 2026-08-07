@@ -1,29 +1,65 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tessera.Shared.Kernel.Identifiers.Json;
 
 namespace Tessera.Shared.Kernel.Api;
 
 /// <summary>
-///     Shared <see cref="JsonSerializerOptions" /> used wherever
-///     <c>System.Text.Json</c> serializes outside of MVC's default pipeline —
-///     e.g. <c>TesseraExceptionHandler</c> writing a <c>ProblemDetails</c>
-///     body to the response. Centralizing prevents per-call-site allocation of
-///     a fresh <see cref="JsonSerializerOptions" /> and keeps wire format
-///     consistent across the app.
+///     The single definition of Tessera's JSON wire format. Two pipelines
+///     serialize responses — MVC (controller results) and raw
+///     <c>System.Text.Json</c> (<c>TesseraExceptionHandler</c> writing a
+///     <c>ProblemDetails</c> body) — and both take their rules from here, so a
+///     format change cannot land in one and miss the other.
 /// </summary>
 public static class TesseraJsonOptions
 {
     /// <summary>
-    ///     The shared options instance: enum-as-string via
-    ///     <see cref="JsonStringEnumConverter" />, camelCase property names
-    ///     to match the convention the FE codegen pipeline expects. Read-only
-    ///     after first initialization.
+    ///     Options for serializing outside MVC's pipeline. Same wire rules as
+    ///     <see cref="ApplyTo" />, plus <c>WhenWritingNull</c>, which suits the
+    ///     sparse ProblemDetails body this instance is used for.
     /// </summary>
-    public static readonly JsonSerializerOptions Instance = new()
+    public static readonly JsonSerializerOptions Instance = TesseraJsonOptionsFactory.CreateInstance();
+
+    /// <summary>
+    ///     Applies Tessera's wire-format rules to an existing options object —
+    ///     used to configure MVC, whose options are owned by the framework and
+    ///     cannot be replaced wholesale.
+    ///     <para>
+    ///         The camelCase policy on <see cref="JsonStringEnumConverter" /> is
+    ///         load-bearing, not cosmetic. Without it a C# enum member ships
+    ///         verbatim (<c>"Ok"</c>, <c>"Healthy"</c>) while every TypeScript
+    ///         consumer compares lowercase literals. Nothing throws — statuses
+    ///         just never match, so error rows never highlight and health reads
+    ///         as unknown.
+    ///     </para>
+    /// </summary>
+    /// <param name="options">The options instance to configure in place.</param>
+    public static void ApplyTo(JsonSerializerOptions options)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new JsonStringEnumConverter() },
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+        // Identifier wrappers are a C# type-safety device, not part of the API.
+        // Without these they serialize as { "value": "…" } and every consumer
+        // has to unwrap an id that is a plain string everywhere else — in the
+        // URL it came from, in the log record it correlates with.
+        options.Converters.Add(new TraceIdJsonConverter());
+        options.Converters.Add(new SpanIdJsonConverter());
+    }
+}
+
+/// <summary>Factory for the shared <see cref="TesseraJsonOptions.Instance" />.</summary>
+file static class TesseraJsonOptionsFactory
+{
+    public static JsonSerializerOptions CreateInstance()
+    {
+        var options = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+
+        TesseraJsonOptions.ApplyTo(options);
+        return options;
+    }
 }

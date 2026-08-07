@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Spectre.Console;
 using Tessera.Banner;
@@ -9,6 +8,7 @@ using Tessera.Modules.Logs.DependencyInjection;
 using Tessera.Modules.Traces.DependencyInjection;
 using Tessera.Providers.Victoria.DependencyInjection;
 using Tessera.Shared.Authentication;
+using Tessera.Shared.Kernel.Api;
 using Tessera.Shared.Kernel.Configuration.Layout;
 using Tessera.Shared.Kernel.Configuration.Options;
 using Tessera.Shared.Kernel.Configuration.Source;
@@ -128,13 +128,13 @@ builder.Services
 // Tessera.Host doesn't need a direct type reference — the composition-root
 // boundary stays clean.
 //
-// JsonStringEnumConverter serializes enums (HealthStatus, TraceStatus) as
-// strings in the wire format instead of ints. The Plexor / OpenAPI convention;
-// allows FE to deserialize case-insensitively while keeping C# enums
-// strongly-typed.
+// The wire format itself is defined once in TesseraJsonOptions and applied to
+// both serialization pipelines — MVC here, raw System.Text.Json in
+// TesseraExceptionHandler — so enum casing and naming policy cannot drift
+// between a normal response and an error body.
 builder.Services
     .AddControllers()
-    .AddJsonOptions(static options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+    .AddJsonOptions(static options => TesseraJsonOptions.ApplyTo(options.JsonSerializerOptions))
     .AddApplicationPart(typeof(Tessera.Modules.Health.Controllers.HealthController).Assembly)
     .AddApplicationPart(typeof(Tessera.Modules.Discovery.Controllers.DiscoveryController).Assembly)
     .AddApplicationPart(typeof(Tessera.Modules.Traces.Controllers.TracesController).Assembly)

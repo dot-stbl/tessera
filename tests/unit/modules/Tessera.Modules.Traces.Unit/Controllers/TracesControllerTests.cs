@@ -172,7 +172,7 @@ public sealed class TracesControllerTests
         var mapper = Substitute.For<ITracesMapper>();
         var log = new LogEntry(
             Timestamp: 1L,
-            Level: LogLevel.Information,
+            Level: LogLevel.Info,
             Service: "api",
             TraceId: AnyTraceId,
             SpanId: null,
