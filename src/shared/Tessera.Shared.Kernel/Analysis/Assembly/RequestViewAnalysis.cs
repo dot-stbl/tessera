@@ -1,3 +1,4 @@
+using Tessera.Shared.Kernel.Analysis.Errors;
 using Tessera.Shared.Kernel.Domain.Logs;
 using Tessera.Shared.Kernel.Domain.Traces;
 using Tessera.Shared.Kernel.Identifiers;
@@ -141,23 +142,10 @@ public static class RequestViewAnalysis
 
     /// <summary>
     ///     Count spans with <see cref="TraceStatus.Error" /> (badge input for P7).
+    ///     Delegates to <see cref="ErrorAnalysis.CountErroredSpans" />.
     /// </summary>
     public static int CountErroredSpans(TraceDetail? trace)
     {
-        if (trace is not { Spans.Count: > 0 })
-        {
-            return 0;
-        }
-
-        var count = 0;
-        foreach (var span in trace.Spans)
-        {
-            if (span.Status is TraceStatus.Error)
-            {
-                count++;
-            }
-        }
-
-        return count;
+        return ErrorAnalysis.CountErroredSpans(trace);
     }
 }
