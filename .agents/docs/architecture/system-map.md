@@ -1,11 +1,11 @@
 # Tessera — system map (living)
 
 > **Status:** living doc. Update when modules/contracts/phases land.  
-> **Tip:** `feature/p9-deps` @ `9d3b434` (P9 code); docs follow on same branch. After each phase, bump “Last updated” + commit table.  
+> **Tip:** `develop` @ `8b46612`. After each phase, bump “Last updated” + commit table.  
 > **ADRs:** `0001` platform · `0002` observability model · `0003` module cut  
 > **Plans:** `.agents/plans/mvp-2-core/P5`…`P9`
 
-**Last updated:** 2026-08-07 (P5–P9 complete on `feature/p9-deps`)
+**Last updated:** 2026-08-07 (P5–P9 core track complete on `develop`)
 
 ---
 
