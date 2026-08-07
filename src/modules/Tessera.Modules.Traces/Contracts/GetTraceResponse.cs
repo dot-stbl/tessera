@@ -1,4 +1,5 @@
 using Tessera.Shared.Kernel.Analysis;
+using Tessera.Shared.Kernel.Analysis.Deps;
 using Tessera.Shared.Kernel.Domain.Logs;
 using Tessera.Shared.Kernel.Domain.Traces;
 
@@ -36,4 +37,11 @@ public sealed record GetTraceResponse
     ///     Empty when no error spans or no exception events.
     /// </summary>
     public IReadOnlyList<TraceExceptionSummary> Exceptions { get; init; } = [];
+
+    /// <summary>
+    ///     Per-trace dependency mini-map derived from CLIENT spans.
+    ///     Null when <see cref="Trace" /> is null (logs-only); empty graph when
+    ///     spans exist but yield no dependency edges.
+    /// </summary>
+    public DependencyGraph? DependencyGraph { get; init; }
 }

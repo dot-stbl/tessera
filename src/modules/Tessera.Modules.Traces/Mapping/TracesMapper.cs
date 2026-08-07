@@ -1,12 +1,14 @@
 using Tessera.Modules.Traces.Contracts;
 using Tessera.Shared.Kernel.Analysis;
+using Tessera.Shared.Kernel.Analysis.Deps;
 using Tessera.Shared.Kernel.Analysis.Errors;
 
 namespace Tessera.Modules.Traces.Mapping;
 
 /// <summary>
 ///     Projection of <see cref="RequestView" /> → <see cref="GetTraceResponse" />,
-///     including error fields from <see cref="ErrorAnalysis" />.
+///     including error fields from <see cref="ErrorAnalysis" /> and the per-trace
+///     dependency graph from <see cref="DependencyAnalysis" />.
 /// </summary>
 public sealed class TracesMapper : ITracesMapper
 {
@@ -14,7 +16,7 @@ public sealed class TracesMapper : ITracesMapper
     ///     Map domain request view to the wire response. Renames
     ///     <see cref="RequestView.Logs" /> →
     ///     <see cref="GetTraceResponse.CorrelatedLogs" /> for back-compat and
-    ///     attaches errored-span count + exception summaries.
+    ///     attaches errored-span count, exception summaries, and dependency graph.
     /// </summary>
     public GetTraceResponse ToResponse(RequestView view)
     {
@@ -27,6 +29,9 @@ public sealed class TracesMapper : ITracesMapper
             Markers = view.Markers,
             ErroredSpanCount = errors.Count,
             Exceptions = TracesErrorMapping.ToExceptionSummaries(errors),
+            DependencyGraph = view.Trace is null
+                ? null
+                : DependencyAnalysis.FromTrace(view.Trace),
         };
     }
 }
