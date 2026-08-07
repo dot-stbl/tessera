@@ -6,7 +6,7 @@ import {
   type Locale,
 } from "react-day-picker"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/lib/utils"
 import { Button, buttonVariants } from "@/shared/ui/primitives/button"
 import { ArrowBack, ArrowDownward, ArrowForward } from '@nine-thirty-five/material-symbols-react/rounded/700';function Calendar({
   className,

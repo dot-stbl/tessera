@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Help } from '@nine-thirty-five/material-symbols-react/rounded/700';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/primitives/tooltip';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 /**
  * HelpTooltip — `?`-кружок рядом с label, раскрывает подсказку по hover/focus.

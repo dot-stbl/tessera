@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { HelpTooltip } from '@/shared/ui/primitives/help-tooltip';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 /**
  * FieldRow — горизонтальное поле config-формы (эталон YC): label-колонка слева

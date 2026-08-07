@@ -1,6 +1,6 @@
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/lib/utils"
 import { KeyboardArrowDown, KeyboardArrowUp } from '@nine-thirty-five/material-symbols-react/rounded/700';function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
   return (
     <AccordionPrimitive.Root

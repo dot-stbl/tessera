@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/primitives/
 import { Button } from '@/shared/ui/primitives/button';
 import { Checkbox } from '@/shared/ui/primitives/checkbox';
 import { DragIndicator, Tune } from '@nine-thirty-five/material-symbols-react/rounded/700';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 import type { ColumnDef } from './data-table';
 
 /** Состояние менеджера колонок — сериализуемо (для `useLocalStorage`). */

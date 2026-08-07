@@ -2,7 +2,7 @@ import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/lib/utils"
 import { KeyboardArrowRight, MoreVert } from '@nine-thirty-five/material-symbols-react/rounded/700';function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav

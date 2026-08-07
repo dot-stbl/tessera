@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { KeyboardArrowRight } from '@nine-thirty-five/material-symbols-react/rounded/700';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/primitives/collapsible';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 /**
  * Disclosure — раскрывающийся блок «Advanced» поверх shadcn `Collapsible`

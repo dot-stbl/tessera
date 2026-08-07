@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { useLocalStorage } from "@uidotdev/usehooks"
 
 import { useIsMobile } from "@/shared/lib/hooks/use-mobile"
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/primitives/button"
 import { Input } from "@/shared/ui/primitives/input"
 import { Separator } from "@/shared/ui/primitives/separator"

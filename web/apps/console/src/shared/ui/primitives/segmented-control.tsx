@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 /**
  * SegmentedControl — 2-4 взаимоисключающих варианта (эталон YC: Авто/Из списка,

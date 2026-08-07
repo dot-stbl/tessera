@@ -1,7 +1,7 @@
 import { NavigationMenu as NavigationMenuPrimitive } from "@base-ui/react/navigation-menu"
 import { cva } from "class-variance-authority"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/lib/utils"
 import { KeyboardArrowDown } from '@nine-thirty-five/material-symbols-react/rounded/700';function NavigationMenu({
   align = "start",
   className,

@@ -1,8 +1,6 @@
-"use client";
-
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { Check, KeyboardArrowDown } from "@nine-thirty-five/material-symbols-react/rounded/700";
 
 /**

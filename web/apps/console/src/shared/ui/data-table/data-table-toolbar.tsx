@@ -4,7 +4,7 @@ import { FilterAltOff } from '@nine-thirty-five/material-symbols-react/rounded/7
 import { Input } from '@/shared/ui/primitives/input';
 import { Button } from '@/shared/ui/primitives/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/primitives/select';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 import type { ColumnDef, FilterValues } from './data-table';
 import { DataTableColumns, type DataTableColumnsState } from './data-table-columns';
 

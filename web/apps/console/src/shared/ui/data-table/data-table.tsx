@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/shared/ui/primitives/table';
 import { Checkbox } from '@/shared/ui/primitives/checkbox';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 /**
  * Project-specific column declaration built on TanStack's `ColumnDef`. The

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Check, ContentCopy } from '@nine-thirty-five/material-symbols-react/rounded/700';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 interface CopyableTextProps {
   /** The string copied to the clipboard. */
