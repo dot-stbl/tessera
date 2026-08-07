@@ -1,11 +1,11 @@
 # Tessera — system map (living)
 
 > **Status:** living doc. Update when modules/contracts/phases land.  
-> **Tip:** `develop` @ `58eb1e4` (pre-P9). After each phase, bump “Last updated” + commit table.  
+> **Tip:** `feature/p9-deps` @ `9d3b434` (P9 code); docs follow on same branch. After each phase, bump “Last updated” + commit table.  
 > **ADRs:** `0001` platform · `0002` observability model · `0003` module cut  
 > **Plans:** `.agents/plans/mvp-2-core/P5`…`P9`
 
-**Last updated:** 2026-08-07 (P5–P8 on `develop`; P9 in flight)
+**Last updated:** 2026-08-07 (P5–P9 complete on `feature/p9-deps`)
 
 ---
 
@@ -71,7 +71,7 @@ No `Modules.Metrics` / `Modules.Errors` / `Modules.Projects` until nest (ADR-000
 | **Request view** | `RequestView`, `RequestViewMode`, `LogMarker`, `RequestViewAnalysis` | Traces |
 | **Errors** | `SpanError`, `ErrorAnalysis` (IsError, exception extract, normalize, group key) | Traces |
 | **RED** | `RedSnapshot`, `RedSource`, `RedMetricExtract` | Discovery |
-| **Deps (P9)** | `DependencyGraph` / edges (planned) | Traces |
+| **Deps (P9)** | `DependencyGraph`, `DependencyNode`/`Edge`, `DependencyAnalysis.FromTrace` | Traces |
 
 ---
 
@@ -137,7 +137,30 @@ Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 | `markers` | log markers for waterfall (`spanId?`, `offsetMs`, level, …) |
 | `erroredSpanCount` | spans with `status == Error` |
 | `exceptions` | `{ exceptionType?, exceptionMessage?, spanId, service, operation }[]` |
-| `dependencyGraph` | **P9** — nodes/edges for this trace (when landed) |
+| `dependencyGraph` | `DependencyGraph?` — per-trace mini-map (`null` logs-only; empty when no CLIENT deps) |
+
+#### `DependencyGraph` (per-trace)
+
+```json
+{
+  "nodes": [
+    { "id": "checkout-api", "name": "checkout-api", "kind": "Service" },
+    { "id": "currency", "name": "currency", "kind": "Service" },
+    { "id": "db:postgresql:orders", "name": "orders", "kind": "Database" },
+    { "id": "external:stripe", "name": "stripe", "kind": "External" }
+  ],
+  "edges": [
+    { "fromId": "checkout-api", "toId": "currency", "callCount": 1, "errorCount": 0 },
+    { "fromId": "checkout-api", "toId": "db:postgresql:orders", "callCount": 2, "errorCount": 0 },
+    { "fromId": "checkout-api", "toId": "external:stripe", "callCount": 1, "errorCount": 1 }
+  ]
+}
+```
+
+- **Service** nodes: `id` = `service.name` (Resource).
+- **Database** synthetic: `db:{db.system}` or `db:{db.system}:{db.name}`.
+- **External** synthetic: `external:{peer.service|server.address}`.
+- **ErrorCount**: CLIENT span `Status == Error` only (child SERVER status ignored).
 
 **404 rules:** only when **both** spans and logs empty. Log-only / spans-only → **200** + `mode`.
 
@@ -180,7 +203,7 @@ MVP: only traces with **root** `Status == Error`; detail fetch cap **20**.
 | **P6** | Request-view degrade + markers | `00dfd8d`, `d039da7` | ✅ |
 | **P7** | Errors analysis + inbox + RV fields | `f489ccd`, `03c8be5` | ✅ |
 | **P8** | Service RED (metrics + SpanApprox) | `466f6fa`, `58eb1e4` | ✅ |
-| **P9** | Per-trace dependency mini-map | — | 🔄 |
+| **P9** | Per-trace dependency mini-map | `33f6a49`, `9d3b434` (+ docs) | ✅ |
 | post-core | Projects, rollup cache, global map | — | ⏸ |
 
 ---
