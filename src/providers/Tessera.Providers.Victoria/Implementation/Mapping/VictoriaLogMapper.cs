@@ -2,6 +2,7 @@ using System.Text.Json;
 using Tessera.Providers.Victoria.Dto.VictoriaLogs;
 using Tessera.Shared.Kernel.Domain.Logs;
 using Tessera.Shared.Kernel.Identifiers;
+using Tessera.Shared.Kernel.Observability;
 using Tessera.Shared.Kernel.Pagination;
 using Tessera.Shared.Kernel.Providers.Logs;
 using Tessera.Shared.Kernel.Time;
@@ -36,11 +37,18 @@ internal static class VictoriaLogJsonOptions
 ///     Held as <c>internal static</c> so they're testable in isolation,
 ///     not private to the provider class.
 /// </summary>
+/// <remarks>
+///     Trace correlation field: query uses <c>_trace_id</c> (VictoriaLogs
+///     stream field convention for OTel). Parse accepts both <c>_trace_id</c>
+///     and <c>trace_id</c> so producers that emit either form still correlate.
+///     Verify against live VL before treating empty correlation as a product bug.
+/// </remarks>
 internal static class VictoriaLogMapper
 {
     /// <summary>
     ///     Build a LogsQL filter string from a <see cref="LogQuery" />.
     ///     Returns "*" when no filter or trace id is supplied.
+    ///     Trace filter uses <c>_trace_id</c> (VL OTel stream field).
     /// </summary>
     public static string BuildLogsQuery(LogQuery query)
     {
@@ -83,20 +91,15 @@ internal static class VictoriaLogMapper
                 continue;
             }
 
-            var traceId = dto.Fields.TryGetValue("trace_id", out var tid)
-                ? ToTraceId(tid)
-                : traceFilter;
-
-            var spanId = dto.Fields.TryGetValue("span_id", out var sid)
-                ? ToSpanId(sid)
-                : null;
-
-            var level = ToLogLevel(dto.Fields.GetValueOrDefault("level"));
+            var traceId = ReadTraceId(dto.Fields) ?? traceFilter;
+            var spanId = ReadSpanId(dto.Fields);
+            var level = ResolveLogLevel(dto.Fields);
+            var service = ResolveService(dto);
 
             entries.Add(new LogEntry(
                 dto.Time.ToUnixTimeMilliseconds(),
                 level,
-                dto.Stream,
+                service,
                 traceId,
                 spanId,
                 dto.Msg,
@@ -107,12 +110,59 @@ internal static class VictoriaLogMapper
     }
 
     /// <summary>
+    ///     Resolve log level from OTel <c>severity_number</c> (1–24) with
+    ///     text fallback on <c>level</c> / <c>severity_text</c>.
+    /// </summary>
+    public static LogLevel ResolveLogLevel(IReadOnlyDictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("severity_number", out var numberText)
+            && int.TryParse(numberText, out var severityNumber))
+        {
+            return FromSeverityNumber(severityNumber);
+        }
+
+        if (fields.TryGetValue("severity_text", out var severityText))
+        {
+            return ToLogLevel(severityText);
+        }
+
+        if (fields.TryGetValue("level", out var levelText))
+        {
+            return ToLogLevel(levelText);
+        }
+
+        return LogLevel.Information;
+    }
+
+    /// <summary>
+    ///     Map OTel severity_number (1–24) to kernel <see cref="LogLevel" />.
+    /// </summary>
+    public static LogLevel FromSeverityNumber(int severityNumber)
+    {
+        return severityNumber switch
+        {
+            >= 1 and <= 4 => LogLevel.Trace,
+            >= 5 and <= 8 => LogLevel.Debug,
+            >= 9 and <= 12 => LogLevel.Information,
+            >= 13 and <= 16 => LogLevel.Warning,
+            >= 17 and <= 20 => LogLevel.Error,
+            >= 21 and <= 24 => LogLevel.Fatal,
+            _ => LogLevel.Information,
+        };
+    }
+
+    /// <summary>
     ///     Convert a LogsQL level string to the kernel's <see cref="LogLevel" />.
     ///     Unknown / missing values map to <see cref="LogLevel.Information" />.
     /// </summary>
     public static LogLevel ToLogLevel(string? value)
     {
-        return value switch
+        if (value is null)
+        {
+            return LogLevel.Information;
+        }
+
+        return value.ToUpperInvariant() switch
         {
             "TRACE" => LogLevel.Trace,
             "DEBUG" => LogLevel.Debug,
@@ -122,6 +172,63 @@ internal static class VictoriaLogMapper
             "FATAL" or "CRITICAL" => LogLevel.Fatal,
             _ => LogLevel.Information,
         };
+    }
+
+    /// <summary>
+    ///     Service identity from resource <c>service.name</c>, then common
+    ///     field aliases, then <c>_stream</c> as last resort.
+    /// </summary>
+    public static string ResolveService(VLLogEntry dto)
+    {
+        if (dto.Fields.TryGetValue(SemanticConventions.ServiceName, out var fromSemconv)
+            && !string.IsNullOrWhiteSpace(fromSemconv))
+        {
+            return fromSemconv;
+        }
+
+        if (dto.Fields.TryGetValue("service", out var fromService)
+            && !string.IsNullOrWhiteSpace(fromService))
+        {
+            return fromService;
+        }
+
+        return string.IsNullOrWhiteSpace(dto.Stream) ? "unknown" : dto.Stream;
+    }
+
+    /// <summary>
+    ///     Prefer <c>_trace_id</c> (VL stream field), then <c>trace_id</c>.
+    /// </summary>
+    public static TraceId? ReadTraceId(IReadOnlyDictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("_trace_id", out var underscored))
+        {
+            return ToTraceId(underscored);
+        }
+
+        if (fields.TryGetValue("trace_id", out var plain))
+        {
+            return ToTraceId(plain);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     Prefer <c>_span_id</c>, then <c>span_id</c>.
+    /// </summary>
+    public static SpanId? ReadSpanId(IReadOnlyDictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("_span_id", out var underscored))
+        {
+            return ToSpanId(underscored);
+        }
+
+        if (fields.TryGetValue("span_id", out var plain))
+        {
+            return ToSpanId(plain);
+        }
+
+        return null;
     }
 
     /// <summary>
