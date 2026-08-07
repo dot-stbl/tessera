@@ -94,10 +94,11 @@ public sealed class DomainPurityTests
             .GetTypes()
             .ToHashSet();
 
-        // MVP-01 ships ITraceProvider + ILogProvider + IDiscoveryProvider + IHealthProvider
+        // Kernel ships trace/log/discovery/health + metrics (P5) provider interfaces
         Assert.Contains(providerInterfaceTypes, static t => t.Name == "ITraceProvider");
         Assert.Contains(providerInterfaceTypes, static t => t.Name == "ILogProvider");
         Assert.Contains(providerInterfaceTypes, static t => t.Name == "IDiscoveryProvider");
         Assert.Contains(providerInterfaceTypes, static t => t.Name == "IHealthProvider");
+        Assert.Contains(providerInterfaceTypes, static t => t.Name == "IMetricsProvider");
     }
 }
