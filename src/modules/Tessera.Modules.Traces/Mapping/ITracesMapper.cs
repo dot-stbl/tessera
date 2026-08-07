@@ -1,6 +1,5 @@
 using Tessera.Modules.Traces.Contracts;
-using Tessera.Shared.Kernel.Domain.Logs;
-using Tessera.Shared.Kernel.Domain.Traces;
+using Tessera.Shared.Kernel.Analysis;
 
 namespace Tessera.Modules.Traces.Mapping;
 
@@ -12,8 +11,8 @@ namespace Tessera.Modules.Traces.Mapping;
 public interface ITracesMapper
 {
     /// <summary>
-    ///     Combine a fetched trace + correlated logs into the single
-    ///     <see cref="GetTraceResponse" /> the endpoint returns.
+    ///     Project a domain <see cref="RequestView" /> into the wire
+    ///     <see cref="GetTraceResponse" />.
     /// </summary>
-    public GetTraceResponse ToResponse(TraceDetail? trace, IReadOnlyList<LogEntry> correlatedLogs);
+    public GetTraceResponse ToResponse(RequestView view);
 }

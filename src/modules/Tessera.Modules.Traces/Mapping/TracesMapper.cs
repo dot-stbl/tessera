@@ -1,27 +1,21 @@
 using Riok.Mapperly.Abstractions;
 using Tessera.Modules.Traces.Contracts;
-using Tessera.Shared.Kernel.Domain.Logs;
-using Tessera.Shared.Kernel.Domain.Traces;
+using Tessera.Shared.Kernel.Analysis;
 
 namespace Tessera.Modules.Traces.Mapping;
 
 /// <summary>
-///     Source-generated Mapperly projection of <see cref="TraceDetail" /> +
-///     correlated logs → <see cref="GetTraceResponse" />.
+///     Source-generated Mapperly projection of <see cref="RequestView" /> →
+///     <see cref="GetTraceResponse" />.
 /// </summary>
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public sealed partial class TracesMapper : ITracesMapper
 {
     /// <summary>
-    ///     Combine a fetched trace + correlated logs into the
-    ///     <see cref="GetTraceResponse" /> returned by the endpoint.
-    ///     <see cref="MapPropertyFromSourceAttribute" /> on
-    ///     <see cref="GetTraceResponse.Trace" /> tells Mapperly to assign the
-    ///     full <paramref name="trace" /> object to the target property
-    ///     instead of trying to map field-by-field (the target DTO only has
-    ///     two properties — <c>Trace</c> + <c>CorrelatedLogs</c> — and shares
-    ///     no field names with the source <see cref="TraceDetail" />).
+    ///     Map domain request view to the wire response. Renames
+    ///     <see cref="RequestView.Logs" /> →
+    ///     <see cref="GetTraceResponse.CorrelatedLogs" /> for back-compat.
     /// </summary>
-    [MapPropertyFromSource(nameof(GetTraceResponse.Trace))]
-    public partial GetTraceResponse ToResponse(TraceDetail? trace, IReadOnlyList<LogEntry> correlatedLogs);
+    [MapProperty(nameof(RequestView.Logs), nameof(GetTraceResponse.CorrelatedLogs))]
+    public partial GetTraceResponse ToResponse(RequestView view);
 }
