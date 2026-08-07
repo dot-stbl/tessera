@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { api } from '@/shared/api';
@@ -61,7 +61,13 @@ export function logsForSpan(logs: LogEntryData[], spanId: string | undefined): L
 
 export function TraceDetailPage() {
   const { traceId } = routeApi.useParams();
-  const [selectedSpanId, setSelectedSpanId] = useState<string | undefined>(undefined);
+  // The selected span is URL state: the link you hand to someone else opens on
+  // the span you were reading, with its logs already narrowed.
+  const { span: selectedSpanId } = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+
+  const selectSpan = (spanId: string | undefined) =>
+    void navigate({ search: (prev) => ({ ...prev, span: spanId }), replace: true });
 
   // One request. GetTraceResponse carries the span tree and the correlated logs
   // together, so the second /logs call this page used to make was asking for
@@ -142,7 +148,7 @@ export function TraceDetailPage() {
                 totalDurationMs={trace.durationMs}
                 selectedSpanId={selectedSpanId}
                 onSpanClick={(span) =>
-                  setSelectedSpanId((current) => (current === span.id ? undefined : span.id))
+                  selectSpan(span.id === selectedSpanId ? undefined : span.id)
                 }
               />
             </div>
@@ -160,7 +166,7 @@ export function TraceDetailPage() {
                     name: event.name,
                     attributes: event.attributes,
                   }))}
-                  onClose={() => setSelectedSpanId(undefined)}
+                  onClose={() => selectSpan(undefined)}
                 />
               </div>
             )}
@@ -170,7 +176,7 @@ export function TraceDetailPage() {
             entries={visibleLogs}
             totalCount={allLogs.length}
             selectedSpanId={selectedSpanId}
-            onClearSpanFilter={() => setSelectedSpanId(undefined)}
+            onClearSpanFilter={() => selectSpan(undefined)}
           />
         </div>
       ) : (

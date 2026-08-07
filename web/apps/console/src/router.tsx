@@ -11,6 +11,11 @@ import { TraceDetailPage } from '@/features/traces/trace-detail-page';
 import { LogsPage } from '@/features/logs/logs-page';
 import { ServicesPage } from '@/features/services/services-page';
 import { DashboardsPage } from '@/features/dashboards/dashboards-page';
+import {
+  parseOptionalString,
+  parseTimeRange,
+  type TimeRangeKey,
+} from '@/shared/lib/search-params';
 
 /**
  * Code-based route definitions. Simpler than file-based for MVP — no codegen
@@ -68,22 +73,65 @@ const indexRoute = createRoute({
 
 // ─── Section routes ───────────────────────────────────────────────────
 
+/**
+ * Search params carry the view state, so what an operator is looking at is
+ * addressable: the link pasted into an incident channel opens on the same
+ * filters, the same trace and the same span, and a reload does not throw the
+ * investigation away. Filters living in component state made every view
+ * unshareable and every reload a restart.
+ */
+
+export interface TracesSearch {
+  service?: string;
+  /**
+   * Optional in the type, always populated by the parser. Declaring it required
+   * would force every `<Link to="/traces">` in the app — including the rail — to
+   * restate the default range, so the type stays permissive for callers and pages
+   * read it through the same DEFAULT_TIME_RANGE constant the parser uses.
+   */
+  range?: TimeRangeKey;
+}
+
 const tracesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/traces',
   component: TracesPage,
+  validateSearch: (search: Record<string, unknown>): TracesSearch => ({
+    service: parseOptionalString(search['service']),
+    range: parseTimeRange(search['range']),
+  }),
 });
+
+export interface TraceDetailSearch {
+  /** Selected span id. Drives both the highlight and the log filter. */
+  span?: string;
+}
 
 const traceDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/traces/$traceId',
   component: TraceDetailPage,
+  validateSearch: (search: Record<string, unknown>): TraceDetailSearch => ({
+    span: parseOptionalString(search['span']),
+  }),
 });
+
+export interface LogsSearch {
+  stream?: string;
+  traceId?: string;
+  /** Optional for callers, populated by the parser — see {@link TracesSearch}. */
+  range?: TimeRangeKey;
+}
 
 const logsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/logs',
   component: LogsPage,
+  validateSearch: (search: Record<string, unknown>): LogsSearch => ({
+    stream: parseOptionalString(search['stream']),
+    traceId: parseOptionalString(search['traceId']),
+    range: parseTimeRange(search['range']),
+  }),
 });
 
 const servicesRoute = createRoute({

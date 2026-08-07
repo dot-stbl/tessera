@@ -1,24 +1,35 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { getRouteApi } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { LogEntry } from '@/shared/ui/apm';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { cn } from '@/shared/lib/utils';
+import {
+  DEFAULT_TIME_RANGE,
+  TIME_RANGES,
+  resolveTimeWindow,
+  type TimeRangeKey,
+} from '@/shared/lib/search-params';
 
-const HOUR = 60 * 60 * 1000;
+const routeApi = getRouteApi('/logs');
 
 export function LogsPage() {
   const { t } = useTranslation();
   useDocumentTitle('Logs');
 
-  const [stream, setStream] = useState<string>('');
-  const [range, setRange] = useState<'1h' | '6h' | '24h'>('1h');
-  const [traceId, setTraceId] = useState<string>('');
+  // Same rule as the trace explorer: what you are looking at is in the URL, so
+  // "logs for this trace id" is a link rather than a set of typed-in filters.
+  const { stream, traceId, range: rangeParam } = routeApi.useSearch();
+  const range = rangeParam ?? DEFAULT_TIME_RANGE;
+  const navigate = routeApi.useNavigate();
 
-  const endUnixMs = Date.now();
-  const startUnixMs = endUnixMs - (range === '1h' ? HOUR : range === '6h' ? 6 * HOUR : 24 * HOUR);
+  const setSearch = (patch: { stream?: string; traceId?: string; range?: TimeRangeKey }) =>
+    void navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+
+  const { startUnixMs, endUnixMs } = useMemo(() => resolveTimeWindow(range), [range]);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['logs', { stream, traceId, startUnixMs, endUnixMs }],
@@ -28,8 +39,8 @@ export function LogsPage() {
           // The backend narrows logs by trace id and stream. There is no
           // free-text parameter yet — ad-hoc LogsQL search is a later phase — so
           // the toolbar filters by service stream instead of pretending.
-          stream: stream || undefined,
-          traceId: traceId || undefined,
+          stream,
+          traceId,
           startUnixMs,
           endUnixMs,
           limit: 500,
@@ -46,11 +57,11 @@ export function LogsPage() {
     >
       <Toolbar
         range={range}
-        onRangeChange={setRange}
-        query={stream}
-        onQueryChange={setStream}
-        traceId={traceId}
-        onTraceIdChange={setTraceId}
+        onRangeChange={(next) => setSearch({ range: next })}
+        query={stream ?? ''}
+        onQueryChange={(next) => setSearch({ stream: next === '' ? undefined : next })}
+        traceId={traceId ?? ''}
+        onTraceIdChange={(next) => setSearch({ traceId: next === '' ? undefined : next })}
       />
 
       {isError && (
@@ -86,8 +97,8 @@ export function LogsPage() {
 }
 
 interface ToolbarProps {
-  range: '1h' | '6h' | '24h';
-  onRangeChange: (next: '1h' | '6h' | '24h') => void;
+  range: TimeRangeKey;
+  onRangeChange: (next: TimeRangeKey) => void;
   query: string;
   onQueryChange: (next: string) => void;
   traceId: string;
@@ -98,7 +109,7 @@ function Toolbar({ range, onRangeChange, query, onQueryChange, traceId, onTraceI
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-3">
       <div className="flex items-center gap-1">
-        {(['1h', '6h', '24h'] as const).map((r) => (
+        {TIME_RANGES.map((r) => (
           <button
             key={r}
             onClick={() => onRangeChange(r)}

@@ -1,30 +1,41 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { getRouteApi, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { TimeFormat } from '@/shared/ui/apm';
 import { Duration } from '@/shared/ui/apm';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
-import { useState } from 'react';
+import { useMemo } from 'react';
+import {
+  DEFAULT_TIME_RANGE,
+  TIME_RANGES,
+  resolveTimeWindow,
+  type TimeRangeKey,
+} from '@/shared/lib/search-params';
 import { cn } from '@/shared/lib/utils';
 import type { TraceSummary, TraceStatus } from '@/shared/api/types';
 
-const HOUR = 60 * 60 * 1000;
+const routeApi = getRouteApi('/traces');
 
 export function TracesPage() {
   const { t } = useTranslation();
   useDocumentTitle('Traces');
 
-  const [service, setService] = useState<string>('');
-  const [range, setRange] = useState<'1h' | '6h' | '24h'>('1h');
+  // Filters live in the URL, so this view is a link someone else can open.
+  const { service, range: rangeParam } = routeApi.useSearch();
+  const range = rangeParam ?? DEFAULT_TIME_RANGE;
+  const navigate = routeApi.useNavigate();
 
-  const endUnixMs = Date.now();
-  const startUnixMs = endUnixMs - (range === '1h' ? HOUR : range === '6h' ? 6 * HOUR : 24 * HOUR);
+  // A raw Date.now() lands in the query key, so every render was a cache miss:
+  // the skeleton never cleared and requests fired in a loop. Quantized instead —
+  // stable between renders, and still advancing on its own.
+  const { startUnixMs, endUnixMs } = useMemo(() => resolveTimeWindow(range), [range]);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['traces', { service, startUnixMs, endUnixMs }],
-    queryFn: () => api.listTraces({ service: service || undefined, startUnixMs, endUnixMs, limit: 50 }),
+    queryFn: ({ signal }) =>
+      api.listTraces({ service, startUnixMs, endUnixMs, limit: 50 }, signal),
     refetchInterval: 30_000,
   });
 
@@ -35,9 +46,16 @@ export function TracesPage() {
     >
       <Toolbar
         range={range}
-        onRangeChange={setRange}
-        service={service}
-        onServiceChange={setService}
+        onRangeChange={(next) =>
+          void navigate({ search: (prev) => ({ ...prev, range: next }), replace: true })
+        }
+        service={service ?? ''}
+        onServiceChange={(next) =>
+          void navigate({
+            search: (prev) => ({ ...prev, service: next === '' ? undefined : next }),
+            replace: true,
+          })
+        }
       />
 
       {isError && (
@@ -56,8 +74,8 @@ export function TracesPage() {
 }
 
 interface ToolbarProps {
-  range: '1h' | '6h' | '24h';
-  onRangeChange: (next: '1h' | '6h' | '24h') => void;
+  range: TimeRangeKey;
+  onRangeChange: (next: TimeRangeKey) => void;
   service: string;
   onServiceChange: (next: string) => void;
 }
@@ -66,7 +84,7 @@ function Toolbar({ range, onRangeChange, service, onServiceChange }: ToolbarProp
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-3">
       <div className="flex items-center gap-1">
-        {(['1h', '6h', '24h'] as const).map((r) => (
+        {TIME_RANGES.map((r) => (
           <button
             key={r}
             onClick={() => onRangeChange(r)}
@@ -132,6 +150,7 @@ function TraceRow({ trace }: { trace: TraceSummary }) {
         <Link
           to="/traces/$traceId"
           params={{ traceId: trace.traceId }}
+          search={{}}
           className="block hover:underline"
         >
           <div className="font-medium text-foreground">{trace.rootService}</div>
