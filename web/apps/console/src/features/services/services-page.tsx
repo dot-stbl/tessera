@@ -1,30 +1,32 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/shared/api/client';
+import { api } from '@/shared/api';
 import type { ServiceSummary } from '@/shared/api/types';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { cn } from '@/shared/lib/utils';
-
-const HOUR = 60 * 60 * 1000;
+import { DEFAULT_TIME_RANGE, resolveTimeWindow } from '@/shared/lib/search-params';
 
 export function ServicesPage() {
   const { t } = useTranslation();
   useDocumentTitle('Services');
 
-  const endUnixMs = Date.now();
-  const startUnixMs = endUnixMs - HOUR;
+  // A raw Date.now() here lands in the query key, so every render was a cache
+  // miss: the skeleton never cleared and requests fired in a loop. The window is
+  // quantized instead — stable between renders, and still advancing.
+  const { startUnixMs, endUnixMs } = useMemo(() => resolveTimeWindow(DEFAULT_TIME_RANGE), []);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['services', { startUnixMs, endUnixMs }],
-    queryFn: () => api.listServices({ startUnixMs, endUnixMs }),
+    queryFn: ({ signal }) => api.listServices({ startUnixMs, endUnixMs }, signal),
     refetchInterval: 60_000,
   });
 
   return (
     <PageTemplate
       title={t('services.title')}
-      subtitle={`${data?.items.length ?? 0} services · last 1h`}
+      subtitle={`${data?.length ?? 0} services · last 1h`}
     >
       {isError && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
@@ -34,13 +36,13 @@ export function ServicesPage() {
 
       {isLoading ? (
         <SkeletonTable />
-      ) : data && data.items.length === 0 ? (
+      ) : data && data.length === 0 ? (
         <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {t('services.empty.title')}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {data?.items.map((service) => (
+          {data?.map((service) => (
             <ServiceCard key={service.name} service={service} />
           ))}
         </div>

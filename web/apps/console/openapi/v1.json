@@ -1,0 +1,1541 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Tessera.Host | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:2100/"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Tessera.Host"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/services": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Service inventory aggregated from traces + logs",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSummary"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSummary"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Composite health status across all wired providers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/logs": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "List logs by trace id (MVP-01). Ad-hoc LogsQL — MVP-02.",
+        "parameters": [
+          {
+            "name": "TraceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Stream",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "StartUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "EndUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfLogEntry"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfLogEntry"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfLogEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/errors": {
+      "get": {
+        "tags": [
+          "errors"
+        ],
+        "summary": "Errors inbox: group exception-bearing error traces",
+        "parameters": [
+          {
+            "name": "StartUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "EndUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Service",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorGroupSummary"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorGroupSummary"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorGroupSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/traces": {
+      "get": {
+        "tags": [
+          "traces"
+        ],
+        "summary": "Search traces by service / operation / time / duration",
+        "parameters": [
+          {
+            "name": "Service",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Operation",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "StartUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "EndUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "MinDurationMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "MaxDurationMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfTraceSummary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfTraceSummary"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfTraceSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/traces/{traceId}": {
+      "get": {
+        "tags": [
+          "traces"
+        ],
+        "summary": "Request view: trace + correlated logs (degradable)",
+        "parameters": [
+          {
+            "name": "traceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "maxLength": 32,
+              "minLength": 32,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTraceResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTraceResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTraceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: the requested resource does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: the request collides with the current state of the target resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: an unexpected server-side failure occurred.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorGroupSummary": {
+        "required": [
+          "key",
+          "sampleTraceIds"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "exceptionType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sampleTraceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GetTraceResponse": {
+        "required": [
+          "correlatedLogs",
+          "mode",
+          "markers"
+        ],
+        "type": "object",
+        "properties": {
+          "trace": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TraceDetail"
+              }
+            ]
+          },
+          "correlatedLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            }
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RequestViewMode"
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogMarker"
+            }
+          },
+          "erroredSpanCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "exceptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceExceptionSummary"
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "required": [
+          "provider",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "HealthStatus": {
+        "enum": [
+          "healthy",
+          "degraded",
+          "unhealthy"
+        ],
+        "type": "string",
+        "description": "Per-provider health status. `Tessera.Host` aggregates per-provider\r\nreports into a composite endpoint response."
+      },
+      "LogEntry": {
+        "required": [
+          "timestamp",
+          "level",
+          "service",
+          "traceId",
+          "spanId",
+          "message",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "level": {
+            "$ref": "#/components/schemas/LogLevel"
+          },
+          "service": {
+            "type": "string"
+          },
+          "traceId": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TraceId"
+              }
+            ]
+          },
+          "spanId": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SpanId"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A single log entry. May be correlated with a trace (TraceId? LogEntry.TraceId) and/or\r\nspan (SpanId? LogEntry.SpanId). IReadOnlyDictionary&lt;string, string&gt; LogEntry.Fields carries structured key-value\r\nattributes attached at log emission time."
+      },
+      "LogLevel": {
+        "enum": [
+          "trace",
+          "debug",
+          "info",
+          "warn",
+          "error",
+          "fatal"
+        ],
+        "type": "string",
+        "description": "                Log severity level. Maps to OpenTelemetry LogLevel + syslog severity.\r\n                Member names are the OTel SeverityText spellings\r\n(INFO / WARN), not the .NET\r\nInformation / Warning ones. They travel to the wire\r\nverbatim (camelCased) and every consumer — the TypeScript union and\r\nthe .log-level-* CSS classes it composes by name — keys off\r\nthose spellings, so renaming a member here silently unstyles a\r\nseverity in the UI."
+      },
+      "LogMarker": {
+        "required": [
+          "spanId",
+          "offsetMs",
+          "level",
+          "message",
+          "timestampUnixMs"
+        ],
+        "type": "object",
+        "properties": {
+          "spanId": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Span this log is pinned to, or `null` for a trace-level marker\r\n(no span_id on the log, or span not present on the trace tree).",
+                "$ref": "#/components/schemas/SpanId"
+              }
+            ]
+          },
+          "offsetMs": {
+            "type": "integer",
+            "description": "Milliseconds from the anchor start (see summary).",
+            "format": "int64"
+          },
+          "level": {
+            "description": "Log severity.",
+            "$ref": "#/components/schemas/LogLevel"
+          },
+          "message": {
+            "type": "string",
+            "description": "Message preview (full message; FE may truncate)."
+          },
+          "timestampUnixMs": {
+            "type": "integer",
+            "description": "Absolute log timestamp (unix ms UTC).",
+            "format": "int64"
+          }
+        },
+        "description": "Timeline marker for a log entry overlaid on a request view.\r\nlong LogMarker.OffsetMs is relative to the matched span's\r\n`StartTime` when SpanId? LogMarker.SpanId is set and that span\r\nexists on the trace; otherwise relative to the trace\r\n`StartTime`. When there is no trace (logs-only), offsets are\r\nrelative to the earliest log timestamp in the batch (so the first\r\nlog sits at 0)."
+      },
+      "PageOfLogEntry": {
+        "required": [
+          "items",
+          "cursor",
+          "hasMore"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "description": "Items in this page."
+          },
+          "cursor": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Opaque pagination cursor, or null if no more pages."
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "True when more pages exist beyond this one."
+          }
+        },
+        "description": "Cursor-paginated result page. string? Page&lt;T&gt;.Cursor is opaque to clients;\r\npass it back to the originating endpoint unchanged to fetch the next page."
+      },
+      "PageOfTraceSummary": {
+        "required": [
+          "items",
+          "cursor",
+          "hasMore"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceSummary"
+            },
+            "description": "Items in this page."
+          },
+          "cursor": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Opaque pagination cursor, or null if no more pages."
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "True when more pages exist beyond this one."
+          }
+        },
+        "description": "Cursor-paginated result page. string? Page&lt;T&gt;.Cursor is opaque to clients;\r\npass it back to the originating endpoint unchanged to fetch the next page."
+      },
+      "RequestViewMode": {
+        "enum": [
+          "full",
+          "spansOnly",
+          "logsOnly",
+          "empty"
+        ],
+        "type": "string",
+        "description": "Degradation mode for a request view (trace + correlated logs).\r\nFE uses this to show a banner when one source is missing."
+      },
+      "Resource": {
+        "required": [
+          "serviceName",
+          "serviceNamespace",
+          "deploymentEnvironment",
+          "attributes"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string",
+            "description": "`service.name` — required service identity (never empty in well-formed data)."
+          },
+          "serviceNamespace": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional `service.namespace`."
+          },
+          "deploymentEnvironment": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional `deployment.environment`."
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Remaining resource attributes (open dict)."
+          }
+        },
+        "description": "OpenTelemetry resource describing the entity that produced telemetry\r\n(typically a process / service instance). Small first-class fields for\r\nthe common service identity attributes; remaining resource attributes\r\nlive in IReadOnlyDictionary&lt;string, string&gt; Resource.Attributes for project predicates and display."
+      },
+      "ServiceOperation": {
+        "required": [
+          "name",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A single operation (e.g. endpoint or RPC method) belonging to a service."
+      },
+      "ServiceSummary": {
+        "required": [
+          "name",
+          "spanCount",
+          "errorCount",
+          "operations"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "spanCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceOperation"
+            }
+          }
+        },
+        "description": "Service inventory summary with aggregated metrics across traces."
+      },
+      "Span": {
+        "required": [
+          "spanId",
+          "parentSpanId",
+          "service",
+          "operation",
+          "startTime",
+          "durationMs",
+          "status",
+          "kind",
+          "resource",
+          "tags",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "spanId": {
+            "$ref": "#/components/schemas/SpanId"
+          },
+          "parentSpanId": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SpanId"
+              }
+            ]
+          },
+          "service": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TraceStatus"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SpanKind"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpanEvent"
+            }
+          }
+        },
+        "description": "A single span within a trace. May have a parent (SpanId? Span.ParentSpanId)\r\nand child spans (IReadOnlyList&lt;SpanEvent&gt; Span.Events captures span events like exceptions).\r\nstring Span.Service is a convenience alias of string Resource.ServiceName\r\nkept for module mappers that still read the flat field."
+      },
+      "SpanEvent": {
+        "required": [
+          "time",
+          "name",
+          "attributes"
+        ],
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A point-in-time event recorded on a span (e.g. exception, log message)."
+      },
+      "SpanId": {
+        "type": "string",
+        "description": "Span identifier (typically 16-char hex per OpenTelemetry / Jaeger convention)."
+      },
+      "SpanKind": {
+        "enum": [
+          "unspecified",
+          "internal",
+          "server",
+          "client",
+          "producer",
+          "consumer"
+        ],
+        "type": "string",
+        "description": "OpenTelemetry span kind (OTLP enum values). Distinguishes server/client\r\nRPC, producer/consumer messaging, and internal work."
+      },
+      "TraceDetail": {
+        "required": [
+          "traceId",
+          "rootService",
+          "rootOperation",
+          "startTime",
+          "durationMs",
+          "status",
+          "spans"
+        ],
+        "type": "object",
+        "properties": {
+          "traceId": {
+            "$ref": "#/components/schemas/TraceId"
+          },
+          "rootService": {
+            "type": "string"
+          },
+          "rootOperation": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TraceStatus"
+          },
+          "spans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Span"
+            }
+          }
+        },
+        "description": "Full trace with reconstructed span tree. Returned by GET /api/traces/{traceId}."
+      },
+      "TraceExceptionSummary": {
+        "required": [
+          "spanId",
+          "service",
+          "operation"
+        ],
+        "type": "object",
+        "properties": {
+          "exceptionType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "exceptionMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "spanId": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          }
+        }
+      },
+      "TraceId": {
+        "type": "string",
+        "description": "Trace identifier (typically 32-char hex per OpenTelemetry / Jaeger convention)."
+      },
+      "TraceStatus": {
+        "enum": [
+          "ok",
+          "error",
+          "unset"
+        ],
+        "type": "string",
+        "description": "Status of a trace or span, mirroring OpenTelemetry span status codes."
+      },
+      "TraceSummary": {
+        "required": [
+          "traceId",
+          "rootService",
+          "rootOperation",
+          "startTime",
+          "durationMs",
+          "status",
+          "spanCount",
+          "services"
+        ],
+        "type": "object",
+        "properties": {
+          "traceId": {
+            "$ref": "#/components/schemas/TraceId"
+          },
+          "rootService": {
+            "type": "string"
+          },
+          "rootOperation": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TraceStatus"
+          },
+          "spanCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Lightweight trace summary without spans. Returned by GET /api/traces list endpoint."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Tessera.Host"
+    },
+    {
+      "name": "discovery"
+    },
+    {
+      "name": "health"
+    },
+    {
+      "name": "logs"
+    },
+    {
+      "name": "errors"
+    },
+    {
+      "name": "traces"
+    }
+  ]
+}

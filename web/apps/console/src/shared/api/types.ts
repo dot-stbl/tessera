@@ -1,128 +1,98 @@
 /**
- * Tessera API types — mirror the backend C# records.
- * Source of truth: .agents/docs/modules.md (per-module contracts) and
- * .agents/docs/dashboard-schema.md.
+ * Ergonomic aliases over the generated OpenAPI schema.
  *
- * All times are UTC unix milliseconds on the wire.
+ * Nothing here describes the API — `schema.gen.ts` does, and it is generated
+ * from the document the backend serves (`bun run codegen`). This file only gives
+ * the generated component schemas short names so call sites read as
+ * `TraceSummary` rather than `components['schemas']['TraceSummary']`.
+ *
+ * The previous version of this file hand-transcribed the C# records from prose
+ * docs, and every one of them had drifted: routes were missing the `v1` segment,
+ * statuses were compared against lowercase literals the wire never sent, the
+ * health response carried a Victoria-shaped `{vt, vl, vm}` body that no endpoint
+ * has ever returned, and the trace response was missing the correlated logs the
+ * backend already computes. Do not reintroduce hand-written mirrors — add an
+ * alias here instead.
  */
+import type { components } from './schema.gen';
 
-export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+type Schemas = components['schemas'];
 
-export type TraceStatus = 'ok' | 'error' | 'unset';
+// ─── Identifiers ───────────────────────────────────────────────────────
+// Plain strings on the wire; the C# side wraps them in TraceId/SpanId records
+// purely to stop the two being mixed up in-process.
+export type TraceId = Schemas['TraceId'];
+export type SpanId = Schemas['SpanId'];
 
+// ─── Enums ─────────────────────────────────────────────────────────────
+export type TraceStatus = Schemas['TraceStatus'];
+export type LogLevel = Schemas['LogLevel'];
+export type SpanKind = Schemas['SpanKind'];
+export type HealthStatus = Schemas['HealthStatus'];
+
+/**
+ * How complete the request view is. The backend answers 200 when it has spans or
+ * logs, and says which — the UI is expected to degrade rather than show an error
+ * when only half the picture exists.
+ */
+export type RequestViewMode = Schemas['RequestViewMode'];
+
+// ─── Traces ────────────────────────────────────────────────────────────
+export type TraceSummary = Schemas['TraceSummary'];
+export type TraceDetail = Schemas['TraceDetail'];
+export type Span = Schemas['Span'];
+export type SpanEvent = Schemas['SpanEvent'];
+export type Resource = Schemas['Resource'];
+export type TraceExceptionSummary = Schemas['TraceExceptionSummary'];
+
+/**
+ * The trace-detail payload. Carries the span tree *and* the logs already
+ * correlated to it, plus {@link LogMarker}s positioned on the trace timeline —
+ * so rendering "logs for this span" needs no second request.
+ */
+export type GetTraceResponse = Schemas['GetTraceResponse'];
+
+/** A log pinned to a point on the trace timeline, optionally to one span. */
+export type LogMarker = Schemas['LogMarker'];
+
+// ─── Logs ──────────────────────────────────────────────────────────────
+export type LogEntry = Schemas['LogEntry'];
+
+// ─── Discovery / health / errors ───────────────────────────────────────
+export type ServiceSummary = Schemas['ServiceSummary'];
+export type ServiceOperation = Schemas['ServiceOperation'];
+export type HealthResponse = Schemas['HealthResponse'];
+export type ErrorGroupSummary = Schemas['ErrorGroupSummary'];
+
+// ─── Pagination ────────────────────────────────────────────────────────
+export type PageOfTraceSummary = Schemas['PageOfTraceSummary'];
+export type PageOfLogEntry = Schemas['PageOfLogEntry'];
+
+// ─── Request shapes ────────────────────────────────────────────────────
+
+/** A closed time window in UTC unix milliseconds — the wire unit everywhere. */
 export interface TimeRange {
   startUnixMs: number;
   endUnixMs: number;
 }
 
-export interface TraceSummary {
-  traceId: string;
-  rootService: string;
-  rootOperation: string;
-  startTime: number;
-  durationMs: number;
-  status: TraceStatus;
-  spanCount: number;
-  services: string[];
-}
-
-export interface Span {
-  spanId: string;
-  parentSpanId: string | null;
-  service: string;
-  operation: string;
-  startTime: number;
-  durationMs: number;
-  status: TraceStatus;
-  tags: Record<string, string>;
-  events: SpanEvent[];
-}
-
-export interface SpanEvent {
-  time: number;
-  name: string;
-  attributes: Record<string, string>;
-}
-
-export interface TraceDetail {
-  traceId: string;
-  rootService: string;
-  rootOperation: string;
-  startTime: number;
-  durationMs: number;
-  status: TraceStatus;
-  spans: Span[];
-}
-
-export interface LogEntry {
-  timestamp: number;
-  level: LogLevel | string;
-  service?: string;
-  traceId?: string;
-  spanId?: string;
-  message: string;
-  fields?: Record<string, string | number | boolean | undefined>;
-}
-
-export interface ServiceOperation {
-  name: string;
-  count: number;
-}
-
-export interface ServiceSummary {
-  name: string;
-  spanCount: number;
-  errorCount: number;
-  operations: ServiceOperation[];
-}
-
-export interface ListTracesRequest {
+export interface ListTracesRequest extends TimeRange {
   service?: string;
   operation?: string;
-  startUnixMs: number;
-  endUnixMs: number;
   minDurationMs?: number;
   maxDurationMs?: number;
-  limit?: number;
-}
-
-export interface ListTracesResponse {
-  items: TraceSummary[];
   cursor?: string;
-  hasMore: boolean;
-}
-
-export interface GetTraceRequest {
-  traceId: string;
-}
-
-export interface ListLogsRequest {
-  traceId?: string;
-  query?: string;       // LogsQL expression (overrides traceId if both)
-  startUnixMs?: number;
-  endUnixMs?: number;
   limit?: number;
 }
 
-export interface ListLogsResponse {
-  entries: LogEntry[];
-  total: number;
+export interface ListLogsRequest extends Partial<TimeRange> {
+  traceId?: TraceId;
+  /** Log stream / service filter, as the backend's `Stream` parameter. */
+  stream?: string;
+  limit?: number;
 }
 
-export interface ListServicesRequest {
-  startUnixMs: number;
-  endUnixMs: number;
-}
-
-export interface ListServicesResponse {
-  items: ServiceSummary[];
-}
-
-export interface HealthResponse {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  backends: {
-    vt: { status: 'ok' | 'error'; latencyMs?: number; error?: string };
-    vl: { status: 'ok' | 'error'; latencyMs?: number; error?: string };
-    vm: { status: 'ok' | 'error'; latencyMs?: number; error?: string };
-  };
+export interface ListErrorsRequest extends TimeRange {
+  service?: string;
+  limit?: number;
 }

@@ -11,6 +11,7 @@
     "build": "bun --filter '@tessera/console' build",
     "test": "bun --filter '@tessera/console' test",
     "lint": "bun --filter '@tessera/console' lint",
-    "typecheck": "bun --filter '@tessera/console' typecheck"
+    "typecheck": "bun --filter '@tessera/console' typecheck",
+    "codegen": "bun --filter '@tessera/console' codegen"
   }
 }

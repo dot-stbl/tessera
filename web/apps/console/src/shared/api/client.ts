@@ -1,123 +1,133 @@
-import { mockApi } from './mock-data';
+import { apiRoutes } from './routes';
+import { toApiError } from './problem-details';
 import type {
+  ErrorGroupSummary,
+  GetTraceResponse,
   HealthResponse,
+  ListErrorsRequest,
   ListLogsRequest,
-  ListLogsResponse,
-  ListServicesRequest,
-  ListServicesResponse,
   ListTracesRequest,
-  ListTracesResponse,
-  TraceDetail,
+  PageOfLogEntry,
+  PageOfTraceSummary,
+  ServiceSummary,
+  TimeRange,
 } from './types';
 
 /**
- * Tessera API client. Falls back to mock data in dev when VITE_API_BASE_URL
- * is unset, so the app works without a running backend.
+ * The API surface, as an interface rather than a concrete object.
  *
- * Usage:
- *   import { api } from '@/shared/api/client';
- *   const traces = await api.listTraces({ startUnixMs, endUnixMs });
+ * Having a named contract is what lets the mock be a *peer implementation*
+ * instead of a branch inside every method. The previous client tested
+ * `if (USE_MOCK)` in each function, which shipped the fixtures in the production
+ * bundle and — more damagingly — let the two paths drift silently: the mock
+ * `getTrace` returned a single root span, so the waterfall could not be
+ * developed against it at all.
+ *
+ * Every method takes an `AbortSignal` because TanStack Query hands one to each
+ * `queryFn`; without it a filter change leaves the superseded request running.
  */
-
-const API_BASE = import.meta.env['VITE_API_BASE_URL'] ?? '';
-const USE_MOCK = !API_BASE;
-
-class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-  }
+export interface TesseraApi {
+  getHealth(signal?: AbortSignal): Promise<HealthResponse>;
+  listServices(range: TimeRange, signal?: AbortSignal): Promise<ServiceSummary[]>;
+  listTraces(request: ListTracesRequest, signal?: AbortSignal): Promise<PageOfTraceSummary>;
+  getTrace(traceId: string, signal?: AbortSignal): Promise<GetTraceResponse>;
+  listLogs(request: ListLogsRequest, signal?: AbortSignal): Promise<PageOfLogEntry>;
+  listErrors(request: ListErrorsRequest, signal?: AbortSignal): Promise<ErrorGroupSummary[]>;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new ApiError(res.status, `${res.status} ${res.statusText}: ${body}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-export const api = {
-  /** List traces in time range. */
-  listTraces(req: ListTracesRequest): Promise<ListTracesResponse> {
-    if (USE_MOCK) return mockApi.listTraces(req);
-    const params = new URLSearchParams({
-      start: String(req.startUnixMs),
-      end: String(req.endUnixMs),
-      ...(req.service && { service: req.service }),
-      ...(req.operation && { operation: req.operation }),
-      ...(req.minDurationMs && { minDurationMs: String(req.minDurationMs) }),
-      ...(req.maxDurationMs && { maxDurationMs: String(req.maxDurationMs) }),
-      ...(req.limit && { limit: String(req.limit) }),
-    });
-    return request<ListTracesResponse>(`/api/traces?${params.toString()}`);
-  },
-
-  /** Get full trace detail with span tree. */
-  getTrace(traceId: string): Promise<TraceDetail> {
-    if (USE_MOCK) {
-      // Mock: synthesize a tiny trace from summary if present
-      return import('./mock-data').then(({ mockData }) => {
-        const summary = mockData.traces.find((t) => t.traceId === traceId);
-        if (!summary) throw new ApiError(404, `Trace ${traceId} not found`);
-        return {
-          traceId: summary.traceId,
-          rootService: summary.rootService,
-          rootOperation: summary.rootOperation,
-          startTime: summary.startTime,
-          durationMs: summary.durationMs,
-          status: summary.status,
-          spans: [
-            {
-              spanId: 'root',
-              parentSpanId: null,
-              service: summary.rootService,
-              operation: summary.rootOperation,
-              startTime: summary.startTime,
-              durationMs: summary.durationMs,
-              status: summary.status,
-              tags: { 'http.method': 'POST', 'http.status_code': summary.status === 'error' ? '500' : '200' },
-              events: [],
-            },
-          ],
-        };
-      });
+/**
+ * Query-parameter names are the PascalCase spellings the OpenAPI document
+ * declares, which come from the C# request-model property names. ASP.NET's query
+ * binding happens to be case-insensitive, but matching the document is what
+ * keeps this client and a generated one interchangeable.
+ */
+function query(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    // Explicit undefined check, not falsiness: `MinDurationMs=0` and `Limit=0`
+    // are meaningful values that a truthiness test silently drops.
+    if (value !== undefined) {
+      search.set(key, String(value));
     }
-    return request<TraceDetail>(`/api/traces/${encodeURIComponent(traceId)}`);
-  },
+  }
+  const rendered = search.toString();
+  return rendered ? `?${rendered}` : '';
+}
 
-  /** List logs (optionally filtered by trace_id or LogsQL query). */
-  listLogs(req: ListLogsRequest): Promise<ListLogsResponse> {
-    if (USE_MOCK) return mockApi.listLogs(req);
-    const params = new URLSearchParams();
-    if (req.traceId) params.set('trace_id', req.traceId);
-    if (req.query) params.set('q', req.query);
-    if (req.startUnixMs) params.set('start', String(req.startUnixMs));
-    if (req.endUnixMs) params.set('end', String(req.endUnixMs));
-    if (req.limit) params.set('limit', String(req.limit));
-    return request<ListLogsResponse>(`/api/logs?${params.toString()}`);
-  },
-
-  /** List services with span counts. */
-  listServices(req: ListServicesRequest): Promise<ListServicesResponse> {
-    if (USE_MOCK) return mockApi.listServices();
-    const params = new URLSearchParams({
-      start: String(req.startUnixMs),
-      end: String(req.endUnixMs),
+/** Talks to a real Tessera host. */
+export function createHttpApi(baseUrl: string): TesseraApi {
+  async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal,
     });
-    return request<ListServicesResponse>(`/api/services?${params.toString()}`);
-  },
 
-  /** Health check. */
-  getHealth(): Promise<HealthResponse> {
-    if (USE_MOCK) return mockApi.getHealth();
-    return request<HealthResponse>('/api/health');
-  },
-};
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
 
-export { ApiError, USE_MOCK };
+    return (await response.json()) as T;
+  }
+
+  return {
+    getHealth(signal) {
+      return request<HealthResponse>(apiRoutes.health, signal);
+    },
+
+    listServices(range, signal) {
+      return request<ServiceSummary[]>(
+        apiRoutes.services + query({ StartUnixMs: range.startUnixMs, EndUnixMs: range.endUnixMs }),
+        signal,
+      );
+    },
+
+    listTraces(request_, signal) {
+      return request<PageOfTraceSummary>(
+        apiRoutes.traces +
+          query({
+            Service: request_.service,
+            Operation: request_.operation,
+            StartUnixMs: request_.startUnixMs,
+            EndUnixMs: request_.endUnixMs,
+            MinDurationMs: request_.minDurationMs,
+            MaxDurationMs: request_.maxDurationMs,
+            Cursor: request_.cursor,
+            Limit: request_.limit,
+          }),
+        signal,
+      );
+    },
+
+    getTrace(traceId, signal) {
+      return request<GetTraceResponse>(apiRoutes.trace(traceId), signal);
+    },
+
+    listLogs(request_, signal) {
+      return request<PageOfLogEntry>(
+        apiRoutes.logs +
+          query({
+            TraceId: request_.traceId,
+            Stream: request_.stream,
+            StartUnixMs: request_.startUnixMs,
+            EndUnixMs: request_.endUnixMs,
+            Limit: request_.limit,
+          }),
+        signal,
+      );
+    },
+
+    listErrors(request_, signal) {
+      return request<ErrorGroupSummary[]>(
+        apiRoutes.errors +
+          query({
+            StartUnixMs: request_.startUnixMs,
+            EndUnixMs: request_.endUnixMs,
+            Service: request_.service,
+            Limit: request_.limit,
+          }),
+        signal,
+      );
+    },
+  };
+}

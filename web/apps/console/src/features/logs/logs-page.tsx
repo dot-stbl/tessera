@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/shared/api/client';
+import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { LogEntry } from '@/shared/ui/apm';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
@@ -13,7 +13,7 @@ export function LogsPage() {
   const { t } = useTranslation();
   useDocumentTitle('Logs');
 
-  const [query, setQuery] = useState<string>('');
+  const [stream, setStream] = useState<string>('');
   const [range, setRange] = useState<'1h' | '6h' | '24h'>('1h');
   const [traceId, setTraceId] = useState<string>('');
 
@@ -21,28 +21,34 @@ export function LogsPage() {
   const startUnixMs = endUnixMs - (range === '1h' ? HOUR : range === '6h' ? 6 * HOUR : 24 * HOUR);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['logs', { query, traceId, startUnixMs, endUnixMs }],
-    queryFn: () =>
-      api.listLogs({
-        query: query || undefined,
-        traceId: traceId || undefined,
-        startUnixMs,
-        endUnixMs,
-        limit: 500,
-      }),
+    queryKey: ['logs', { stream, traceId, startUnixMs, endUnixMs }],
+    queryFn: ({ signal }) =>
+      api.listLogs(
+        {
+          // The backend narrows logs by trace id and stream. There is no
+          // free-text parameter yet — ad-hoc LogsQL search is a later phase — so
+          // the toolbar filters by service stream instead of pretending.
+          stream: stream || undefined,
+          traceId: traceId || undefined,
+          startUnixMs,
+          endUnixMs,
+          limit: 500,
+        },
+        signal,
+      ),
     refetchInterval: 30_000,
   });
 
   return (
     <PageTemplate
       title={t('logs.title')}
-      subtitle={`${data?.entries.length ?? 0} log entries · last ${range}`}
+      subtitle={`${data?.items.length ?? 0} log entries · last ${range}`}
     >
       <Toolbar
         range={range}
         onRangeChange={setRange}
-        query={query}
-        onQueryChange={setQuery}
+        query={stream}
+        onQueryChange={setStream}
         traceId={traceId}
         onTraceIdChange={setTraceId}
       />
@@ -55,20 +61,20 @@ export function LogsPage() {
 
       {isLoading ? (
         <SkeletonList />
-      ) : data && data.entries.length === 0 ? (
+      ) : data && data.items.length === 0 ? (
         <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {t('logs.empty.title')}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-border bg-card">
-          {data?.entries.map((entry, i) => (
+          {data?.items.map((entry, i) => (
             <LogEntry
               key={`${entry.timestamp}-${i}`}
               timestamp={entry.timestamp}
               level={entry.level}
               service={entry.service}
-              traceId={entry.traceId}
-              spanId={entry.spanId}
+              traceId={entry.traceId ?? undefined}
+              spanId={entry.spanId ?? undefined}
               message={entry.message}
               fields={entry.fields}
             />
@@ -110,7 +116,7 @@ function Toolbar({ range, onRangeChange, query, onQueryChange, traceId, onTraceI
       <div className="flex-1 min-w-[200px]">
         <input
           type="text"
-          placeholder="LogsQL query (e.g. level:ERROR service:checkout-api)"
+          placeholder="Service, e.g. checkout-api"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           className="h-7 w-full rounded-sm border border-border bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-foreground/60 focus:outline-none"

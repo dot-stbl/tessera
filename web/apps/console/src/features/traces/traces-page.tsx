@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/shared/api/client';
+import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { TimeFormat } from '@/shared/ui/apm';
 import { Duration } from '@/shared/ui/apm';

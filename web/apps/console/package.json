@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "playbook:dev": "ladle serve",
     "playbook:build": "ladle build --outDir dist-playbook",
-    "playbook:preview": "ladle preview"
+    "playbook:preview": "ladle preview",
+    "codegen": "openapi-typescript openapi/v1.json -o src/shared/api/schema.gen.ts"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-beta.7",
