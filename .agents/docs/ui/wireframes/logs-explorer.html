@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tessera · Logs explorer</title>
+  <style>
+    :root {
+      --bg: oklch(1 0 0);
+      --card: oklch(1 0 0);
+      --surface-2: oklch(97% 0.006 250);
+      --surface-3: oklch(95% 0.008 240);
+      --fg: oklch(0.141 0.005 285.823);
+      --fg-2: oklch(35% 0.018 240);
+      --muted: oklch(0.552 0.016 285.938);
+      --border: oklch(0.92 0.004 286.32);
+      --primary: oklch(0.505 0.213 27.518);
+      --primary-fg: oklch(0.971 0.013 17.38);
+      --ok: oklch(58% 0.16 145);
+      --err: oklch(58% 0.20 25);
+      --err-soft: oklch(96% 0.03 25);
+      --err-ink: oklch(50% 0.17 25);
+      --warn: oklch(72% 0.15 75);
+      --warn-soft: oklch(96% 0.05 75);
+      --warn-ink: oklch(48% 0.10 75);
+      --level-trace: oklch(60% 0.005 240);
+      --level-debug: oklch(60% 0.05 220);
+      --level-info: oklch(58% 0.10 230);
+      --level-warn: var(--warn);
+      --level-error: var(--err);
+      --level-fatal: oklch(45% 0.22 0);
+      --level-error-bg: var(--err-soft);
+      --level-warn-bg: var(--warn-soft);
+      --level-info-bg: oklch(96% 0.04 230);
+      --level-fatal-bg: oklch(95% 0.05 0);
+      --font-sans: "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
+      --row-h: 32px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: oklch(17% 0.012 250);
+        --card: oklch(21% 0.014 250);
+        --surface-2: oklch(25% 0.015 250);
+        --surface-3: oklch(28% 0.016 250);
+        --fg: oklch(94% 0.006 250);
+        --fg-2: oklch(82% 0.008 250);
+        --muted: oklch(66% 0.012 250);
+        --border: oklch(30% 0.012 250);
+        --primary: oklch(70% 0.20 25);
+        --primary-fg: oklch(17% 0.012 250);
+        --err: oklch(72% 0.20 25);
+        --err-soft: oklch(28% 0.06 25);
+        --err-ink: oklch(82% 0.17 25);
+        --warn: oklch(80% 0.15 75);
+        --warn-soft: oklch(28% 0.06 75);
+        --warn-ink: oklch(82% 0.12 75);
+        --level-trace: oklch(70% 0.005 240);
+        --level-debug: oklch(70% 0.05 220);
+        --level-info: oklch(72% 0.10 230);
+        --level-fatal: oklch(65% 0.18 10);
+        --level-error-bg: var(--err-soft);
+        --level-warn-bg: var(--warn-soft);
+        --level-info-bg: oklch(28% 0.04 230);
+        --level-fatal-bg: oklch(28% 0.06 10);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--fg);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .topnav {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .mark {
+      width: 14px; height: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+    }
+    .mark i { background: var(--fg); display: block; }
+    .mark i.r { background: #A60000; }
+    .nav a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .nav a.on { color: var(--fg); background: var(--surface-2); font-weight: 500; }
+    .spacer { flex: 1; }
+    .range, .btn {
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .btn { background: var(--card); }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .field {
+      height: 28px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 4px;
+      padding: 0 8px;
+      font-size: 12px;
+    }
+    .query {
+      flex: 1;
+      min-width: 220px;
+      font-family: var(--font-mono);
+    }
+    .levels { display: flex; gap: 4px; }
+    .lvl-btn {
+      height: 28px;
+      min-width: 28px;
+      padding: 0 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: default;
+    }
+    .lvl-btn.on-e { background: var(--level-error-bg); color: var(--err-ink); border-color: color-mix(in oklch, var(--err) 35%, var(--border)); }
+    .lvl-btn.on-w { background: var(--level-warn-bg); color: var(--warn-ink); border-color: color-mix(in oklch, var(--warn) 35%, var(--border)); }
+    .lvl-btn.on-f { background: var(--level-fatal-bg); color: var(--level-fatal); border-color: color-mix(in oklch, var(--level-fatal) 35%, var(--border)); }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--fg-2);
+    }
+    .chip b { color: var(--fg); font-weight: 500; }
+    .stream { flex: 1; overflow: auto; }
+    .log {
+      min-height: var(--row-h);
+      display: grid;
+      grid-template-columns: 96px 52px 110px 1fr 132px 28px;
+      gap: 8px;
+      align-items: center;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .log:hover { background: var(--surface-2); }
+    .log.sel { background: var(--surface-3); }
+    .log.e { box-shadow: inset 2px 0 0 var(--err); }
+    .log.f { box-shadow: inset 2px 0 0 var(--level-fatal); }
+    .log.w { box-shadow: inset 2px 0 0 var(--warn); }
+    .ts { color: var(--fg-2); font-size: 11px; }
+    .level {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .level.e { color: var(--err-ink); }
+    .level.w { color: var(--warn-ink); }
+    .level.i { color: var(--level-info); }
+    .level.d { color: var(--level-debug); }
+    .level.f { color: var(--level-fatal); }
+    .svc { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); }
+    .tid a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 11px;
+    }
+    .tid a:hover { text-decoration: underline; }
+    .tid .orphan { color: var(--muted); font-size: 11px; }
+    .go {
+      color: var(--primary);
+      font-size: 14px;
+      text-decoration: none;
+      text-align: center;
+    }
+    .expand {
+      grid-column: 1 / -1;
+      margin: 0 0 8px 96px;
+      padding: 8px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 4px 12px;
+    }
+    .expand dt { color: var(--muted); }
+    .expand dd { margin: 0; color: var(--fg); }
+    .footer {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .kbd {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0 4px;
+      background: var(--surface-2);
+    }
+    .note { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><i></i><i class="r"></i><i></i><i></i></span>
+      Tessera
+    </div>
+    <nav class="nav">
+      <a href="traces-list.html">Traces</a>
+      <a class="on" href="#">Logs</a>
+    </nav>
+    <div class="spacer"></div>
+    <button class="range" type="button">Last 1h · 13:20–14:20</button>
+    <button class="btn" type="button">Refresh</button>
+  </header>
+
+  <div class="filters">
+    <select class="field" aria-label="Service">
+      <option>All services</option>
+      <option selected>checkout-api</option>
+      <option>stripe</option>
+      <option>postgres</option>
+    </select>
+    <div class="levels" role="group" aria-label="Levels">
+      <button class="lvl-btn" type="button" title="Trace">T</button>
+      <button class="lvl-btn" type="button" title="Debug">D</button>
+      <button class="lvl-btn" type="button" title="Info">I</button>
+      <button class="lvl-btn on-w" type="button" title="Warn">W</button>
+      <button class="lvl-btn on-e" type="button" title="Error">E</button>
+      <button class="lvl-btn on-f" type="button" title="Fatal">F</button>
+    </div>
+    <input class="field query" type="search" placeholder="/  query…  e.g. StripeCardError OR decline" value="StripeCardError" />
+    <div class="chips">
+      <span class="chip"><span>service</span><b>checkout-api</b><span>×</span></span>
+      <span class="chip"><span>level</span><b>warn,error,fatal</b><span>×</span></span>
+      <span class="chip"><span>q</span><b>StripeCardError</b><span>×</span></span>
+    </div>
+  </div>
+
+  <div class="stream" role="list">
+    <div class="log e sel" role="listitem">
+      <span class="mono ts">14:03:21.412</span>
+      <span class="level e">ERROR</span>
+      <span class="svc">checkout-api</span>
+      <span class="msg">failed to charge card: StripeCardError</span>
+      <span class="tid mono"><a href="trace-detail.html" title="Open request view">a1b2c3d4e5f6…</a></span>
+      <a class="go" href="trace-detail.html" title="Open trace">↗</a>
+    </div>
+    <div class="expand">
+      <dt>trace.id</dt><dd>a1b2c3d4e5f67890abcdef0123456789</dd>
+      <dt>span.id</dt><dd>span_001</dd>
+      <dt>error.kind</dt><dd>StripeCardError</dd>
+      <dt>user.id</dt><dd>u_42</dd>
+      <dt>amount</dt><dd>129.99</dd>
+    </div>
+
+    <div class="log w" role="listitem">
+      <span class="mono ts">14:03:21.512</span>
+      <span class="level w">WARN</span>
+      <span class="svc">checkout-api</span>
+      <span class="msg">payment retry attempt 1 of 3</span>
+      <span class="tid mono"><a href="trace-detail.html">a1b2c3d4e5f6…</a></span>
+      <a class="go" href="trace-detail.html">↗</a>
+    </div>
+
+    <div class="log e" role="listitem">
+      <span class="mono ts">13:33:08.901</span>
+      <span class="level e">ERROR</span>
+      <span class="svc">stripe</span>
+      <span class="msg">card declined by issuer</span>
+      <span class="tid mono"><a href="trace-detail.html">f67890abcdef…</a></span>
+      <a class="go" href="#">↗</a>
+    </div>
+
+    <div class="log f" role="listitem">
+      <span class="mono ts">13:20:01.004</span>
+      <span class="level f">FATAL</span>
+      <span class="svc">stripe</span>
+      <span class="msg">payment processor unreachable</span>
+      <span class="tid mono"><a href="#">f67890abcdef…</a></span>
+      <a class="go" href="#">↗</a>
+    </div>
+
+    <div class="log" role="listitem">
+      <span class="mono ts">13:15:44.220</span>
+      <span class="level i">INFO</span>
+      <span class="svc">checkout-api</span>
+      <span class="msg">service started</span>
+      <span class="tid mono"><span class="orphan">— no trace</span></span>
+      <span class="go" style="color:var(--muted)">·</span>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span class="mono">5</span> lines · orphans without <span class="mono">trace_id</span> stay here
+    <span>·</span>
+    <span>URL <span class="mono">?service=checkout-api&amp;level=warn,error,fatal&amp;q=StripeCardError</span></span>
+    <span class="note">
+      <span class="kbd">j</span><span class="kbd">k</span> line
+      <span class="kbd">↵</span> open trace
+      <span class="kbd">/</span> query
+      <span class="kbd">e</span> errors
+    </span>
+  </footer>
+</body>
+</html>

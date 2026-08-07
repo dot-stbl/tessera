@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tessera · Request view · POST /checkout</title>
+  <style>
+    :root {
+      --bg: oklch(1 0 0);
+      --card: oklch(1 0 0);
+      --surface-2: oklch(97% 0.006 250);
+      --surface-3: oklch(95% 0.008 240);
+      --fg: oklch(0.141 0.005 285.823);
+      --fg-2: oklch(35% 0.018 240);
+      --muted: oklch(0.552 0.016 285.938);
+      --border: oklch(0.92 0.004 286.32);
+      --border-2: oklch(85% 0.008 240);
+      --grid: oklch(0.55 0.02 260 / 0.14);
+      --primary: oklch(0.505 0.213 27.518);
+      --primary-fg: oklch(0.971 0.013 17.38);
+      --ok: oklch(58% 0.16 145);
+      --ok-soft: oklch(95% 0.03 145);
+      --ok-ink: oklch(45% 0.13 145);
+      --err: oklch(58% 0.20 25);
+      --err-soft: oklch(96% 0.03 25);
+      --err-ink: oklch(50% 0.17 25);
+      --warn: oklch(72% 0.15 75);
+      --warn-soft: oklch(96% 0.05 75);
+      --warn-ink: oklch(48% 0.10 75);
+      --level-error: var(--err);
+      --level-warn: var(--warn);
+      --level-info: oklch(58% 0.10 230);
+      --svc-1: oklch(0.60 0.12 250);
+      --svc-2: oklch(0.60 0.10 190);
+      --svc-3: oklch(0.58 0.13 300);
+      --font-sans: "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
+      --panel-w: 360px;
+      --span-h: 28px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: oklch(17% 0.012 250);
+        --card: oklch(21% 0.014 250);
+        --surface-2: oklch(25% 0.015 250);
+        --surface-3: oklch(28% 0.016 250);
+        --fg: oklch(94% 0.006 250);
+        --fg-2: oklch(82% 0.008 250);
+        --muted: oklch(66% 0.012 250);
+        --border: oklch(30% 0.012 250);
+        --border-2: oklch(38% 0.014 250);
+        --grid: oklch(1 0 0 / 0.06);
+        --primary: oklch(70% 0.20 25);
+        --primary-fg: oklch(17% 0.012 250);
+        --ok: oklch(72% 0.16 145);
+        --ok-soft: oklch(28% 0.05 145);
+        --ok-ink: oklch(82% 0.14 145);
+        --err: oklch(72% 0.20 25);
+        --err-soft: oklch(28% 0.06 25);
+        --err-ink: oklch(82% 0.17 25);
+        --warn: oklch(80% 0.15 75);
+        --warn-soft: oklch(28% 0.06 75);
+        --warn-ink: oklch(82% 0.12 75);
+        --level-info: oklch(72% 0.10 230);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--fg);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .header {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .crumb {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .crumb a { color: var(--primary); text-decoration: none; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--fg-2);
+      font-size: 12px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .pill-err { background: var(--err-soft); color: var(--err-ink); }
+    .tid { color: var(--primary); font-size: 12px; }
+    .actions { margin-left: auto; display: flex; gap: 6px; }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--fg);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-fg);
+      border-color: transparent;
+    }
+    .banner {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border: 1px solid var(--warn);
+      background: var(--warn-soft);
+      color: var(--warn-ink);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .banner strong { font-weight: 600; }
+    .banner .btn { margin-left: auto; background: var(--card); color: var(--fg); }
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr var(--panel-w);
+      min-height: 0;
+    }
+    .waterfall {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-right: 1px solid var(--border);
+      overflow: auto;
+    }
+    .axis {
+      display: grid;
+      grid-template-columns: 220px 1fr 64px;
+      height: 26px;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      z-index: 2;
+    }
+    .axis-label { padding: 0 10px; }
+    .axis-track { position: relative; height: 100%; }
+    .tick {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .tick.is-first { transform: translate(0, -50%); }
+    .tick.is-last { transform: translate(-100%, -50%); }
+    .axis-dur { padding: 0 10px; text-align: right; }
+    .span-row {
+      display: grid;
+      grid-template-columns: 220px 1fr 64px;
+      height: var(--span-h);
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .span-row:hover { background: var(--surface-2); }
+    .span-row.sel {
+      background: var(--surface-3);
+      box-shadow: inset 2px 0 0 var(--primary);
+    }
+    .span-row.err { box-shadow: inset 2px 0 0 var(--err); }
+    .span-row.sel.err { box-shadow: inset 2px 0 0 var(--err); }
+    .label {
+      padding: 0 8px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      font-size: 12px;
+    }
+    .label.d1 { padding-left: 22px; }
+    .label.d2 { padding-left: 34px; }
+    .svc-dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+    .svc-name { color: var(--muted); flex: 0 0 auto; }
+    .op-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .track {
+      position: relative;
+      height: 16px;
+      margin: 0 4px;
+      background:
+        linear-gradient(to right, var(--grid) 1px, transparent 1px) 0 0 / 25% 100%,
+        linear-gradient(to right, var(--grid) 1px, transparent 1px) 0 0 / 50% 100%,
+        linear-gradient(to right, var(--grid) 1px, transparent 1px) 0 0 / 75% 100%;
+    }
+    .bar {
+      position: absolute;
+      top: 2px;
+      height: 12px;
+      border-radius: 2px;
+      min-width: 2px;
+    }
+    .bar.ok { background: var(--svc-1); opacity: 0.75; }
+    .bar.db { background: var(--svc-2); opacity: 0.75; }
+    .bar.stripe { background: var(--svc-3); opacity: 0.85; }
+    .bar.error {
+      background: var(--err);
+      opacity: 0.9;
+      box-shadow: 0 0 0 1px color-mix(in oklch, var(--err) 40%, transparent);
+    }
+    .markers {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .marker {
+      position: absolute;
+      top: -1px;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: default;
+      z-index: 1;
+    }
+    .marker .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1.5px solid var(--bg);
+      box-shadow: 0 0 0 1px currentColor;
+    }
+    .marker.error { color: var(--level-error); }
+    .marker.warn { color: var(--level-warn); }
+    .marker .tip {
+      position: absolute;
+      top: 12px;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 2px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--fg-2);
+      box-shadow: 0 1px 2px oklch(0 0 0 / 0.08);
+    }
+    .dur {
+      padding: 0 10px;
+      text-align: right;
+      font-size: 11px;
+      color: var(--fg-2);
+    }
+    .dur.err { color: var(--err-ink); font-weight: 500; }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--card);
+      overflow: auto;
+    }
+    .panel-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-kicker {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .panel-title { font-weight: 600; font-size: 13px; }
+    .panel-sub {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--fg-2);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .section {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section h3 {
+      margin: 0 0 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 4px 8px;
+      font-size: 11px;
+    }
+    dt { color: var(--muted); font-family: var(--font-mono); }
+    dd { margin: 0; font-family: var(--font-mono); color: var(--fg); word-break: break-all; }
+    .tl-item {
+      display: grid;
+      grid-template-columns: 56px 44px 1fr auto;
+      gap: 6px;
+      align-items: start;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .tl-item:last-child { border-bottom: 0; }
+    .tl-item.hot {
+      background: var(--err-soft);
+      margin: 0 -12px;
+      padding: 6px 12px;
+      border-bottom-color: transparent;
+    }
+    .tl-off { color: var(--fg-2); }
+    .src {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0 4px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lvl {
+      font-weight: 600;
+      font-size: 10px;
+    }
+    .lvl-e { color: var(--err-ink); }
+    .lvl-w { color: var(--warn-ink); }
+    .lvl-ev { color: var(--err-ink); }
+    .tl-msg { color: var(--fg); line-height: 1.35; }
+    .footer {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .kbd {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0 4px;
+      color: var(--muted);
+      background: var(--surface-2);
+    }
+    .footer .note { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="crumb"><a href="traces-list.html">← Traces</a> · request view</div>
+    <div class="title-row">
+      <h1>POST /checkout</h1>
+      <div class="meta">
+        <span>checkout-api</span>
+        <span class="mono">1.25s</span>
+        <span class="pill pill-err">ERROR</span>
+        <span class="mono tid">a1b2c3d4e5f67890abcdef0123456789</span>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button">Copy id</button>
+        <button class="btn" type="button">Open in Logs</button>
+      </div>
+    </div>
+    <div class="banner" role="status">
+      <strong>Degraded · example</strong>
+      <span>Spans only — logs backend timed out on first try. Waterfall is complete; markers use cached log lines when present.</span>
+      <button class="btn" type="button">Retry logs</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="waterfall" aria-label="Waterfall">
+      <div class="axis">
+        <div class="axis-label">Service · Operation</div>
+        <div class="axis-track">
+          <span class="tick is-first" style="left:0">0</span>
+          <span class="tick" style="left:25%">312ms</span>
+          <span class="tick" style="left:50%">624ms</span>
+          <span class="tick" style="left:75%">936ms</span>
+          <span class="tick is-last" style="left:100%">1.25s</span>
+        </div>
+        <div class="axis-dur">Dur</div>
+      </div>
+
+      <!-- root -->
+      <div class="span-row">
+        <div class="label">
+          <span class="svc-dot" style="background:var(--svc-1)"></span>
+          <span class="svc-name">checkout-api</span>
+          <span class="op-name">POST /checkout</span>
+        </div>
+        <div class="track">
+          <div class="bar ok" style="left:0%;width:100%"></div>
+        </div>
+        <div class="dur mono">1.25s</div>
+      </div>
+
+      <!-- validate -->
+      <div class="span-row">
+        <div class="label d1">
+          <span class="svc-dot" style="background:var(--svc-1)"></span>
+          <span class="svc-name">checkout-api</span>
+          <span class="op-name">ValidateCart</span>
+        </div>
+        <div class="track">
+          <div class="bar ok" style="left:2%;width:6%"></div>
+        </div>
+        <div class="dur mono">72ms</div>
+      </div>
+
+      <!-- db -->
+      <div class="span-row">
+        <div class="label d1">
+          <span class="svc-dot" style="background:var(--svc-2)"></span>
+          <span class="svc-name">postgres</span>
+          <span class="op-name">SELECT orders</span>
+        </div>
+        <div class="track">
+          <div class="bar db" style="left:8%;width:3.6%"></div>
+        </div>
+        <div class="dur mono">45ms</div>
+      </div>
+
+      <!-- currency -->
+      <div class="span-row">
+        <div class="label d1">
+          <span class="svc-dot" style="background:var(--svc-4, var(--svc-1))"></span>
+          <span class="svc-name">currency</span>
+          <span class="op-name">Convert</span>
+        </div>
+        <div class="track">
+          <div class="bar ok" style="left:14%;width:1.8%;background:oklch(0.62 0.10 220)"></div>
+        </div>
+        <div class="dur mono">23ms</div>
+      </div>
+
+      <!-- stripe CLIENT — selected, with log markers (the wow) -->
+      <div class="span-row sel err">
+        <div class="label d1">
+          <span class="svc-dot" style="background:var(--svc-3)"></span>
+          <span class="svc-name">stripe</span>
+          <span class="op-name">POST /v1/charges</span>
+        </div>
+        <div class="track">
+          <!-- bar: +375ms → +1000ms of 1250ms total (50% width) so +608/+708 fit inside -->
+          <div class="bar error" style="left:30%;width:50%"></div>
+          <div class="markers">
+            <div class="marker error" style="left:54.64%" title="ERROR log @+608ms from span start">
+              <span class="dot"></span>
+              <span class="tip">●ERROR @+608ms</span>
+            </div>
+            <div class="marker warn" style="left:58.64%" title="WARN log @+708ms from span start">
+              <span class="dot"></span>
+              <span class="tip">●WARN @+708ms</span>
+            </div>
+          </div>
+        </div>
+        <div class="dur mono err">625ms</div>
+      </div>
+
+      <!-- retry internal -->
+      <div class="span-row">
+        <div class="label d2">
+          <span class="svc-dot" style="background:var(--svc-1)"></span>
+          <span class="svc-name">checkout-api</span>
+          <span class="op-name">payment.retry</span>
+        </div>
+        <div class="track">
+          <div class="bar ok" style="left:82%;width:8%"></div>
+        </div>
+        <div class="dur mono">98ms</div>
+      </div>
+
+      <!-- response write -->
+      <div class="span-row">
+        <div class="label d1">
+          <span class="svc-dot" style="background:var(--svc-1)"></span>
+          <span class="svc-name">checkout-api</span>
+          <span class="op-name">WriteResponse</span>
+        </div>
+        <div class="track">
+          <div class="bar ok" style="left:94%;width:4%"></div>
+        </div>
+        <div class="dur mono">41ms</div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="Span detail">
+      <div class="panel-head">
+        <div class="panel-kicker">Selected span · span_001</div>
+        <div class="panel-title">POST /v1/charges → stripe</div>
+        <div class="panel-sub">
+          <span class="pill pill-err">ERROR</span>
+          <span class="mono">CLIENT</span>
+          <span class="mono">625ms</span>
+          <span class="mono">+420ms</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Attributes</h3>
+        <dl>
+          <dt>http.request.method</dt><dd>POST</dd>
+          <dt>http.response.status_code</dt><dd>402</dd>
+          <dt>server.address</dt><dd>api.stripe.com</dd>
+          <dt>error.type</dt><dd>StripeCardError</dd>
+          <dt>user.id</dt><dd>u_42</dd>
+          <dt>amount</dt><dd>129.99</dd>
+        </dl>
+      </div>
+
+      <div class="section">
+        <h3>Timeline · events + logs</h3>
+        <div class="tl-item hot">
+          <span class="mono tl-off">+608ms</span>
+          <span class="lvl lvl-e">ERROR</span>
+          <span class="tl-msg">failed to charge card: StripeCardError</span>
+          <span class="src">VL</span>
+        </div>
+        <div class="tl-item hot">
+          <span class="mono tl-off">+608ms</span>
+          <span class="lvl lvl-ev">EXC</span>
+          <span class="tl-msg">exception · StripeCardError · card_declined</span>
+          <span class="src">event</span>
+        </div>
+        <div class="tl-item">
+          <span class="mono tl-off">+708ms</span>
+          <span class="lvl lvl-w">WARN</span>
+          <span class="tl-msg">payment retry attempt 1 of 3</span>
+          <span class="src">VL</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Exception (span event)</h3>
+        <dl>
+          <dt>exception.type</dt><dd>StripeCardError</dd>
+          <dt>exception.message</dt><dd>Your card was declined.</dd>
+          <dt>exception.stacktrace</dt><dd class="mono" style="font-size:10px;color:var(--muted)">at Charge.execute (…)</dd>
+        </dl>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <span class="mono">7</span> spans shown · <span class="mono">2</span> error logs · join by <span class="mono">trace_id/span_id</span>
+    <span class="note">
+      <span class="kbd">j</span><span class="kbd">k</span> span
+      <span class="kbd">↵</span> select
+      <span class="kbd">e</span> errors
+      <span class="kbd">c</span> copy id
+    </span>
+  </footer>
+
+</body>
+</html>

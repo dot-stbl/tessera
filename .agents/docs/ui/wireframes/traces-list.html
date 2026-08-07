@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tessera · Traces list</title>
+  <style>
+    :root {
+      --bg: oklch(1 0 0);
+      --card: oklch(1 0 0);
+      --surface-2: oklch(97% 0.006 250);
+      --surface-3: oklch(95% 0.008 240);
+      --fg: oklch(0.141 0.005 285.823);
+      --fg-2: oklch(35% 0.018 240);
+      --muted: oklch(0.552 0.016 285.938);
+      --border: oklch(0.92 0.004 286.32);
+      --border-2: oklch(85% 0.008 240);
+      --primary: oklch(0.505 0.213 27.518);
+      --primary-fg: oklch(0.971 0.013 17.38);
+      --ok: oklch(58% 0.16 145);
+      --ok-soft: oklch(95% 0.03 145);
+      --ok-ink: oklch(45% 0.13 145);
+      --err: oklch(58% 0.20 25);
+      --err-soft: oklch(96% 0.03 25);
+      --err-ink: oklch(50% 0.17 25);
+      --slow: oklch(68% 0.18 50);
+      --slow-soft: oklch(96% 0.04 50);
+      --slow-ink: oklch(45% 0.12 50);
+      --idle-soft: oklch(95% 0.006 240);
+      --idle-ink: oklch(45% 0.012 240);
+      --svc-1: oklch(0.60 0.12 250);
+      --svc-2: oklch(0.60 0.10 190);
+      --svc-3: oklch(0.58 0.13 300);
+      --svc-4: oklch(0.62 0.10 220);
+      --font-sans: "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
+      --row-h: 32px;
+      --chrome-h: 42px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: oklch(17% 0.012 250);
+        --card: oklch(21% 0.014 250);
+        --surface-2: oklch(25% 0.015 250);
+        --surface-3: oklch(28% 0.016 250);
+        --fg: oklch(94% 0.006 250);
+        --fg-2: oklch(82% 0.008 250);
+        --muted: oklch(66% 0.012 250);
+        --border: oklch(30% 0.012 250);
+        --border-2: oklch(38% 0.014 250);
+        --primary: oklch(70% 0.20 25);
+        --primary-fg: oklch(17% 0.012 250);
+        --ok: oklch(72% 0.16 145);
+        --ok-soft: oklch(28% 0.05 145);
+        --ok-ink: oklch(82% 0.14 145);
+        --err: oklch(72% 0.20 25);
+        --err-soft: oklch(28% 0.06 25);
+        --err-ink: oklch(82% 0.17 25);
+        --slow: oklch(75% 0.18 50);
+        --slow-soft: oklch(28% 0.06 50);
+        --slow-ink: oklch(82% 0.14 50);
+        --idle-soft: oklch(28% 0.006 240);
+        --idle-ink: oklch(75% 0.012 240);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--fg);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .topnav {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .mark {
+      width: 14px; height: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+    }
+    .mark i { background: var(--fg); display: block; }
+    .mark i.r { background: #A60000; }
+    .nav a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .nav a.on { color: var(--fg); background: var(--surface-2); font-weight: 500; }
+    .spacer { flex: 1; }
+    .range {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--fg);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: default;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-fg);
+      border-color: transparent;
+    }
+    .filters {
+      min-height: var(--chrome-h);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .field {
+      height: 28px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 4px;
+      padding: 0 8px;
+      font-size: 12px;
+    }
+    .query {
+      flex: 1;
+      min-width: 200px;
+      font-family: var(--font-mono);
+    }
+    .query::placeholder { color: var(--muted); }
+    .kbd {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0 4px;
+      color: var(--muted);
+      background: var(--surface-2);
+    }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--fg-2);
+    }
+    .chip b { font-weight: 500; color: var(--fg); }
+    .chip .x { color: var(--muted); cursor: default; }
+    .table-wrap { flex: 1; overflow: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      height: 28px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 10px;
+    }
+    tbody tr {
+      height: var(--row-h);
+      border-bottom: 1px solid var(--border);
+      cursor: default;
+    }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody tr.sel { background: var(--surface-3); outline: 1px solid var(--border-2); outline-offset: -1px; }
+    tbody tr.err-row { box-shadow: inset 2px 0 0 var(--err); }
+    td { padding: 0 10px; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .pill-ok { background: var(--ok-soft); color: var(--ok-ink); }
+    .pill-err { background: var(--err-soft); color: var(--err-ink); }
+    .tid { color: var(--primary); font-size: 12px; }
+    .root { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+    .op { color: var(--fg); }
+    .svc { color: var(--muted); }
+    .dur-cell { display: flex; align-items: center; gap: 8px; }
+    .dur-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--surface-3);
+      border-radius: 2px;
+      overflow: hidden;
+      max-width: 120px;
+    }
+    .dur-bar > i {
+      display: block;
+      height: 100%;
+      background: var(--fg-2);
+      opacity: 0.55;
+    }
+    .dur-bar.slow > i { background: var(--slow); opacity: 0.85; }
+    .dur-bar.err > i { background: var(--err); opacity: 0.85; }
+    .dur-val { width: 56px; text-align: right; font-size: 12px; }
+    .dur-val.slow { color: var(--slow-ink); }
+    .dur-val.err { color: var(--err-ink); }
+    .num { text-align: right; color: var(--fg-2); font-size: 12px; }
+    .svc-dots { display: flex; gap: 3px; }
+    .svc-dots span { width: 6px; height: 6px; border-radius: 50%; }
+    .footer {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .footer .mono { color: var(--fg-2); }
+    .note {
+      margin-left: auto;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><i></i><i class="r"></i><i></i><i></i></span>
+      Tessera
+    </div>
+    <nav class="nav">
+      <a class="on" href="#">Traces</a>
+      <a href="logs-explorer.html">Logs</a>
+    </nav>
+    <div class="spacer"></div>
+    <button class="range" type="button">Last 1h · 13:20–14:20</button>
+    <button class="btn" type="button">Refresh</button>
+  </header>
+
+  <div class="filters">
+    <select class="field" aria-label="Service">
+      <option>All services</option>
+      <option selected>checkout-api</option>
+      <option>stripe</option>
+      <option>postgres</option>
+    </select>
+    <select class="field" aria-label="Status">
+      <option>Any status</option>
+      <option selected>Error</option>
+      <option>OK</option>
+    </select>
+    <select class="field" aria-label="Min duration">
+      <option>Min duration</option>
+      <option>&gt; 100ms</option>
+      <option selected>&gt; 500ms</option>
+      <option>&gt; 1s</option>
+    </select>
+    <input class="field query" type="search" placeholder="/  operation or free text…  e.g. POST /checkout" value="" />
+    <button class="btn" type="button" title="Toggle errors only (e)">e · errors</button>
+    <div class="chips">
+      <span class="chip"><span>service</span><b>checkout-api</b><span class="x">×</span></span>
+      <span class="chip"><span>status</span><b>error</b><span class="x">×</span></span>
+      <span class="chip"><span>minDuration</span><b>500ms</b><span class="x">×</span></span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:88px">Status</th>
+          <th style="width:128px">Trace</th>
+          <th>Root</th>
+          <th style="width:200px">Duration</th>
+          <th style="width:64px;text-align:right">Spans</th>
+          <th style="width:88px">Services</th>
+          <th style="width:72px;text-align:right">Start</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="sel err-row">
+          <td><span class="pill pill-err">ERROR</span></td>
+          <td class="mono tid">a1b2c3d4e5f6…</td>
+          <td>
+            <div class="root">
+              <span class="dot" style="background:var(--svc-1)"></span>
+              <span class="svc">checkout-api</span>
+              <span class="op">· POST /checkout</span>
+            </div>
+          </td>
+          <td>
+            <div class="dur-cell">
+              <div class="dur-bar err" style="max-width:120px"><i style="width:14%"></i></div>
+              <span class="mono dur-val err">1.25s</span>
+            </div>
+          </td>
+          <td class="mono num">23</td>
+          <td><div class="svc-dots"><span style="background:var(--svc-1)"></span><span style="background:var(--svc-2)"></span><span style="background:var(--svc-3)"></span></div></td>
+          <td class="mono num">5m</td>
+        </tr>
+        <tr class="err-row">
+          <td><span class="pill pill-err">ERROR</span></td>
+          <td class="mono tid">f67890abcdef…</td>
+          <td>
+            <div class="root">
+              <span class="dot" style="background:var(--svc-3)"></span>
+              <span class="svc">stripe</span>
+              <span class="op">· Charge</span>
+            </div>
+          </td>
+          <td>
+            <div class="dur-cell">
+              <div class="dur-bar err"><i style="width:100%"></i></div>
+              <span class="mono dur-val err">8.93s</span>
+            </div>
+          </td>
+          <td class="mono num">19</td>
+          <td><div class="svc-dots"><span style="background:var(--svc-3)"></span><span style="background:var(--svc-1)"></span></div></td>
+          <td class="mono num">47m</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-ok">OK</span></td>
+          <td class="mono tid">b2c3d4e5f678…</td>
+          <td>
+            <div class="root">
+              <span class="dot" style="background:var(--svc-1)"></span>
+              <span class="svc">checkout-api</span>
+              <span class="op">· GET /cart</span>
+            </div>
+          </td>
+          <td>
+            <div class="dur-cell">
+              <div class="dur-bar"><i style="width:1%"></i></div>
+              <span class="mono dur-val">89ms</span>
+            </div>
+          </td>
+          <td class="mono num">5</td>
+          <td><div class="svc-dots"><span style="background:var(--svc-1)"></span></div></td>
+          <td class="mono num">12m</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-ok">OK</span></td>
+          <td class="mono tid">c3d4e5f67890…</td>
+          <td>
+            <div class="root">
+              <span class="dot" style="background:var(--svc-4)"></span>
+              <span class="svc">frontend-proxy</span>
+              <span class="op">· ingress</span>
+            </div>
+          </td>
+          <td>
+            <div class="dur-cell">
+              <div class="dur-bar"><i style="width:4.6%"></i></div>
+              <span class="mono dur-val">412ms</span>
+            </div>
+          </td>
+          <td class="mono num">12</td>
+          <td><div class="svc-dots"><span style="background:var(--svc-4)"></span><span style="background:var(--svc-1)"></span></div></td>
+          <td class="mono num">18m</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-ok">OK</span></td>
+          <td class="mono tid">67890abcdef0…</td>
+          <td>
+            <div class="root">
+              <span class="dot" style="background:var(--svc-1)"></span>
+              <span class="svc">checkout-api</span>
+              <span class="op">· POST /payment</span>
+            </div>
+          </td>
+          <td>
+            <div class="dur-cell">
+              <div class="dur-bar"><i style="width:2.6%"></i></div>
+              <span class="mono dur-val">234ms</span>
+            </div>
+          </td>
+          <td class="mono num">11</td>
+          <td><div class="svc-dots"><span style="background:var(--svc-1)"></span><span style="background:var(--svc-3)"></span></div></td>
+          <td class="mono num">58m</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-ok">OK</span></td>
+          <td class="mono tid">e5f67890abcd…</td>
+          <td>
+            <div class="root">
+              <span class="dot" style="background:var(--svc-2)"></span>
+              <span class="svc">postgres</span>
+              <span class="op">· SELECT orders</span>
+            </div>
+          </td>
+          <td>
+            <div class="dur-cell">
+              <div class="dur-bar"><i style="width:1.7%"></i></div>
+              <span class="mono dur-val">156ms</span>
+            </div>
+          </td>
+          <td class="mono num">7</td>
+          <td><div class="svc-dots"><span style="background:var(--svc-2)"></span></div></td>
+          <td class="mono num">32m</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="footer">
+    <span class="mono">6</span> traces · errors in range <span class="mono">2</span>
+    <span>·</span>
+    <span>URL <span class="mono">?from=&amp;to=&amp;service=checkout-api&amp;status=error</span></span>
+    <span class="note">
+      <span class="kbd">j</span><span class="kbd">k</span> move
+      <span class="kbd">↵</span> open
+      <span class="kbd">/</span> filter
+      <span class="kbd">e</span> errors
+    </span>
+  </footer>
+</body>
+</html>
