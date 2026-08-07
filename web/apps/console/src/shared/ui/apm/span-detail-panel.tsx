@@ -91,7 +91,10 @@ export function SpanDetailPanel({
       data-slot="span-detail-panel"
       aria-label={`Span detail: ${service} ${operation}`}
       className={cn(
-        'flex w-full flex-col gap-4 rounded-lg border border-border bg-card p-4 text-foreground',
+        // Flush against the waterfall rather than a rounded card floating beside
+        // it: this is a second region of the same panel, not a popover. A single
+        // left rule separates them, the same device the time gutter uses.
+        'flex w-full flex-col gap-4 self-stretch border-l border-border-2 bg-card p-4 text-foreground',
         className,
       )}
     >

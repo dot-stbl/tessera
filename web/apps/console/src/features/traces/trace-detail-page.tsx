@@ -155,7 +155,7 @@ export function TraceDetailPage() {
       {requestView.isLoading ? (
         <WaterfallSkeleton />
       ) : trace ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col">
           {/* The backend answers 200 when it has spans or logs and says which, so
               a partial view is a normal state here rather than an error. */}
           {view && view.mode !== 'full' && (
@@ -168,7 +168,7 @@ export function TraceDetailPage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="flex flex-col border-b border-border-2 bg-card lg:flex-row lg:items-stretch">
             <div className="min-w-0 flex-1">
               <Waterfall
                 spans={tree}
@@ -181,7 +181,7 @@ export function TraceDetailPage() {
               />
             </div>
             {selectedSpan && (
-              <div className="w-full lg:w-96 lg:shrink-0">
+              <div className="w-full lg:w-[340px] lg:shrink-0">
                 <SpanDetailPanel
                   service={selectedSpan.service}
                   operation={selectedSpan.operation}
@@ -227,8 +227,8 @@ function LogsSection({ entries, totalCount, selectedSpanId, onClearSpanFilter }:
   const scoped = selectedSpanId !== undefined;
 
   return (
-    <section className="flex flex-col gap-2">
-      <header className="flex items-center gap-3">
+    <section className="flex flex-col">
+      <header className="flex items-center gap-3 px-[18px] py-2">
         <h2 className="meta">
           {scoped ? 'Logs for selected span' : 'Logs'} · {entries.length}
         </h2>
@@ -250,7 +250,7 @@ function LogsSection({ entries, totalCount, selectedSpanId, onClearSpanFilter }:
             : 'No logs were correlated to this trace.'}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border border-border bg-card">
+        <div className="border-y border-border-2 bg-card">
           {entries.map((entry, index) => (
             <LogEntry
               key={`${entry.timestamp}-${index}`}

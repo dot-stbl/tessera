@@ -156,60 +156,80 @@
   --primary-foreground: oklch(0.971 0.013 17.38);
 }
 
+/* =========================================================================
+ * Dark — the primary design, not an inversion of the light one.
+ *
+ * Three grounds, and depth comes from *stacking* them rather than from shadow:
+ *   --background  the shell: near-black, faintly blue
+ *   --card        the raised surface content sits on
+ *   --surface-2   recessed — the time gutter, strip and rail sink INTO the page
+ *   --surface-3   the lift under a hovered or selected row
+ *
+ * On dark, a recessed gutter reads better than a lighter one: a lighter strip
+ * looks painted on top, a darker one looks like a channel cut into the surface.
+ * That is the opposite of the light theme, which is why this block is designed
+ * rather than derived.
+ *
+ * Borders are white at low alpha, not a grey hue. A grey line on a dark ground
+ * reads as a drawn stroke; translucent white reads as an edge catching light,
+ * which is what a raised panel actually has.
+ * ========================================================================= */
 .dark,
 [data-theme="dark"] {
-  --background: oklch(17% 0.012 250);
-  --card: oklch(21% 0.014 250);
-  --popover: oklch(21% 0.014 250);
-  --secondary: oklch(25% 0.015 250);
-  --muted: oklch(25% 0.015 250);
-  --surface-2: oklch(25% 0.015 250);
-  --surface-3: oklch(28% 0.016 250);
+  --background: oklch(9.5% 0.011 258);
+  --card: oklch(17.5% 0.016 258);
+  --popover: oklch(21% 0.017 258);
+  --secondary: oklch(23% 0.017 258);
+  --muted: oklch(23% 0.017 258);
+  --surface-2: oklch(13.5% 0.014 258);
+  --surface-3: oklch(23.5% 0.018 258);
 
-  --foreground: oklch(94% 0.006 250);
+  --foreground: oklch(96% 0.004 258);
   --card-foreground: var(--foreground);
   --popover-foreground: var(--foreground);
   --secondary-foreground: var(--foreground);
-  --muted-foreground: oklch(66% 0.012 250);
-  --fg-2: oklch(82% 0.008 250);
-  --muted-2: oklch(45% 0.012 240);
+  --muted-foreground: oklch(64% 0.012 258);
+  --fg-2: oklch(80% 0.008 258);
+  --muted-2: oklch(48% 0.012 258);
 
-  --border: oklch(31% 0.012 250);
-  --border-2: oklch(40% 0.014 250);
-  --rule: oklch(52% 0.014 250);
-  --input: var(--border);
+  --border: oklch(100% 0 0 / 0.08);
+  --border-2: oklch(100% 0 0 / 0.15);
+  --rule: oklch(100% 0 0 / 0.28);
+  --input: oklch(100% 0 0 / 0.11);
 
-  --grid: oklch(1 0 0 / 0.06);
-  --svc-1: oklch(0.70 0.12 250);
-  --svc-2: oklch(0.72 0.10 190);
-  --svc-3: oklch(0.70 0.13 300);
-  --svc-4: oklch(0.74 0.10 220);
-  --svc-5: oklch(0.68 0.13 275);
-  --svc-6: oklch(0.72 0.11 320);
+  --grid: oklch(1 0 0 / 0.05);
+  /* Service hues gain lightness and chroma: on a near-black ground the light
+   * theme's 54-60% values collapse into each other and stop being categorical. */
+  --svc-1: oklch(0.72 0.14 250);
+  --svc-2: oklch(0.76 0.13 190);
+  --svc-3: oklch(0.72 0.15 300);
+  --svc-4: oklch(0.78 0.12 220);
+  --svc-5: oklch(0.70 0.15 275);
+  --svc-6: oklch(0.74 0.13 320);
 
-  --primary: oklch(70% 0.20 25);
-  --primary-foreground: oklch(17% 0.012 250);
-  --accent: oklch(28% 0.016 250);
+  --primary: oklch(64% 0.21 26);
+  --primary-foreground: oklch(13% 0.02 26);
+  --accent: oklch(21% 0.016 258);
   --accent-foreground: var(--foreground);
-  --destructive: oklch(0.704 0.191 22.216);
-  --ring: oklch(0.552 0.016 285.938);
+  --destructive: oklch(0.70 0.19 25);
+  --ring: oklch(64% 0.21 26);
 
-  --ok: oklch(72% 0.16 145);
-  --ok-soft: oklch(28% 0.05 145);
-  --ok-ink: oklch(82% 0.14 145);
-  --err: oklch(72% 0.20 25);
-  --err-soft: oklch(28% 0.06 25);
-  --err-ink: oklch(82% 0.17 25);
-  --warn: oklch(80% 0.15 75);
-  --warn-soft: oklch(28% 0.06 75);
-  --warn-ink: oklch(82% 0.12 75);
-  --idle: oklch(70% 0.008 240);
-  --idle-soft: oklch(28% 0.006 240);
-  --idle-ink: oklch(75% 0.012 240);
+  --ok: oklch(76% 0.16 150);
+  --ok-soft: oklch(24% 0.05 150);
+  --ok-ink: oklch(82% 0.15 150);
+  --err: oklch(70% 0.20 25);
+  --err-soft: oklch(24% 0.07 25);
+  --err-ink: oklch(80% 0.17 25);
+  --warn: oklch(82% 0.15 72);
+  --warn-soft: oklch(25% 0.06 72);
+  --warn-ink: oklch(85% 0.13 72);
+  --idle: oklch(66% 0.008 258);
+  --idle-soft: oklch(22% 0.006 258);
+  --idle-ink: oklch(72% 0.012 258);
 
-  --slow: oklch(75% 0.18 50);
-  --slow-soft: oklch(28% 0.06 50);
-  --slow-ink: oklch(82% 0.14 50);
+  --slow: oklch(78% 0.17 55);
+  --slow-soft: oklch(25% 0.06 55);
+  --slow-ink: oklch(84% 0.14 55);
 
   --level-trace: oklch(70% 0.005 240);
   --level-debug: oklch(70% 0.05 220);
@@ -479,7 +499,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--muted-2);
 }
-.log-entry:hover { background: var(--surface-2); }
+.log-entry:hover { background: var(--surface-3); }
 .log-entry:hover .log-time { color: var(--fg-2); }
 
 /* Severity, stated on the axis. */
@@ -513,7 +533,7 @@
 .log-fields {
   margin: 0;
   padding: 8px 12px 10px calc(var(--gutter) + 12px);
-  border-top: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+  border-top: 1px solid var(--border);
   background: var(--surface-2);
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -572,7 +592,7 @@
   top: 0;
   z-index: 2;
   height: 26px;
-  background: var(--background);
+  background: var(--card);
   border-bottom: 1px solid var(--rule);
   color: var(--muted-foreground);
 }
@@ -629,13 +649,13 @@
   grid-template-columns: var(--gutter) var(--wf-label) 1fr var(--wf-dur);
   align-items: center;
   height: var(--row);
-  background: var(--background);
+  background: transparent;
   border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
   cursor: default;
 }
 .waterfall-body .span-row:last-child { border-bottom: 0; }
 .span-row[data-clickable] { cursor: pointer; }
-.span-row[data-clickable]:hover { background: var(--surface-2); }
+.span-row[data-clickable]:hover { background: var(--surface-3); }
 .span-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 
 /* The offset gutter. Failing spans stamp it red; the selected span claims it
@@ -659,9 +679,14 @@
   color: var(--primary);
   box-shadow: inset -2px 0 0 var(--primary);
 }
-.span-row-selected { background: color-mix(in oklch, var(--primary) 5%, var(--background)); }
+/* The selected span is the only element in the app allowed to glow, and only
+ * because it is the answer to the question the screen was opened to ask. */
+.span-row-selected {
+  background: color-mix(in oklch, var(--primary) 7%, var(--card));
+  box-shadow: inset 0 0 24px -8px color-mix(in oklch, var(--primary) 40%, transparent);
+}
 .span-row-selected[data-clickable]:hover {
-  background: color-mix(in oklch, var(--primary) 9%, var(--background));
+  background: color-mix(in oklch, var(--primary) 11%, var(--card));
 }
 
 .span-label {
@@ -790,10 +815,10 @@
   align-items: center;
   gap: 2px;
   padding: 9px 0;
-  /* Tinted ground rather than another outlined box: the shell needs figure and
-   * ground, or the whole app is nothing but lines. */
+  /* Recessed, not tinted-lighter. The rail belongs to the window frame, so it
+   * sits behind the content rather than on top of it. */
   background: var(--surface-2);
-  border-right: 1px solid var(--border-2);
+  border-right: 1px solid var(--border);
   z-index: 20;
 }
 .app-sidebar-brand {
@@ -873,8 +898,8 @@
   align-items: center;
   gap: 14px;
   padding: 0 14px;
-  border-bottom: 1px solid var(--border-2);
-  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
   z-index: 10;
 }
 .app-topnav-spacer { flex: 1; }
@@ -914,8 +939,12 @@
 .app-health[data-status='degraded'] i { background: var(--warn); }
 .app-health[data-status='unhealthy'] i { background: var(--err); }
 
+/* Content is a raised panel, not more of the same sheet. One light top edge is
+ * what makes it read as a surface at all — on a dark ground that hairline does
+ * the work a drop shadow does on a light one. */
 .app-main {
   grid-area: main;
+  background: var(--background);
   overflow-y: auto;
   /* Reserve the gutter on the single main scroll root so opening a
    * Select/Dialog/Popover (Base UI locks body scroll + compensates with
@@ -937,7 +966,8 @@
   align-items: baseline;
   gap: 14px;
   padding: 13px 18px 11px;
-  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: inset 0 1px 0 0 oklch(100% 0 0 / 0.04);
 }
 .page-title {
   margin: 0;
@@ -962,11 +992,23 @@
   align-items: center;
   gap: 10px;
 }
+/* The page itself is the dark desk. Content sits on it as a lighter slab with a
+ * closing edge, so the empty area below a short list reads as space around the
+ * panel rather than as more panel. Without this the screen goes back to being one
+ * flat sheet — the exact thing that made the light theme look unfinished. */
 .page-body {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  background: var(--background);
+}
+.page-body > .listing,
+.page-body > .waterfall,
+.page-body > .loading-rows {
+  background: var(--card);
+  border-bottom: 1px solid var(--border-2);
+  box-shadow: 0 1px 0 0 oklch(0% 0 0 / 0.35);
 }
 
 /* ─── Filter strip ───
@@ -977,6 +1019,7 @@
   gap: 8px;
   flex-wrap: wrap;
   padding: 8px 18px;
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
@@ -1061,7 +1104,7 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--muted-foreground);
-  background: var(--background);
+  background: var(--card);
   border-bottom: 1px solid var(--rule);
 }
 .listing tbody tr {
@@ -1095,6 +1138,9 @@
   color: var(--primary);
   box-shadow: inset -2px 0 0 var(--primary);
 }
+/* Hover lifts the row off the panel. One step, no transition — a table that
+ * animates under the cursor at forty rows is noise. */
+.listing tbody tr:hover { background: var(--surface-3); }
 
 /* Primary cell: service muted, operation in ink, one line. */
 .cell-subject {
@@ -1135,11 +1181,16 @@
   width: calc(var(--share, 0) * 1%);
   min-width: 2px;
   border-radius: 2px;
+  /* Full opacity on dark. The 55% wash that kept it quiet on white made it
+   * disappear here, and this bar is the column's entire reason to exist. */
   background: var(--muted-2);
-  opacity: 0.55;
 }
-tr[data-slow='true'] .cell-track > i { background: var(--slow); opacity: 0.9; }
-tr[data-status='error'] .cell-track > i { background: var(--err); opacity: 0.95; }
+.dark .cell-track > i,
+[data-theme='dark'] .cell-track > i { background: oklch(58% 0.02 258); }
+tr[data-slow='true'] .cell-track > i,
+.dark tr[data-slow='true'] .cell-track > i { background: var(--slow); }
+tr[data-status='error'] .cell-track > i,
+.dark tr[data-status='error'] .cell-track > i { background: var(--err); }
 
 .cell-num {
   text-align: right;

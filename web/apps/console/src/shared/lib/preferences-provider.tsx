@@ -26,8 +26,19 @@ export interface Preferences {
   language: Language;
 }
 
+/**
+ * Dark is the default, not `system`.
+ *
+ * Tessera is designed dark-first, the way every observability tool an operator
+ * already has open is: Grafana, Datadog, Sentry, Honeycomb. That is not fashion —
+ * on a dark ground the coloured data carries, and span bars, log severities and
+ * latency all read as signal. On white the same palette washes out and the
+ * hairlines between four hundred rows turn the screen into a spreadsheet.
+ *
+ * Light remains fully supported and switchable; it is the secondary target.
+ */
 export const PREFERENCES_DEFAULT: Preferences = {
-  theme: 'system',
+  theme: 'dark',
   fontSize: 'medium',
   language: 'en',
 };
