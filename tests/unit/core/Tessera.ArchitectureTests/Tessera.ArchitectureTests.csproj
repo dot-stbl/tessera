@@ -29,9 +29,10 @@
     <ProjectReference Include="..\..\..\..\src\providers\Tessera.Providers.Victoria\Tessera.Providers.Victoria.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Http\Tessera.Shared.Http.csproj" />
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Web\Tessera.Shared.Web.csproj" />
-    <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Authentication\Tessera.Shared.Authentication.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\infra\Tessera.Shared.Web\Tessera.Shared.Web.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\infra\Tessera.Shared.Authentication\Tessera.Shared.Authentication.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\Tessera.Shared.Validation\Tessera.Shared.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\infra\Tessera.Shared.Storage\Tessera.Shared.Storage.csproj" />
   </ItemGroup>
 
 </Project>

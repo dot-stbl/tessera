@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Kernel.Persistence;
+namespace Tessera.Shared.Storage;
 
 /// <summary>
 ///     Read/write tracking semantics applied to a query built from an

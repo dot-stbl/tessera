@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Kernel.Persistence;
+namespace Tessera.Shared.Storage;
 
 /// <summary>
 ///     Predicate expressions commonly composed into
@@ -43,7 +43,6 @@ public static class FilterHelpers
             System.Func<T, bool>> TenantScoped<T>(string tenantId)
         where T : class
     {
-        ArgumentException.ThrowIfNullOrEmpty(tenantId);
         var constant = System.Linq.Expressions.Expression.Constant(tenantId);
         var parameter = System.Linq.Expressions.Expression.Parameter(typeof(T), "entity");
         var property = System.Linq.Expressions.Expression.Property(

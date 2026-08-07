@@ -40,8 +40,8 @@ public sealed class DomainPurityTests
 
     /// <summary>
     ///     <c>Tessera.Shared.Kernel</c> must not reference Entity Framework
-    ///     Core. If EF appears in a model later, it goes in a new
-    ///     <c>Tessera.Shared.Persistence</c> project under shared/.
+    ///     Core. EF + Repository/Specification live in
+    ///     <c>Tessera.Shared.Storage</c> under <c>shared/infra/</c>.
     /// </summary>
     [Fact]
     public void SharedKernel_DoesNotReference_EntityFrameworkCore()

@@ -3,6 +3,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\..\shared\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\infra\Tessera.Shared.Storage\Tessera.Shared.Storage.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Remove="Meziantou.Analyzer" />

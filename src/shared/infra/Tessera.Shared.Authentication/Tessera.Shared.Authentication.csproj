@@ -2,7 +2,7 @@
   <PropertyGroup />
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Tessera.Shared.Kernel\Tessera.Shared.Kernel.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Tessera.Host.UnitTests" />

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 using Tessera.Modules.Preferences.Application;
-using Tessera.Shared.Kernel.Persistence;
+using Tessera.Shared.Storage;
 
 namespace Tessera.Modules.Preferences.Persistence.Specifications;
 

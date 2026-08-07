@@ -8,7 +8,8 @@
     <!--   /src/build/          — MSBuild SDK / shared targets (FIRST:           -->
     <!--                          topological order so VerifyFormatOnBuild       -->
     <!--                          fires exactly once per solution build)         -->
-    <!--   /src/shared/         — kernel + cross-cutting libraries                -->
+    <!--   /src/shared/         — kernel + cross-cutting libraries (≤5 dirs)     -->
+    <!--   /src/shared/infra/   — framework-bound shared (auth/web/telemetry/…)  -->
     <!--   /src/modules/<M>/    — vertical-slice APM modules (Traces/Logs/...)   -->
     <!--   /src/host/           — Tessera.Host (ASP.NET Core minimal API)         -->
     <!--   /tests/              — unit / integration / architecture               -->
@@ -22,17 +23,18 @@
     </Folder>
 
     <!-- ============ Shared libraries (grouped by concern) ================ -->
-    <!-- Kernel = contracts/abstractions. Infra = http/telemetry/openapi/validation. -->
-    <Folder Name="/src/shared/kernel/">
+    <!-- Root shared/ ≤5 project dirs: Kernel, Http, Validation, Banner + infra/ -->
+    <Folder Name="/src/shared/">
         <Project Path="src/shared/Tessera.Shared.Kernel/Tessera.Shared.Kernel.csproj" />
-    </Folder>
-    <Folder Name="/src/shared/" />
-    <Folder Name="/src/shared/infra/">
         <Project Path="src/shared/Tessera.Shared.Http/Tessera.Shared.Http.csproj" />
-        <Project Path="src/shared/Tessera.Shared.Web/Tessera.Shared.Web.csproj" />
-        <Project Path="src/shared/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj" />
         <Project Path="src/shared/Tessera.Shared.Validation/Tessera.Shared.Validation.csproj" />
         <Project Path="src/shared/Tessera.Banner/Tessera.Banner.csproj" />
+    </Folder>
+    <Folder Name="/src/shared/infra/">
+        <Project Path="src/shared/infra/Tessera.Shared.Authentication/Tessera.Shared.Authentication.csproj" />
+        <Project Path="src/shared/infra/Tessera.Shared.Web/Tessera.Shared.Web.csproj" />
+        <Project Path="src/shared/infra/Tessera.Shared.Telemetry/Tessera.Shared.Telemetry.csproj" />
+        <Project Path="src/shared/infra/Tessera.Shared.Storage/Tessera.Shared.Storage.csproj" />
     </Folder>
 
     <!-- ============ Modules (vertical slices) ============================= -->

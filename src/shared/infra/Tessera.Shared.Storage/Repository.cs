@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 
-namespace Tessera.Shared.Kernel.Persistence;
+namespace Tessera.Shared.Storage;
 
 /// <summary>
 ///     Generic base for per-module repositories. Subclasses add module-

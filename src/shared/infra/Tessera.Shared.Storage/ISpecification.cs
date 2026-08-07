@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Kernel.Persistence;
+namespace Tessera.Shared.Storage;
 
 /// <summary>
 ///     Query-criteria contract for <see cref="Repository{TEntity}" />.

@@ -1,4 +1,4 @@
-namespace Tessera.Shared.Kernel.Persistence;
+namespace Tessera.Shared.Storage;
 
 /// <summary>
 ///     Default <see cref="ISpecification{T, TResult}" /> implementation.
