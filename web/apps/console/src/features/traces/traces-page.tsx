@@ -13,6 +13,7 @@ import {
   resolveTimeWindow,
   type TimeRangeKey,
 } from '@/shared/lib/search-params';
+import { TraceTableAria } from './trace-table-aria';
 import type { TraceSummary } from '@/shared/api/types';
 
 const routeApi = getRouteApi('/traces');
@@ -22,9 +23,10 @@ export function TracesPage() {
   useDocumentTitle('Traces');
 
   // Filters live in the URL, so this view is a link someone else can open.
-  const { service, range: rangeParam } = routeApi.useSearch();
+  const { service, range: rangeParam, table } = routeApi.useSearch();
   const range = rangeParam ?? DEFAULT_TIME_RANGE;
   const navigate = routeApi.useNavigate();
+  const useAriaTable = table === 'aria';
 
   // A raw Date.now() lands in the query key, so every render was a cache miss:
   // the skeleton never cleared and requests fired in a loop. Quantized instead —
@@ -54,6 +56,13 @@ export function TracesPage() {
             replace: true,
           })
         }
+        useAriaTable={useAriaTable}
+        onToggleTable={() =>
+          void navigate({
+            search: (prev) => ({ ...prev, table: useAriaTable ? undefined : 'aria' }),
+            replace: true,
+          })
+        }
       />
 
       {isError && (
@@ -63,7 +72,18 @@ export function TracesPage() {
         </div>
       )}
 
-      {isLoading ? <SkeletonRows /> : <TraceTable traces={data?.items ?? []} />}
+      {isLoading ? (
+        <SkeletonRows />
+      ) : useAriaTable ? (
+        <TraceTableAria
+          traces={data?.items ?? []}
+          onOpenTrace={(traceId) =>
+            void navigate({ to: '/traces/$traceId', params: { traceId }, search: {} })
+          }
+        />
+      ) : (
+        <TraceTable traces={data?.items ?? []} />
+      )}
     </PageTemplate>
   );
 }
@@ -73,9 +93,18 @@ interface ToolbarProps {
   onRangeChange: (next: TimeRangeKey) => void;
   service: string;
   onServiceChange: (next: string) => void;
+  useAriaTable: boolean;
+  onToggleTable: () => void;
 }
 
-function Toolbar({ range, onRangeChange, service, onServiceChange }: ToolbarProps) {
+function Toolbar({
+  range,
+  onRangeChange,
+  service,
+  onServiceChange,
+  useAriaTable,
+  onToggleTable,
+}: ToolbarProps) {
   return (
     <div className="strip">
       {/* One segmented control rather than three loose buttons: the choice is
@@ -119,6 +148,16 @@ function Toolbar({ range, onRangeChange, service, onServiceChange }: ToolbarProp
         onChange={(e) => onServiceChange(e.target.value)}
         className="h-[22px] w-40 rounded-sm px-2 font-mono text-[10.5px]"
       />
+
+      {/* Spike switch — see trace-table-aria.tsx. Goes with the decision. */}
+      <button
+        type="button"
+        onClick={onToggleTable}
+        className="meta rounded-sm border border-border-2 bg-background px-2 py-[3px] hover:text-foreground"
+        title="Compare the hand-rolled table with the React Aria build"
+      >
+        {useAriaTable ? 'aria' : 'plain'}
+      </button>
     </div>
   );
 }

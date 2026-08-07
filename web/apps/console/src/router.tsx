@@ -90,6 +90,12 @@ export interface TracesSearch {
    * read it through the same DEFAULT_TIME_RANGE constant the parser uses.
    */
   range?: TimeRangeKey;
+  /**
+   * Which table implementation renders the list. A spike switch: `aria` selects
+   * the React Aria Components build so the two can be compared without a rebuild.
+   * Goes away together with one of the implementations once decided.
+   */
+  table?: 'aria';
 }
 
 const tracesRoute = createRoute({
@@ -99,6 +105,7 @@ const tracesRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): TracesSearch => ({
     service: parseOptionalString(search['service']),
     range: parseTimeRange(search['range']),
+    table: search['table'] === 'aria' ? 'aria' : undefined,
   }),
 });
 
