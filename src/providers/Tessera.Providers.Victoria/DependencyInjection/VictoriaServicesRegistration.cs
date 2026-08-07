@@ -4,10 +4,12 @@ using Tessera.Providers.Victoria.Clients;
 using Tessera.Providers.Victoria.Configuration;
 using Tessera.Providers.Victoria.Implementation;
 using Tessera.Providers.Victoria.Implementation.Health;
+using Tessera.Providers.Victoria.Implementation.Metrics;
 using Tessera.Shared.Http;
 using Tessera.Shared.Kernel.Providers.Discovery;
 using Tessera.Shared.Kernel.Providers.Health;
 using Tessera.Shared.Kernel.Providers.Logs;
+using Tessera.Shared.Kernel.Providers.Metrics;
 using Tessera.Shared.Kernel.Providers.Traces;
 
 namespace Tessera.Providers.Victoria.DependencyInjection;
@@ -20,10 +22,12 @@ namespace Tessera.Providers.Victoria.DependencyInjection;
 public static class VictoriaServicesRegistration
 {
     /// <summary>
-    ///     Register the four concrete provider classes and bind each one to
+    ///     Register the concrete provider classes and bind each one to
     ///     its kernel provider interface via factory delegates (so callers can
     ///     resolve either the concrete type or the interface and get the same
-    ///     singleton instance).
+    ///     singleton instance). Metrics uses <see cref="VictoriaMetricsProvider" />
+    ///     when <c>victoria.metrics.url</c> is set; otherwise
+    ///     <see cref="UnconfiguredMetricsProvider" />.
     /// </summary>
     public static void RegisterProviders(IServiceCollection services)
     {
@@ -36,10 +40,12 @@ public static class VictoriaServicesRegistration
         services.AddSingleton<ILogProvider>(static sp => sp.GetRequiredService<VictoriaLogProvider>());
         services.AddSingleton<IDiscoveryProvider>(static sp => sp.GetRequiredService<VictoriaDiscoveryProvider>());
         services.AddSingleton<IHealthProvider>(static sp => sp.GetRequiredService<VictoriaHealthProvider>());
+
+        RegisterMetricsProvider(services);
     }
 
     /// <summary>
-    ///     Build the two Refit clients (one per Victoria backend) and register
+    ///     Build Refit clients (traces, logs, optional metrics) and register
     ///     them as singletons. Each client uses
     ///     <see cref="RefitExtensions.AddTesseraRefitClient{TClient}" /> so the
     ///     bearer-auth + standard Polly resilience pipeline is shared with the
@@ -54,11 +60,8 @@ public static class VictoriaServicesRegistration
     ///         at registration time. The di-installer.md §5 banned-pattern
     ///         warning about <c>BuildServiceProvider()</c> applies when the
     ///         root provider leaks into request scope; here it does not.
-    ///         A future TODO may replace this with IValidateOptions + a
-    ///         hosted migration check.
     ///     </para>
     /// </remarks>
-    /// <exception cref="InvalidOperationException"></exception>
     public static void RegisterClients(IServiceCollection services)
     {
         using var tempProvider = services.BuildServiceProvider();
@@ -68,5 +71,31 @@ public static class VictoriaServicesRegistration
             options.Traces.Url.ToString());
         services.AddTesseraRefitClient<IVictoriaLogsClient>(
             options.Logs.Url.ToString());
+
+        if (options.Metrics?.Url is { } metricsUrl)
+        {
+            services.AddTesseraRefitClient<IVictoriaMetricsClient>(metricsUrl.ToString());
+        }
+    }
+
+    /// <summary>
+    ///     Register metrics provider based on whether Metrics.Url is configured.
+    ///     Must run after options binding so the temporary provider can read it.
+    /// </summary>
+    public static void RegisterMetricsProvider(IServiceCollection services)
+    {
+        using var tempProvider = services.BuildServiceProvider();
+        var options = tempProvider.GetRequiredService<IOptions<VictoriaOptions>>().Value;
+
+        if (options.Metrics?.Url is not null)
+        {
+            services.AddSingleton<VictoriaMetricsProvider>();
+            services.AddSingleton<IMetricsProvider>(static sp =>
+                sp.GetRequiredService<VictoriaMetricsProvider>());
+        }
+        else
+        {
+            services.AddSingleton<IMetricsProvider, UnconfiguredMetricsProvider>();
+        }
     }
 }
