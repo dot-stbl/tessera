@@ -31,6 +31,12 @@ public static class ApiRoutes
     /// <summary>Service inventory (list of services known to the backend, each with its operations).</summary>
     public const string Services = Base + "/services";
 
+    /// <summary>
+    ///     RED (rate/errors/duration) for one service. Query: startUnixMs, endUnixMs,
+    ///     optional operation and stepSeconds. Owned by Discovery (ADR-0003).
+    /// </summary>
+    public const string ServiceRed = Base + "/services/{serviceName}/red";
+
     /// <summary>Trace search.</summary>
     public const string Traces = Base + "/traces";
 
