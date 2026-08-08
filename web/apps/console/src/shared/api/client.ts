@@ -2,6 +2,7 @@ import { apiRoutes } from './routes';
 import { toApiError } from './problem-details';
 import type {
   ErrorGroupSummary,
+  GetServiceRedRequest,
   GetTraceResponse,
   HealthResponse,
   ListErrorsRequest,
@@ -9,6 +10,7 @@ import type {
   ListTracesRequest,
   PageOfLogEntry,
   PageOfTraceSummary,
+  ServiceRedResponse,
   ServiceSummary,
   TimeRange,
 } from './types';
@@ -29,6 +31,11 @@ import type {
 export interface TesseraApi {
   getHealth(signal?: AbortSignal): Promise<HealthResponse>;
   listServices(range: TimeRange, signal?: AbortSignal): Promise<ServiceSummary[]>;
+  getServiceRed(
+    serviceName: string,
+    request: GetServiceRedRequest,
+    signal?: AbortSignal,
+  ): Promise<ServiceRedResponse>;
   listTraces(request: ListTracesRequest, signal?: AbortSignal): Promise<PageOfTraceSummary>;
   getTrace(traceId: string, signal?: AbortSignal): Promise<GetTraceResponse>;
   listLogs(request: ListLogsRequest, signal?: AbortSignal): Promise<PageOfLogEntry>;
@@ -78,6 +85,19 @@ export function createHttpApi(baseUrl: string): TesseraApi {
     listServices(range, signal) {
       return request<ServiceSummary[]>(
         apiRoutes.services + query({ StartUnixMs: range.startUnixMs, EndUnixMs: range.endUnixMs }),
+        signal,
+      );
+    },
+
+    getServiceRed(serviceName, request_, signal) {
+      return request<ServiceRedResponse>(
+        apiRoutes.serviceRed(serviceName) +
+          query({
+            StartUnixMs: request_.startUnixMs,
+            EndUnixMs: request_.endUnixMs,
+            Operation: request_.operation,
+            StepSeconds: request_.stepSeconds,
+          }),
         signal,
       );
     },

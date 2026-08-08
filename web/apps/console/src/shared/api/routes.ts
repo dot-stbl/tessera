@@ -12,6 +12,8 @@ const BASE = '/api/v1';
 export const apiRoutes = {
   health: `${BASE}/health`,
   services: `${BASE}/services`,
+  serviceRed: (serviceName: string) =>
+    `${BASE}/services/${encodeURIComponent(serviceName)}/red`,
   traces: `${BASE}/traces`,
   trace: (traceId: string) => `${BASE}/traces/${encodeURIComponent(traceId)}`,
   logs: `${BASE}/logs`,

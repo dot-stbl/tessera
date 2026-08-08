@@ -53,6 +53,13 @@ export function ServicesPage() {
 
 function ServiceCard({ service }: { service: ServiceSummary }) {
   const errorRate = service.spanCount > 0 ? (service.errorCount / service.spanCount) * 100 : 0;
+  const { startUnixMs, endUnixMs } = useMemo(() => resolveTimeWindow(DEFAULT_TIME_RANGE), []);
+  const red = useQuery({
+    queryKey: ['service-red', service.name, { startUnixMs, endUnixMs }],
+    queryFn: ({ signal }) =>
+      api.getServiceRed(service.name, { startUnixMs, endUnixMs }, signal),
+    staleTime: 60_000,
+  });
 
   return (
     <div className="rounded-md border border-border bg-card p-4">
@@ -71,6 +78,29 @@ function ServiceCard({ service }: { service: ServiceSummary }) {
           {errorRate.toFixed(1)}% err
         </span>
       </div>
+
+      {red.data && (
+        <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-muted-foreground">Rate</div>
+            <div className="font-mono text-foreground">
+              {red.data.requestRatePerSec == null
+                ? '—'
+                : `${red.data.requestRatePerSec.toFixed(1)}/s`}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">p95</div>
+            <div className="font-mono text-foreground">
+              {red.data.durationP95Ms == null ? '—' : `${Math.round(red.data.durationP95Ms)}ms`}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Source</div>
+            <div className="font-mono text-foreground">{red.data.source}</div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
         <div>
