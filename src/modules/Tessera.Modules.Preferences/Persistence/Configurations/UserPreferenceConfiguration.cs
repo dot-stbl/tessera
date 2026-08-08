@@ -43,29 +43,29 @@ public sealed class UserPreferenceConfiguration : IEntityTypeConfiguration<UserP
     /// <inheritdoc />
     public void Configure(EntityTypeBuilder<UserPreference> builder)
     {
-        _ = builder.ToTable(Tables.UserPreferences, Schemes.Tessera);
-        _ = builder.HasKey(static preference => preference.Id);
+        builder.ToTable(Tables.UserPreferences, Schemes.Tessera);
+        builder.HasKey(static preference => preference.Id);
 
-        _ = builder.Property(static preference => preference.Id).HasColumnName("id").HasMaxLength(64).IsRequired();
-        _ = builder.Property(static preference => preference.UserId).HasColumnName("user_id").HasMaxLength(64).IsRequired();
-        _ = builder.Property(static preference => preference.TenantId).HasColumnName("tenant_id").HasMaxLength(64).IsRequired();
-        _ = builder.Property(static preference => preference.Key).HasColumnName("key").HasMaxLength(128).IsRequired();
-        _ = builder.Property(static preference => preference.ValueJson)
+        builder.Property(static preference => preference.Id).HasColumnName("id").HasMaxLength(64).IsRequired();
+        builder.Property(static preference => preference.UserId).HasColumnName("user_id").HasMaxLength(64).IsRequired();
+        builder.Property(static preference => preference.TenantId).HasColumnName("tenant_id").HasMaxLength(64).IsRequired();
+        builder.Property(static preference => preference.Key).HasColumnName("key").HasMaxLength(128).IsRequired();
+        builder.Property(static preference => preference.ValueJson)
             .HasColumnName("value_json")
             .HasColumnType("jsonb")
             .IsRequired();
-        _ = builder.Property(static preference => preference.CreatedAt).HasColumnName("created_at").IsRequired();
-        _ = builder.Property(static preference => preference.UpdatedAt).HasColumnName("updated_at").IsRequired();
-        _ = builder.Property(static preference => preference.DeletedAt).HasColumnName("deleted_at");
+        builder.Property(static preference => preference.CreatedAt).HasColumnName("created_at").IsRequired();
+        builder.Property(static preference => preference.UpdatedAt).HasColumnName("updated_at").IsRequired();
+        builder.Property(static preference => preference.DeletedAt).HasColumnName("deleted_at");
 
-        _ = builder.HasIndex(static preference => new { preference.UserId, preference.Key })
+        builder.HasIndex(static preference => new { preference.UserId, preference.Key })
             .HasDatabaseName("ux_user_preferences_user_key")
             .IsUnique();
 
-        _ = builder.HasIndex(static preference => preference.TenantId)
+        builder.HasIndex(static preference => preference.TenantId)
             .HasDatabaseName("ix_user_preferences_tenant_id");
 
-        _ = builder.HasIndex(static preference => preference.DeletedAt)
+        builder.HasIndex(static preference => preference.DeletedAt)
             .HasDatabaseName("ix_user_preferences_deleted_at");
     }
 }

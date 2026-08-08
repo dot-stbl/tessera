@@ -196,18 +196,38 @@ file static class TesseraHostProcessHelpers
             $"Tessera.Host did not become healthy at {host.BaseAddress}. last={last}\nstdout:\n{host.StdOutSnapshot()}\nstderr:\n{host.StdErrSnapshot()}");
     }
 
+    /// <summary>
+    ///     Pick a free loopback port inside the Tessera host pool (1990–2120).
+    /// </summary>
+    /// <exception cref="InvalidOperationException"></exception>
     public static int FindFreePort()
     {
-        var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        try
+        for (var port = 1995; port <= 2120; port++)
         {
-            return ((IPEndPoint)listener.LocalEndpoint).Port;
+            var listener = new TcpListener(IPAddress.Loopback, port);
+            try
+            {
+                listener.Start();
+                return port;
+            }
+            catch (SocketException)
+            {
+                // in use — try next
+            }
+            finally
+            {
+                try
+                {
+                    listener.Stop();
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
         }
-        finally
-        {
-            listener.Stop();
-        }
+
+        throw new InvalidOperationException("no free port in Tessera pool 1995–2120");
     }
 
     public static ProcessStartInfo CreateStartInfo(
@@ -228,8 +248,11 @@ file static class TesseraHostProcessHelpers
         };
         startInfo.Environment["TESSERA_CONFIG"] = configPath;
         startInfo.Environment["TESSERA_DATA_PATH"] = dataDir;
-        startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
-        startInfo.Environment["DOTNET_ENVIRONMENT"] = "Development";
+        // Production: Development enables DI ValidateScopes, and providers still
+        // inject concrete VictoriaOptions (not IOptions<>) — that fails host start.
+        // Match the verified manual smoke (Production + TESSERA_CONFIG).
+        startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Production";
+        startInfo.Environment["DOTNET_ENVIRONMENT"] = "Production";
         return startInfo;
     }
 

@@ -58,9 +58,9 @@ public sealed class UserPreferenceRepositoryShould : IDisposable
     {
         var repository = new UserPreferenceRepository(dbContext);
 
-        _ = await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
+        await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
         await dbContext.SaveChangesAsync();
-        _ = await repository.UpsertAsync("alice", "theme", "\"light\"", clock);
+        await repository.UpsertAsync("alice", "theme", "\"light\"", clock);
         await dbContext.SaveChangesAsync();
 
         var rows = await dbContext.UserPreferences
@@ -80,7 +80,7 @@ public sealed class UserPreferenceRepositoryShould : IDisposable
     {
         var repository = new UserPreferenceRepository(dbContext);
 
-        _ = await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
+        await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
         await dbContext.SaveChangesAsync();
 
         var retrieved = await repository.GetByUserKeyAsync("alice", "theme");
@@ -106,7 +106,7 @@ public sealed class UserPreferenceRepositoryShould : IDisposable
     {
         var repository = new UserPreferenceRepository(dbContext);
 
-        _ = await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
+        await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
         await dbContext.SaveChangesAsync();
 
         var deleted = await repository.SoftDeleteAsync("alice", "theme", clock);
@@ -128,8 +128,8 @@ public sealed class UserPreferenceRepositoryShould : IDisposable
     {
         var repository = new UserPreferenceRepository(dbContext);
 
-        _ = await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
-        _ = await repository.UpsertAsync("alice", "language", "\"en\"", clock);
+        await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
+        await repository.UpsertAsync("alice", "language", "\"en\"", clock);
         await dbContext.SaveChangesAsync();
 
         var theme = await repository.GetByUserKeyAsync("alice", "theme");
@@ -150,8 +150,8 @@ public sealed class UserPreferenceRepositoryShould : IDisposable
     {
         var repository = new UserPreferenceRepository(dbContext);
 
-        _ = await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
-        _ = await repository.UpsertAsync("bob", "theme", "\"light\"", clock);
+        await repository.UpsertAsync("alice", "theme", "\"dark\"", clock);
+        await repository.UpsertAsync("bob", "theme", "\"light\"", clock);
         await dbContext.SaveChangesAsync();
 
         var alice = await repository.GetByUserKeyAsync("alice", "theme");

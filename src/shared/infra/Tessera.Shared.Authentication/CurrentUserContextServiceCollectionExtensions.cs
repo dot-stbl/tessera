@@ -21,8 +21,8 @@ public static class CurrentUserContextServiceCollectionExtensions
     public static IServiceCollection AddTesseraCurrentUserContext(
         this IServiceCollection services)
     {
-        _ = services.AddScoped<CurrentUserContext>();
-        _ = services.AddScoped<ICurrentUserContext>(
+        services.AddScoped<CurrentUserContext>();
+        services.AddScoped<ICurrentUserContext>(
             static sp => sp.GetRequiredService<CurrentUserContext>());
 
         return services;

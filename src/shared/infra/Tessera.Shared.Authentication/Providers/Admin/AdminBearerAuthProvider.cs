@@ -38,8 +38,6 @@ public sealed class AdminBearerAuthProvider : IAuthProvider
         HttpContext context,
         CancellationToken cancellationToken = default)
     {
-        _ = cancellationToken;
-
         var authentication = context.RequestServices.GetService<IAuthenticationService>()
             ?? throw new InvalidOperationException(
                 "IAuthenticationService is not registered; "
@@ -51,8 +49,6 @@ public sealed class AdminBearerAuthProvider : IAuthProvider
     /// <inheritdoc />
     public void ValidateOptions(IConfigurationSection section)
     {
-        // Per-key binding happens via AdminBearerOptions + PostConfigure
-        // (ResolveAdminBearerToken.Apply), not here. Nothing to do.
-        _ = section;
+
     }
 }

@@ -31,8 +31,6 @@ public sealed class LdapAuthProvider : IAuthProvider
         HttpContext context,
         CancellationToken cancellationToken = default)
     {
-        _ = cancellationToken;
-
         var authentication = context.RequestServices.GetService<IAuthenticationService>()
             ?? throw new InvalidOperationException(
                 "IAuthenticationService is not registered; "
@@ -44,9 +42,5 @@ public sealed class LdapAuthProvider : IAuthProvider
     /// <inheritdoc />
     public void ValidateOptions(IConfigurationSection section)
     {
-        // Backing options are validated by Microsoft.Extensions.Options
-        // via [Required] data annotations + ValidateOnStart at the
-        // installer call site; nothing to do here.
-        _ = section;
     }
 }

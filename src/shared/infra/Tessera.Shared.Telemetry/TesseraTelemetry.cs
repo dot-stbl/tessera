@@ -79,13 +79,13 @@ public static class TesseraTelemetry
         OpenTelemetry.Trace.TracerProviderBuilder tracing,
         TelemetryOptions options)
     {
-        _ = tracing
+        tracing
             .AddSource(ActivitySourceWildcard)
             .SetSampler(new TraceIdRatioBasedSampler(options.TraceSamplingRatio));
 
         if (options.EnableAspNetCoreInstrumentation)
         {
-            _ = tracing.AddAspNetCoreInstrumentation(asp =>
+            tracing.AddAspNetCoreInstrumentation(asp =>
             {
                 asp.RecordException = true;
                 const string healthCheck = "/api/v1/health";
@@ -95,14 +95,14 @@ public static class TesseraTelemetry
 
         if (options.EnableHttpClientInstrumentation)
         {
-            _ = tracing.AddHttpClientInstrumentation();
+            tracing.AddHttpClientInstrumentation();
         }
 
-        _ = tracing.AddOtlpExporter(otlp => otlp.Endpoint = new Uri(options.OtlpEndpoint));
+        tracing.AddOtlpExporter(otlp => otlp.Endpoint = new Uri(options.OtlpEndpoint));
 
         if (options.EnableConsoleExporter)
         {
-            _ = tracing.AddConsoleExporter();
+            tracing.AddConsoleExporter();
         }
     }
 
@@ -110,23 +110,23 @@ public static class TesseraTelemetry
         OpenTelemetry.Metrics.MeterProviderBuilder metrics,
         TelemetryOptions options)
     {
-        _ = metrics.AddMeter(MeterName);
+        metrics.AddMeter(MeterName);
 
         if (options.EnableAspNetCoreInstrumentation)
         {
-            _ = metrics.AddAspNetCoreInstrumentation();
+            metrics.AddAspNetCoreInstrumentation();
         }
 
         if (options.EnableHttpClientInstrumentation)
         {
-            _ = metrics.AddHttpClientInstrumentation();
+            metrics.AddHttpClientInstrumentation();
         }
 
-        _ = metrics.AddOtlpExporter(otlp => otlp.Endpoint = new Uri(options.OtlpEndpoint));
+        metrics.AddOtlpExporter(otlp => otlp.Endpoint = new Uri(options.OtlpEndpoint));
 
         if (options.EnableConsoleExporter)
         {
-            _ = metrics.AddConsoleExporter();
+            metrics.AddConsoleExporter();
         }
     }
 }

@@ -48,7 +48,6 @@ public sealed class GuestAuthProvider : IAuthProvider
         // presence-only section is valid; an empty section is valid;
         // a malformed section is just <c>[auth.providers.guest]</c>
         // with no keys, which we don't validate.
-        _ = section;
     }
 }
 

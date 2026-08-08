@@ -49,7 +49,7 @@ public static class AuthenticationInstallerExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        _ = services
+        services
             .AddOptions<TesseraAuthenticationOptions>()
             .Bind(configuration.GetSection(TesseraAuthenticationOptions.SectionName));
 
@@ -70,7 +70,7 @@ public static class AuthenticationInstallerExtensions
                 AdminBearerAuthProvider.NameConst,
                 _ => { });
 
-            _ = services
+            services
                 .AddOptions<AdminBearerOptions>()
                 .Bind(configuration.GetSection($"{TesseraAuthenticationOptions.SectionName}.{TesseraAuthenticationOptions.ProvidersSectionName}.admin-bearer"));
 
@@ -86,7 +86,7 @@ public static class AuthenticationInstallerExtensions
                 LdapAuthProvider.NameConst,
                 _ => { });
 
-            _ = services
+            services
                 .AddOptions<LdapAuthOptions>()
                 .Bind(configuration.GetSection(LdapAuthOptions.SectionName))
                 .ValidateDataAnnotations()
@@ -133,7 +133,7 @@ public static class AuthenticationInstallerExtensions
                         : [authority];
                 });
 
-            _ = services
+            services
                 .AddOptions<KeycloakAuthOptions>()
                 .Bind(keycloakSection)
                 .ValidateDataAnnotations()

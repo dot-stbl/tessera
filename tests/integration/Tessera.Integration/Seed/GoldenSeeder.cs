@@ -55,13 +55,22 @@ file static class GoldenSeederHttp
     {
         var body = GoldenSeederPayloads.BuildTracesOtlpJson(startUnixNano);
         var url = OtlpIdEncoding.TracesOtlpInsertUrl(VictoriaEndpoints.TracesBase);
-        using var content = new StringContent(body, Encoding.UTF8, "application/json");
-        using var response = await http.PostAsync(new Uri(url), content, cancellationToken);
+        using var content = GoldenSeederHttp.JsonBytes(body);
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url))
+        {
+            Content = content,
+        };
+        // Headers-only: VT may return chunked empty bodies that break full buffering.
+        // Content-Type must be application/json without charset — VT returns 400 on
+        // application/json; charset=utf-8 from StringContent.
+        using var response = await http.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            var text = await response.Content.ReadAsStringAsync(cancellationToken);
             throw new InvalidOperationException(
-                $"VT OTLP insert {(int)response.StatusCode} {url}: {text}");
+                $"VT OTLP insert {(int)response.StatusCode} {url}");
         }
     }
 
@@ -72,8 +81,15 @@ file static class GoldenSeederHttp
     {
         var otlpBody = GoldenSeederPayloads.BuildLogsOtlpJson(startUnixNano);
         var otlpUrl = OtlpIdEncoding.LogsOtlpInsertUrl(VictoriaEndpoints.LogsBase);
-        using (var content = new StringContent(otlpBody, Encoding.UTF8, "application/json"))
-        using (var response = await http.PostAsync(new Uri(otlpUrl), content, cancellationToken))
+        using (var otlpContent = GoldenSeederHttp.JsonBytes(otlpBody))
+        using (var otlpRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(otlpUrl))
+        {
+            Content = otlpContent,
+        })
+        using (var response = await http.SendAsync(
+                   otlpRequest,
+                   HttpCompletionOption.ResponseHeadersRead,
+                   cancellationToken))
         {
             if (response.IsSuccessStatusCode)
             {
@@ -83,15 +99,28 @@ file static class GoldenSeederHttp
 
         var jsonLine = GoldenSeederPayloads.BuildLogsJsonLine(startUnixNano);
         var jsonUrl = OtlpIdEncoding.LogsJsonLineInsertUrl(VictoriaEndpoints.LogsBase);
-        using var lineContent = new StringContent(jsonLine, Encoding.UTF8);
+        using var lineContent = new ByteArrayContent(Encoding.UTF8.GetBytes(jsonLine));
         lineContent.Headers.ContentType = new MediaTypeHeaderValue("application/stream+json");
-        using var lineResponse = await http.PostAsync(new Uri(jsonUrl), lineContent, cancellationToken);
+        using var lineRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(jsonUrl))
+        {
+            Content = lineContent,
+        };
+        using var lineResponse = await http.SendAsync(
+            lineRequest,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
         if (!lineResponse.IsSuccessStatusCode)
         {
-            var text = await lineResponse.Content.ReadAsStringAsync(cancellationToken);
             throw new InvalidOperationException(
-                $"VL log insert failed OTLP+jsonline {(int)lineResponse.StatusCode} {jsonUrl}: {text}");
+                $"VL log insert failed OTLP+jsonline {(int)lineResponse.StatusCode} {jsonUrl}");
         }
+    }
+
+    public static ByteArrayContent JsonBytes(string json)
+    {
+        var content = new ByteArrayContent(Encoding.UTF8.GetBytes(json));
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        return content;
     }
 }
 

@@ -49,11 +49,11 @@ internal static class PreferencesStorageInstaller
     public static IServiceCollection AddPreferencesStorage(
         this IServiceCollection services)
     {
-        _ = services.AddOptions<StorageOptions>()
+        services.AddOptions<StorageOptions>()
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        _ = services.AddDbContext<PreferencesDbContext>(static (sp, builder) =>
+        services.AddDbContext<PreferencesDbContext>(static (sp, builder) =>
         {
             var storage = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
             if (!string.Equals(storage.Provider, "sqlite", StringComparison.OrdinalIgnoreCase))
@@ -73,7 +73,7 @@ internal static class PreferencesStorageInstaller
         // AddPreferencesModule (DbContext + repo) keeps the host's
         // SQLite-aware path distinct from the module's provider-
         // agnostic entry point.
-        _ = services.AddScoped<UserPreferenceRepository>();
+        services.AddScoped<UserPreferenceRepository>();
 
         return services;
     }
@@ -116,7 +116,7 @@ internal static class PreferencesStorageInstaller
 
         if (!storage.MigrateOnStart)
         {
-            _ = await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+            await dbContext.Database.EnsureCreatedAsync(cancellationToken);
             return;
         }
 

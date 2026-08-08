@@ -19,8 +19,6 @@ public sealed class PreferencesDbContextDesignTimeFactory : IDesignTimeDbContext
     /// <inheritdoc />
     public PreferencesDbContext CreateDbContext(string[] args)
     {
-        _ = args;
-
         var builder = new DbContextOptionsBuilder<PreferencesDbContext>()
             .UseSqlite(
                 "Data Source=tessera-design.db",

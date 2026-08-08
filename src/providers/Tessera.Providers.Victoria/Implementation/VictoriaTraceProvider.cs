@@ -1,5 +1,4 @@
 using Tessera.Providers.Victoria.Clients;
-using Tessera.Providers.Victoria.Configuration;
 using Tessera.Providers.Victoria.Implementation.Mapping;
 using Tessera.Shared.Kernel.Domain.Traces;
 using Tessera.Shared.Kernel.Identifiers;
@@ -10,21 +9,23 @@ namespace Tessera.Providers.Victoria.Implementation;
 
 /// <summary>
 ///     VictoriaTraces implementation of <see cref="ITraceProvider" />.
-///     Delegates all Jaeger → domain mapping to
-///     <see cref="VictoriaTraceMapper" />; this class only handles I/O.
 /// </summary>
-public sealed class VictoriaTraceProvider(IVictoriaTracesClient client, VictoriaOptions options) : ITraceProvider
+public sealed class VictoriaTraceProvider(IVictoriaTracesClient client) : ITraceProvider
 {
     /// <inheritdoc />
     public async Task<Page<TraceSummary>> SearchAsync(TraceSearchQuery query, CancellationToken cancellationToken)
     {
+        var windowMs = Math.Max(0, query.EndUnixMs - query.StartUnixMs);
+        var lookbackHours = Math.Clamp((int)Math.Ceiling(windowMs / 3_600_000.0), 1, 168);
+        var lookback = lookbackHours + "h";
+
         var response = await client.SearchTracesAsync(
-            options.Tenant,
             service: query.Service,
             operation: query.Operation,
             tags: null,
-            start: query.StartUnixMs,
-            end: query.EndUnixMs,
+            start: null,
+            end: null,
+            lookback: lookback,
             minDuration: VictoriaTraceMapper.FormatDuration(query.MinDurationMs),
             maxDuration: VictoriaTraceMapper.FormatDuration(query.MaxDurationMs),
             limit: query.Limit,
@@ -36,7 +37,7 @@ public sealed class VictoriaTraceProvider(IVictoriaTracesClient client, Victoria
     /// <inheritdoc />
     public async Task<TraceDetail?> GetByIdAsync(TraceId traceId, CancellationToken cancellationToken)
     {
-        var response = await client.GetTraceAsync(options.Tenant, traceId.Value, cancellationToken);
+        var response = await client.GetTraceAsync(traceId.Value, cancellationToken);
         return response.Data.Count == 0 ? null : VictoriaTraceMapper.ToDetail(response.Data[0]);
     }
 }

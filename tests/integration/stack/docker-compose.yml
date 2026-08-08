@@ -9,7 +9,8 @@
 
 services:
   victoria-traces:
-    image: victoriametrics/victoria-traces:v0.4.0
+    # Pin when lab versions stabilize; :latest verified pullable on podman 2026-08-09.
+    image: docker.io/victoriametrics/victoria-traces:latest
     command:
       - -storageDataPath=/victoria-traces-data
       - -httpListenAddr=:10428
@@ -22,7 +23,7 @@ services:
       retries: 10
 
   victoria-logs:
-    image: victoriametrics/victoria-logs:v1.21.0
+    image: docker.io/victoriametrics/victoria-logs:latest
     command:
       - -storageDataPath=/victoria-logs-data
       - -httpListenAddr=:9428

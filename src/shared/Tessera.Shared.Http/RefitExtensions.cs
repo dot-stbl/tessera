@@ -28,6 +28,11 @@ public static class RefitExtensions
         string baseUrl)
             where TClient : class
     {
+        // Transient handler per HttpClient factory rules; register once even if
+        // multiple Refit clients share the type (AddTransient is idempotent enough).
+        services.AddTransient<BearerTokenHandler>();
+        services.AddOptions<Configuration.HttpClientAuthOptions>();
+
         return services
                 .AddRefitClient<TClient>()
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(baseUrl))

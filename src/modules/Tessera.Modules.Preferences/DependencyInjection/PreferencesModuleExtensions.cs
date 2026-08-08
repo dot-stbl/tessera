@@ -36,9 +36,9 @@ public static class PreferencesModuleExtensions
 
         void Bridge(DbContextOptionsBuilder builder) => configureDb((DbContextOptionsBuilder<PreferencesDbContext>)builder);
 
-        _ = services.AddDbContext<PreferencesDbContext>(Bridge);
+        services.AddDbContext<PreferencesDbContext>(Bridge);
 
-        _ = services.AddScoped<UserPreferenceRepository>();
+        services.AddScoped<UserPreferenceRepository>();
 
         return services;
     }

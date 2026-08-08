@@ -27,7 +27,7 @@ public sealed class PreferencesDbContext(DbContextOptions<PreferencesDbContext> 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        _ = modelBuilder.ApplyConfiguration(new Configurations.UserPreferenceConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.UserPreferenceConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 }

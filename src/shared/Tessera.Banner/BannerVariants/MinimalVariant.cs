@@ -18,7 +18,6 @@ internal static class MinimalVariant
     /// </summary>
     public static void Render(IAnsiConsole console, string tagline, bool noColor)
     {
-        _ = noColor;
         console.WriteLine("tessera");
         console.WriteLine("v0.0.0");
         console.WriteLine();

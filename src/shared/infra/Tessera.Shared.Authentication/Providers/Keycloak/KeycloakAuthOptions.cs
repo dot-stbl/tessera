@@ -92,6 +92,5 @@ internal static class ResolveKeycloakAuthority
         // hook exists so future fields added to KeycloakAuthOptions
         // (e.g. client_secret) get the same SecretReference treatment
         // pattern as LDAP / AdminBearer.
-        _ = options;
     }
 }

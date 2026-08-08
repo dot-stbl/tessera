@@ -66,7 +66,7 @@ public sealed class UserPreferenceRepository(PreferencesDbContext dbContext)
         {
             existing.ValueJson = valueJson;
             existing.UpdatedAt = clock.GetUtcNow();
-            _ = await DbContext.SaveChangesAsync(cancellationToken);
+            await DbContext.SaveChangesAsync(cancellationToken);
             return existing;
         }
 

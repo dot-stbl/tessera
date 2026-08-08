@@ -1,5 +1,4 @@
 using Tessera.Providers.Victoria.Clients;
-using Tessera.Providers.Victoria.Configuration;
 using Tessera.Providers.Victoria.Implementation.Mapping;
 using Tessera.Shared.Kernel.Domain.Logs;
 using Tessera.Shared.Kernel.Exceptions;
@@ -12,10 +11,8 @@ namespace Tessera.Providers.Victoria.Implementation;
 
 /// <summary>
 ///     VictoriaLogs implementation of <see cref="ILogProvider" />.
-///     Delegates LogsQL query construction + NDJSON parsing to
-///     <see cref="VictoriaLogMapper" />; this class only handles I/O.
 /// </summary>
-public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOptions options) : ILogProvider
+public sealed class VictoriaLogProvider(IVictoriaLogsClient client) : ILogProvider
 {
     /// <inheritdoc />
     public async Task<Page<LogEntry>> QueryAsync(LogQuery query, CancellationToken cancellationToken)
@@ -26,7 +23,6 @@ public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOpti
         try
         {
             response = await client.QueryAsync(
-                options.Tenant,
                 logsql,
                 query.Limit,
                 query.StartUnixMs is null ? null : VictoriaLogMapper.ToIso8601(query.StartUnixMs.Value),
@@ -35,11 +31,6 @@ public sealed class VictoriaLogProvider(IVictoriaLogsClient client, VictoriaOpti
         }
         catch (HttpRequestException ex)
         {
-            // error-mapping.md §5: translate the synchronous HTTP failure
-            // to a typed boundary exception. The host's IExceptionHandler
-            // maps ProviderException("provider.network_error", ...) to a
-            // ProblemDetails with status 502 — a 5xx from Victoria no
-            // longer crashes the host with a raw HttpRequestException.
             throw new ProviderException(
                 code: "provider.network_error",
                 message: $"Victoria logs query failed: {ex.Message}",

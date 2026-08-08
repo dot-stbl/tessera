@@ -35,8 +35,6 @@ public sealed class KeycloakAuthProvider : IAuthProvider
         HttpContext context,
         CancellationToken cancellationToken = default)
     {
-        _ = cancellationToken;
-
         var authentication = context.RequestServices.GetService<IAuthenticationService>()
             ?? throw new InvalidOperationException(
                 "IAuthenticationService is not registered; "
@@ -48,8 +46,6 @@ public sealed class KeycloakAuthProvider : IAuthProvider
     /// <inheritdoc />
     public void ValidateOptions(IConfigurationSection section)
     {
-        // [Required] data annotations + ValidateOnStart cover the
-        // Authority presence check; nothing extra here.
-        _ = section;
+
     }
 }

@@ -91,10 +91,11 @@ internal static class VictoriaLogMapper
                 continue;
             }
 
-            var traceId = ReadTraceId(dto.Fields) ?? traceFilter;
-            var spanId = ReadSpanId(dto.Fields);
-            var level = ResolveLogLevel(dto.Fields);
-            var service = ResolveService(dto);
+            var fields = dto.Fields ?? EmptyFields;
+            var traceId = ReadTraceId(fields) ?? traceFilter;
+            var spanId = ReadSpanId(fields);
+            var level = ResolveLogLevel(fields);
+            var service = ResolveService(dto with { Fields = fields });
 
             entries.Add(new LogEntry(
                 dto.Time.ToUnixTimeMilliseconds(),
@@ -102,12 +103,17 @@ internal static class VictoriaLogMapper
                 service,
                 traceId,
                 spanId,
-                dto.Msg,
-                dto.Fields));
+                dto.Msg ?? string.Empty,
+                fields));
         }
 
         return entries;
     }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyFields =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
+    // Keep EmptyFields next to ParseNdjson consumers (no extra members below).
 
     /// <summary>
     ///     Resolve log level from OTel <c>severity_number</c> (1–24) with

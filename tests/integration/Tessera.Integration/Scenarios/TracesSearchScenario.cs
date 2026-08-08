@@ -56,17 +56,18 @@ public sealed class TracesSearchScenario(Wave1Fixture fixture)
         var root = document.RootElement;
         Assert.True(root.TryGetProperty("mode", out var modeElement), body);
         var mode = modeElement.GetString();
+        // Wire enums are camelCase (TesseraJsonOptions).
         Assert.True(
-            mode is "Full" or "SpansOnly",
-            $"expected Full or SpansOnly, got {mode}: {body}");
+            mode is "full" or "spansOnly",
+            $"expected full or spansOnly, got {mode}: {body}");
 
         Assert.True(root.TryGetProperty("trace", out var traceElement), body);
         Assert.Equal(JsonValueKind.Object, traceElement.ValueKind);
 
-        if (mode == "Full")
+        if (mode == "full")
         {
             Assert.True(root.TryGetProperty("correlatedLogs", out var logs), body);
-            Assert.True(logs.GetArrayLength() >= 1, "Full mode should include correlated logs: " + body);
+            Assert.True(logs.GetArrayLength() >= 1, "full mode should include correlated logs: " + body);
         }
     }
 }
