@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import type { ServiceSummary } from '@/shared/api/types';
 import { PageTemplate } from '@/shared/ui/app-shell';
+import { Dns, Percent, Speed, Storage } from '@nine-thirty-five/material-symbols-react/rounded/400';
 import { Duration } from '@/shared/ui/apm';
 import {
   Blank,
@@ -17,6 +18,7 @@ import {
   LoadingRows,
   NumCell,
   Row,
+  StatBar,
   Subject,
   TrackCell,
 } from '@/shared/ui/console';
@@ -46,12 +48,63 @@ export function ServicesPage() {
         </Blank>
       )}
 
+      {!isLoading && !isError && <ServiceStats services={data ?? []} />}
+
       {isLoading ? (
-        <LoadingRows count={6} />
+        <LoadingRows count={8} />
       ) : (
         <ServiceTable services={data ?? []} startUnixMs={startUnixMs} endUnixMs={endUnixMs} />
       )}
     </PageTemplate>
+  );
+}
+
+/**
+ * The inventory's own summary. `failing` counts services rather than spans on
+ * purpose: one service at 12% and eleven at zero is a different morning from
+ * twelve services all at 1%, and a span-weighted average hides exactly that.
+ */
+function ServiceStats({ services }: { services: ServiceSummary[] }) {
+  const spans = services.reduce((sum, service) => sum + service.spanCount, 0);
+  const errors = services.reduce((sum, service) => sum + service.errorCount, 0);
+  const failing = services.filter((service) => errorRate(service) >= 1);
+  const worst = [...services].sort((a, b) => errorRate(b) - errorRate(a))[0];
+  const rate = spans > 0 ? (errors / spans) * 100 : 0;
+
+  return (
+    <StatBar
+      items={[
+        {
+          icon: Dns,
+          label: 'services',
+          value: services.length.toLocaleString(),
+          sub:
+            failing.length > 0
+              ? `${failing.length} above a 1% error rate`
+              : 'none above a 1% error rate',
+        },
+        {
+          icon: Storage,
+          label: 'spans',
+          value: spans.toLocaleString(),
+          sub: 'in the last hour',
+        },
+        {
+          icon: Percent,
+          label: 'error rate',
+          value: `${rate < 10 ? rate.toFixed(2) : rate.toFixed(1)}%`,
+          bad: rate >= 1,
+          sub: `${errors.toLocaleString()} failing spans`,
+        },
+        {
+          icon: Speed,
+          label: 'worst',
+          value: worst?.name ?? '—',
+          bad: worst !== undefined && errorRate(worst) >= 1,
+          sub: worst ? `${errorRate(worst).toFixed(1)}% of its spans fail` : 'nothing failing',
+        },
+      ]}
+    />
   );
 }
 

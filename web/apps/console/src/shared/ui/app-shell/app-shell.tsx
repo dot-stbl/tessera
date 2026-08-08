@@ -94,9 +94,14 @@ function AppPath({ path, section }: { path: string; section: string | undefined 
 }
 
 /**
- * Provider health: one dot, one word. The question is only ever "is the data I am
- * looking at complete", and the per-provider detail belongs in Settings rather
- * than in the chrome of every screen.
+ * Provider health — and it renders **nothing at all while the providers are
+ * healthy**, which is almost always.
+ *
+ * A permanently green "● HEALTHY" chip is not information. It costs a fixed
+ * corner of every screen to restate the default, and it trains the eye to skip
+ * the one place that would have said the trace store stopped answering. Chrome
+ * is silent until it has something to say; when it does, it says which provider
+ * and what is wrong, and the detail lives in Settings.
  */
 function ProviderHealth() {
   const { data, isError } = useQuery({
@@ -106,12 +111,15 @@ function ProviderHealth() {
     staleTime: 15_000,
   });
 
+  // Undefined means the first check has not returned. That is not a fault, and
+  // flashing "checking" on every page load is the same noise in a paler colour.
   const status = isError ? 'unhealthy' : data?.status;
+  if (status === undefined || status === 'healthy') return null;
 
   return (
-    <span className="app-health" data-status={status ?? 'unknown'} title={data?.detail ?? undefined}>
+    <span className="app-health" data-status={status} title={data?.detail ?? undefined}>
       <i aria-hidden="true" />
-      {status ?? 'checking'}
+      {isError ? 'provider unreachable' : `providers ${status}`}
     </span>
   );
 }

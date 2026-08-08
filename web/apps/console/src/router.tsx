@@ -17,7 +17,9 @@ import { DashboardsPage } from '@/features/dashboards/dashboards-page';
 import {
   parseOptionalString,
   parseTimeRange,
+  parseTraceStatusFilter,
   type TimeRangeKey,
+  type TraceStatusFilter,
 } from '@/shared/lib/search-params';
 
 /**
@@ -95,6 +97,12 @@ export interface TracesSearch {
    * Goes away together with one of the implementations once decided.
    */
   table?: 'aria';
+  /**
+   * Narrows the list to failing or slow requests. Kept in the URL like every
+   * other filter: "the errors in the last 6h" is the thing people paste into an
+   * incident channel, and it has to survive being pasted.
+   */
+  status?: TraceStatusFilter;
 }
 
 const tracesRoute = createRoute({
@@ -105,6 +113,7 @@ const tracesRoute = createRoute({
     service: parseOptionalString(search['service']),
     range: parseTimeRange(search['range']),
     table: search['table'] === 'aria' ? 'aria' : undefined,
+    status: parseTraceStatusFilter(search['status']),
   }),
 });
 

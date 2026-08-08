@@ -4,6 +4,7 @@ import { getRouteApi } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
+import { Description, Error as ErrorGlyph, Hub, Warning } from '@nine-thirty-five/material-symbols-react/rounded/400';
 import { LogEntry } from '@/shared/ui/apm';
 import {
   Blank,
@@ -11,6 +12,7 @@ import {
   Chip,
   LoadingRows,
   Seg,
+  StatBar,
   Strip,
   StripSpacer,
 } from '@/shared/ui/console';
@@ -22,6 +24,7 @@ import {
   resolveTimeWindow,
   type TimeRangeKey,
 } from '@/shared/lib/search-params';
+import type { LogEntry as LogEntryData } from '@/shared/api/types';
 
 const routeApi = getRouteApi('/logs');
 
@@ -79,8 +82,12 @@ export function LogsPage() {
         </Blank>
       )}
 
+      {!isLoading && !isError && data && data.items.length > 0 && (
+        <LogStats entries={data.items} range={range} />
+      )}
+
       {isLoading ? (
-        <LoadingRows />
+        <LoadingRows count={12} />
       ) : data && data.items.length === 0 ? (
         <Blank title="No log entries in this window.">
           <BlankText>
@@ -105,6 +112,52 @@ export function LogsPage() {
         </div>
       )}
     </PageTemplate>
+  );
+}
+
+/**
+ * What the window contains before you start reading it. The top emitter matters
+ * as much as the counts: a stream that is 80% one service is usually that
+ * service having a bad time, not the whole platform.
+ */
+function LogStats({ entries, range }: { entries: LogEntryData[]; range: TimeRangeKey }) {
+  const errors = entries.filter((entry) => entry.level === 'error' || entry.level === 'fatal');
+  const warnings = entries.filter((entry) => entry.level === 'warn');
+
+  const byService = new Map<string, number>();
+  for (const entry of entries) byService.set(entry.service, (byService.get(entry.service) ?? 0) + 1);
+  const top = [...byService.entries()].sort((a, b) => b[1] - a[1])[0];
+
+  return (
+    <StatBar
+      items={[
+        {
+          icon: Description,
+          label: 'entries',
+          value: entries.length.toLocaleString(),
+          sub: `in the last ${range}`,
+        },
+        {
+          icon: ErrorGlyph,
+          label: 'errors',
+          value: errors.length.toLocaleString(),
+          bad: errors.length > 0,
+          sub: `${new Set(errors.map((entry) => entry.service)).size} services affected`,
+        },
+        {
+          icon: Warning,
+          label: 'warnings',
+          value: warnings.length.toLocaleString(),
+          sub: warnings.length > 0 ? 'retries and degraded paths' : 'nothing degraded',
+        },
+        {
+          icon: Hub,
+          label: 'loudest',
+          value: top?.[0] ?? '—',
+          sub: top ? `${Math.round((top[1] / entries.length) * 100)}% of the stream` : '—',
+        },
+      ]}
+    />
   );
 }
 

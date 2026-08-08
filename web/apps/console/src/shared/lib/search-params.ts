@@ -25,6 +25,24 @@ export function parseTimeRange(value: unknown): TimeRangeKey {
   return TIME_RANGES.includes(value as TimeRangeKey) ? (value as TimeRangeKey) : DEFAULT_TIME_RANGE;
 }
 
+/**
+ * Which slice of the list to show. `slow` is a client-side cut at 1s rather than
+ * a backend `minDurationMs`: the threshold that matters is relative to the
+ * window you are looking at, and 1s is the point past which a request stops
+ * being a page load and starts being a complaint.
+ */
+export const TRACE_STATUS_FILTERS = ['all', 'errors', 'slow'] as const;
+
+export type TraceStatusFilter = (typeof TRACE_STATUS_FILTERS)[number];
+
+export const SLOW_THRESHOLD_MS = 1000;
+
+export function parseTraceStatusFilter(value: unknown): TraceStatusFilter {
+  return TRACE_STATUS_FILTERS.includes(value as TraceStatusFilter)
+    ? (value as TraceStatusFilter)
+    : 'all';
+}
+
 /** A non-empty trimmed string, or undefined. Empty means "no filter". */
 export function parseOptionalString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;

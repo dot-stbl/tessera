@@ -1,4 +1,5 @@
 import type { TesseraApi } from './client';
+import { buildFleet } from './mock-fleet';
 import { TesseraApiError } from './problem-details';
 import type {
   DependencyGraph,
@@ -206,33 +207,64 @@ function summary(
   };
 }
 
+/**
+ * The generated day of traffic behind the flagship. See mock-fleet.ts — 220
+ * traces across 24 hours, each with a real span tree and its own logs, so the
+ * inventory, the RED figures and the log stream all agree with what a trace
+ * shows when it is opened.
+ */
+const FLEET = buildFleet(NOW);
+
 const TRACES: TraceSummary[] = [
   summary(FLAGSHIP_TRACE_ID, 'frontend-proxy', 'ingress POST /checkout', 5, 1247, 'error', FLAGSHIP_SPANS.length, ['frontend-proxy', 'checkout-api', 'postgres', 'pricing', 'stripe', 'currency']),
-  summary('f67890abcdef0123456789abcdef0123', 'stripe', 'POST /v1/charges', 47, 8934, 'error', 19, ['stripe', 'checkout-api']),
-  summary('b2c3d4e5f67890abcdef0123456789ab', 'checkout-api', 'GET /cart', 12, 89, 'ok', 5, ['checkout-api', 'postgres']),
-  summary('c3d4e5f67890abcdef0123456789abcd', 'frontend-proxy', 'ingress GET /products', 18, 412, 'ok', 12, ['frontend-proxy', 'checkout-api', 'postgres']),
-  summary('d4e5f67890abcdef0123456789abcdef0', 'currency', 'Convert EUR→USD', 25, 23, 'ok', 4, ['currency']),
-  summary('e5f67890abcdef0123456789abcdef012', 'postgres', 'SELECT orders', 32, 156, 'ok', 7, ['postgres']),
-  summary('67890abcdef0123456789abcdef01234', 'checkout-api', 'POST /payment', 58, 234, 'ok', 11, ['checkout-api', 'stripe']),
-  summary('7890abcdef0123456789abcdef012345', 'frontend-proxy', 'ingress POST /cart', 78, 287, 'ok', 9, ['frontend-proxy', 'checkout-api']),
-  summary('890abcdef0123456789abcdef0123456', 'pricing', 'GET /quote', 92, 119, 'ok', 6, ['pricing', 'currency']),
-  summary('90abcdef0123456789abcdef01234567', 'checkout-api', 'GET /cart', 105, 67, 'ok', 4, ['checkout-api', 'postgres']),
-];
+  ...FLEET.traces,
+].sort((a, b) => b.startTime - a.startTime);
 
-const SERVICES: ServiceSummary[] = [
-  { name: 'checkout-api', spanCount: 8421, errorCount: 23, operations: [{ name: 'POST /checkout', count: 4210 }, { name: 'GET /cart', count: 3100 }, { name: 'POST /payment', count: 1111 }] },
-  { name: 'postgres', spanCount: 12_004, errorCount: 0, operations: [{ name: 'SELECT cart', count: 6000 }, { name: 'UPDATE orders', count: 4004 }, { name: 'SELECT orders', count: 2000 }] },
-  { name: 'stripe', spanCount: 4521, errorCount: 96, operations: [{ name: 'POST /v1/charges', count: 4400 }, { name: 'GET /v1/customers', count: 121 }] },
-  { name: 'frontend-proxy', spanCount: 18_392, errorCount: 31, operations: [{ name: 'ingress POST /checkout', count: 9000 }, { name: 'ingress GET /products', count: 9392 }] },
-  { name: 'pricing', spanCount: 3210, errorCount: 11, operations: [{ name: 'GET /quote', count: 3210 }] },
-  { name: 'currency', spanCount: 2980, errorCount: 0, operations: [{ name: 'Convert EUR→USD', count: 2980 }] },
-];
+const SERVICES: ServiceSummary[] = FLEET.services;
 
-const ERROR_GROUPS: ErrorGroupSummary[] = [
-  { key: 'stripe|TimeoutRejectedException', exceptionType: 'TimeoutRejectedException', message: 'HTTP request timed out after 8000ms', count: 96, sampleTraceIds: [FLAGSHIP_TRACE_ID, 'f67890abcdef0123456789abcdef0123'] },
-  { key: 'checkout-api|OrderCompensationException', exceptionType: 'OrderCompensationException', message: 'order rolled back after payment failure', count: 23, sampleTraceIds: [FLAGSHIP_TRACE_ID] },
-  { key: 'pricing|HttpRequestException', exceptionType: 'HttpRequestException', message: 'upstream tax service returned 503', count: 11, sampleTraceIds: ['890abcdef0123456789abcdef0123456'] },
-];
+/**
+ * Error groups, rolled up from what the fleet actually failed at. Hand-writing
+ * these let them drift from the traces they claim to sample, which is the one
+ * thing an error-grouping screen must never do.
+ */
+const ERROR_GROUPS: ErrorGroupSummary[] = (() => {
+  const groups = new Map<string, ErrorGroupSummary>();
+
+  for (const trace of FLEET.traces) {
+    if (trace.status !== 'error') continue;
+    const detail = FLEET.detail(trace.traceId);
+    for (const span of detail?.spans ?? []) {
+      const type = span.tags['error.type'];
+      if (type === undefined) continue;
+
+      const key = `${span.service}|${type}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.count = (existing.count ?? 0) + 1;
+        if (existing.sampleTraceIds.length < 5) existing.sampleTraceIds.push(trace.traceId);
+      } else {
+        groups.set(key, {
+          key,
+          exceptionType: type,
+          message: span.events[0]?.attributes['exception.message'] ?? `${span.operation} failed`,
+          count: 1,
+          sampleTraceIds: [trace.traceId],
+        });
+      }
+    }
+  }
+
+  return [
+    {
+      key: 'stripe|TimeoutRejectedException',
+      exceptionType: 'TimeoutRejectedException',
+      message: 'HTTP request timed out after 8000ms',
+      count: 96,
+      sampleTraceIds: [FLAGSHIP_TRACE_ID],
+    },
+    ...[...groups.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0)),
+  ];
+})();
 
 /** Flagship per-trace dependency mini-map (CLIENT edges only). */
 const FLAGSHIP_DEPS: DependencyGraph = {
@@ -257,44 +289,7 @@ const FLAGSHIP_DEPS: DependencyGraph = {
   ],
 };
 
-const SERVICE_RED: Record<string, ServiceRedResponse> = {
-  'checkout-api': {
-    requestRatePerSec: 12.4,
-    errorRatio: 0.023,
-    durationP95Ms: 842,
-    source: 'metrics',
-  },
-  stripe: {
-    requestRatePerSec: 4.1,
-    errorRatio: 0.096,
-    durationP95Ms: 6200,
-    source: 'metrics',
-  },
-  postgres: {
-    requestRatePerSec: null,
-    errorRatio: 0,
-    durationP95Ms: null,
-    source: 'spanApprox',
-  },
-  'frontend-proxy': {
-    requestRatePerSec: 28.7,
-    errorRatio: 0.012,
-    durationP95Ms: 1180,
-    source: 'metrics',
-  },
-  pricing: {
-    requestRatePerSec: 9.2,
-    errorRatio: 0.011,
-    durationP95Ms: 210,
-    source: 'metrics',
-  },
-  currency: {
-    requestRatePerSec: null,
-    errorRatio: 0,
-    durationP95Ms: null,
-    source: 'spanApprox',
-  },
-};
+const SERVICE_RED: Record<string, ServiceRedResponse> = FLEET.red;
 
 const HEALTH: HealthResponse = {
   provider: 'victoria',
@@ -380,7 +375,8 @@ export function createMockApi(): TesseraApi {
       }
 
       const known = TRACES.find((candidate) => candidate.traceId === traceId);
-      if (!known) {
+      const built = FLEET.detail(traceId);
+      if (!known || !built) {
         return Promise.reject(
           new TesseraApiError(404, `Trace ${traceId} not found`, {
             title: 'Not Found',
@@ -390,8 +386,9 @@ export function createMockApi(): TesseraApi {
         );
       }
 
-      // Other fixtures only have a summary. `logsOnly`/`spansOnly` are real
-      // backend modes, so a degraded view is worth exercising too.
+      // Every fleet trace opens into a real waterfall with its own logs. The
+      // previous fixtures synthesized a single root span here, so nine of ten
+      // rows in the list led to a screen that could not demonstrate the product.
       return delay<GetTraceResponse>({
         trace: {
           traceId: known.traceId,
@@ -400,44 +397,48 @@ export function createMockApi(): TesseraApi {
           startTime: known.startTime,
           durationMs: known.durationMs,
           status: known.status,
-          spans: [
-            {
-              spanId: '0000000000000001',
-              parentSpanId: null,
-              service: known.rootService,
-              operation: known.rootOperation,
-              startTime: known.startTime,
-              durationMs: known.durationMs,
-              status: known.status,
-              kind: 'server',
-              resource: RESOURCES[known.rootService] ?? res(known.rootService, 'unknown'),
-              tags: {},
-              events: [],
-            },
-          ],
+          spans: built.spans,
         },
-        correlatedLogs: [],
-        mode: 'spansOnly',
-        markers: [],
-        erroredSpanCount: known.status === 'error' ? 1 : 0,
-        exceptions: [],
-        dependencyGraph: {
-          nodes: [{ id: known.rootService, name: known.rootService, kind: 'service' }],
-          edges: [],
-        },
+        correlatedLogs: built.logs,
+        mode: built.logs.length > 0 ? 'full' : 'spansOnly',
+        markers: built.markers,
+        erroredSpanCount: built.spans.filter((span) => span.status === 'error').length,
+        exceptions: built.spans
+          .filter((span) => span.status === 'error')
+          .map((span) => ({
+            spanId: span.spanId,
+            service: span.service,
+            operation: span.operation,
+            exceptionType: span.tags['error.type'] ?? 'Exception',
+            exceptionMessage: span.events[0]?.attributes['exception.message'] ?? 'failed',
+          })),
+        dependencyGraph: built.dependencyGraph,
       });
     },
 
     listLogs(request) {
-      let items = FLAGSHIP_LOGS;
+      let items = [...FLAGSHIP_LOGS, ...FLEET.logStream].sort(
+        (a, b) => a.timestamp - b.timestamp,
+      );
       if (request.traceId) {
         items = items.filter((entry) => entry.traceId === request.traceId);
       }
       if (request.stream) {
         items = items.filter((entry) => entry.service === request.stream);
       }
+      const from = request.startUnixMs ?? 0;
+      const to = request.endUnixMs ?? Number.MAX_SAFE_INTEGER;
+      items = items.filter((entry) => entry.timestamp >= from && entry.timestamp <= to);
+
+      // Newest last, and the window's tail is what a stream shows — taking the
+      // head would pin the view to the oldest entries in the range and never
+      // move as time passes.
       const limit = request.limit ?? 500;
-      return delay({ items: items.slice(0, limit), cursor: null, hasMore: items.length > limit });
+      return delay({
+        items: items.slice(-limit),
+        cursor: null,
+        hasMore: items.length > limit,
+      });
     },
 
     listErrors(request) {

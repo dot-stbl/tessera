@@ -114,8 +114,8 @@
   /* ─── Density and the time gutter ───
    * Time runs down the left edge of every listing, always the same width,
    * always monospaced. --gutter is that column. */
-  --row: 28px;
-  --gutter: 62px;
+  --row: 33px;
+  --gutter: 76px;
   --rail: 52px;
 
   /* Primer's radius. Small enough to stay out of the way in a dense table,
@@ -463,21 +463,16 @@
  * stream and a trace list are the same object seen from two sides. Clipping is
  * what makes the gutter's tint stop at the rounded corner instead of squaring
  * it off. */
-.log-stream {
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius);
-  background: var(--card);
-  overflow: hidden;
-}
+.log-stream { background: var(--card); }
 .log-entry {
   border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 .log-entry:last-child { border-bottom: 0; }
 .log-entry-row {
   display: grid;
-  grid-template-columns: var(--gutter) 46px minmax(88px, 124px) 1fr 22px;
+  grid-template-columns: var(--gutter) 52px minmax(96px, 136px) 1fr 24px;
   align-items: center;
   min-height: var(--row);
 }
@@ -486,10 +481,10 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 10px;
+  padding-right: 12px;
   background: var(--surface-2);
   border-right: 1px solid var(--rule);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   color: var(--muted-2);
 }
@@ -936,8 +931,24 @@
 /* Content is a raised panel, not more of the same sheet. One light top edge is
  * what makes it read as a surface at all — on a dark ground that hairline does
  * the work a drop shadow does on a light one. */
+/* A very faint accent bloom at the top of the content area. Two radial washes at
+ * 5% — below the threshold where it reads as a colour, above the one where the
+ * screen reads as unlit. It moves nothing and costs nothing; it is the only
+ * decoration in the app, and it exists because a dead-flat ground under bounded
+ * panels looks like an unstyled document. */
+.app-main::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 420px;
+  pointer-events: none;
+  background-image:
+    radial-gradient(60% 100% at 12% 0%, color-mix(in oklch, var(--primary) 7%, transparent), transparent 70%),
+    radial-gradient(50% 90% at 92% 0%, color-mix(in oklch, var(--primary) 4%, transparent), transparent 65%);
+}
 .app-main {
   grid-area: main;
+  position: relative;
   background: var(--background);
   overflow-y: auto;
   /* Reserve the gutter on the single main scroll root so opening a
@@ -948,8 +959,13 @@
 }
 
 /* ─── Page ───
- * No max-width and no page-level card. A trace with forty spans wants the whole
- * window; centring it inside a 1280px column throws away the timeline. */
+ *
+ * Content is a stack of bounded panels on a desk, not a single sheet bleeding
+ * into the chrome. The full-bleed version was defensible on the argument that a
+ * forty-span timeline wants every pixel — and it was still wrong, because with
+ * nothing framing it the screen had no depth at all and read as raw output. The
+ * panel keeps its own edge; the timeline loses 32px and gains a shape.
+ */
 .page {
   display: flex;
   flex-direction: column;
@@ -959,16 +975,13 @@
   display: flex;
   align-items: baseline;
   gap: 14px;
-  padding: 13px 18px 11px;
-  background: var(--card);
-  box-shadow: inset 0 1px 0 0 oklch(100% 0 0 / 0.04);
+  padding: 15px 16px 13px;
 }
 .page-title {
   margin: 0;
-  font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
@@ -977,58 +990,130 @@
 .page-subtitle {
   min-width: 0;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted-foreground);
 }
 .page-actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
-/* The page itself is the dark desk. Content sits on it as a lighter slab with a
- * closing edge, so the empty area below a short list reads as space around the
- * panel rather than as more panel. Without this the screen goes back to being one
- * flat sheet — the exact thing that made the light theme look unfinished. */
 .page-body {
   display: flex;
   flex-direction: column;
+  gap: 10px;
   flex: 1;
   min-height: 0;
-  background: var(--background);
+  padding: 0 16px 16px;
 }
+
+/* Anything dropped straight into the body becomes a panel. Declared once here
+ * rather than on each component, so a new screen cannot forget the frame. */
 .page-body > .listing,
+.page-body > .stat-bar,
 .page-body > .waterfall,
-.page-body > .loading-rows {
+.page-body > .log-stream,
+.page-body > .loading-rows,
+.page-body > [data-slot='table-container'] {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
   background: var(--card);
-  border-bottom: 1px solid var(--border-2);
-  box-shadow: 0 1px 0 0 oklch(0% 0 0 / 0.35);
+  overflow: hidden;
+}
+.dark .page-body > .listing,
+.dark .page-body > .stat-bar,
+.dark .page-body > .waterfall,
+.dark .page-body > .log-stream,
+.dark .page-body > [data-slot='table-container'],
+[data-theme='dark'] .page-body > .listing,
+[data-theme='dark'] .page-body > .stat-bar,
+[data-theme='dark'] .page-body > .waterfall,
+[data-theme='dark'] .page-body > .log-stream,
+[data-theme='dark'] .page-body > [data-slot='table-container'] {
+  /* On a dark ground a border alone is not enough separation — one lit top edge
+   * does the work a drop shadow does on white. */
+  box-shadow:
+    inset 0 1px 0 0 oklch(100% 0 0 / 0.045),
+    0 1px 2px 0 oklch(0% 0 0 / 0.35);
+}
+
+/* ─── Summary bar ───
+ * One card divided by hairlines, not four floating tiles: these are facets of
+ * one window, not four independent widgets. */
+.stat-bar {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+}
+@media (min-width: 720px) {
+  .stat-bar { flex-direction: row; }
+  .stat + .stat { border-top: 0; border-left: 1px solid var(--border); }
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 16px;
+}
+.stat + .stat { border-top: 1px solid var(--border); }
+.stat-icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--muted-2);
+}
+.stat-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.stat-line { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.stat-value {
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.stat-value.is-bad { color: var(--err-ink); }
+.stat-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.stat-sub {
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--muted-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ─── Filter strip ───
- * Filters read as the query they are: key=value, monospace, on one line. */
+ * Filters read as the query they are: key=value, monospace, on one line. It is
+ * the controls for the panel below it, so it carries no frame of its own —
+ * boxing it would make the toolbar look like a second, equal panel. */
 .strip {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 8px 18px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
+  min-height: 34px;
 }
 .strip-spacer { flex: 1; }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  height: 21px;
-  padding: 0 7px;
+  height: 24px;
+  padding: 0 8px;
   border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
-  background: var(--background);
+  background: var(--card);
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--foreground);
 }
 .chip-key { color: var(--muted-foreground); }
@@ -1051,16 +1136,16 @@
   border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: var(--background);
+  background: var(--card);
 }
 .seg > button {
-  padding: 4px 9px;
+  padding: 6px 11px;
   border: 0;
   border-left: 1px solid var(--border);
   background: transparent;
   color: var(--muted-foreground);
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11.5px;
   letter-spacing: 0.04em;
   cursor: pointer;
 }
@@ -1107,7 +1192,7 @@
 }
 .listing tbody tr:hover { background: var(--surface-2); }
 .listing td {
-  padding: 0 10px;
+  padding: 0 12px;
   vertical-align: middle;
   white-space: nowrap;
   overflow: hidden;
@@ -1121,7 +1206,7 @@
   text-align: right;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted-foreground);
   background: var(--surface-2);
   border-right: 1px solid var(--rule);
@@ -1146,14 +1231,14 @@
 .cell-subject .svc {
   flex: none;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted-foreground);
 }
 .cell-subject .op {
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--foreground);
 }
 
@@ -1190,7 +1275,7 @@ tr[data-status='error'] .cell-track > i,
   text-align: right;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--fg-2);
 }
 /* A number that is itself the bad news. Data red, per the two-reds rule. */
@@ -1200,7 +1285,7 @@ tr[data-status='error'] .cell-track > i,
  * the pastel pills were the loudest thing on screen and said the least. */
 .tag {
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1229,7 +1314,7 @@ tr[data-status='error'] .cell-track > i,
   min-width: 0;
   overflow: hidden;
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted-foreground);
   white-space: nowrap;
 }
@@ -1253,11 +1338,10 @@ tr[data-status='error'] .cell-track > i,
  * talking about, so an operator cannot read the view without reading it. */
 .notice {
   display: block;
-  padding: 7px 18px;
-  border: 0;
-  border-bottom: 1px solid var(--border-2);
-  border-radius: 0;
-  font-size: 11.5px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 12.5px;
   line-height: 1.5;
 }
 .notice-attention {
@@ -1283,8 +1367,8 @@ tr[data-status='error'] .cell-track > i,
   /* Bounded, unlike the listings. A table earns full bleed because more width
    * is more data; a form does not — at 1400px the label and its control end up
    * at opposite ends of the screen and stop reading as one row. */
-  max-width: 780px;
-  margin: 16px 18px 0;
+  max-width: 820px;
+  margin: 0;
 }
 .settings-legend {
   padding: 9px 14px;
@@ -1340,12 +1424,15 @@ tr[data-status='error'] .cell-track > i,
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 7px;
-  padding: 40px 18px;
-  max-width: 62ch;
+  gap: 8px;
+  padding: 44px 22px;
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--card) 55%, transparent);
 }
-.blank-title { font-size: 13.5px; color: var(--foreground); }
-.blank-body { font-size: 13px; line-height: 1.55; color: var(--muted-foreground); }
+.blank > * { max-width: 66ch; }
+.blank-title { font-size: 14.5px; font-weight: 600; color: var(--foreground); }
+.blank-body { font-size: 13.5px; line-height: 1.6; color: var(--muted-foreground); }
 /* Paths and endpoints inside prose are still machine values, so they keep the
  * machine face — the type roles hold even in a sentence. */
 .blank-body code {

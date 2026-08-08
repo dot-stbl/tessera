@@ -29,3 +29,6 @@ export { Strip, StripSpacer, Seg, Chip, Meta } from './strip';
 export type { SegProps, ChipProps } from './strip';
 
 export { Panel, PanelRow, PanelValue, LoadingRows } from './panel';
+
+export { StatBar } from './stats';
+export type { StatItem } from './stats';
