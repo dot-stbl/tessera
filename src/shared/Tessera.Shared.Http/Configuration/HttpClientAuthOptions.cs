@@ -13,5 +13,9 @@ public sealed record HttpClientAuthOptions
     ///     Bearer token to send in <c>Authorization: Bearer &lt;token&gt;</c>. Null or
     ///     whitespace disables auth (no header is sent).
     /// </summary>
-    public string? AuthToken { get; init; }
+    /// <remarks>
+    ///     Settable so secret resolution can rewrite <c>env:</c>/<c>file:</c>
+    ///     references in place during PostConfigure.
+    /// </remarks>
+    public string? AuthToken { get; set; }
 }

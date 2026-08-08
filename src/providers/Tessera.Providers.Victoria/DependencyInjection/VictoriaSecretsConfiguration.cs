@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Tessera.Providers.Victoria.Configuration;
-using Tessera.Shared.Http.Configuration;
 using Tessera.Shared.Kernel.Configuration.Paths;
 
 namespace Tessera.Providers.Victoria.DependencyInjection;
@@ -9,23 +8,12 @@ namespace Tessera.Providers.Victoria.DependencyInjection;
 ///     Wires <see cref="SecretReference.Resolve(string?)" /> into PostConfigure
 ///     for every <see cref="VictoriaOptions" /> secret field. Without this,
 ///     raw values like <c>"env:TESSERA_VICTORIA_TOKEN"</c> would land in the
-///     HTTP client header verbatim — see STATE.md "Open questions" /
-///     ADR-0001 Decision 5 for context.
+///     HTTP client header verbatim.
 /// </summary>
 /// <remarks>
-///     <para>
-///         Each PostConfigure uses <c>with</c>-expressions on the
-///         nested record types. Records require <c>init</c>-only properties;
-///         that's why <see cref="VictoriaBackendOptions" /> and
-///         <see cref="HttpClientAuthOptions" /> are declared as records
-///         (Phase 2b refactor).
-///     </para>
-///     <para>
-///         Operations are idempotent: <see cref="SecretReference.Resolve" />
-///         passes through literal values unchanged, so a token that is
-///         already the resolved form (e.g. set directly in TOML) is not
-///         touched.
-///     </para>
+///     Mutates nested tokens in place. <c>PostConfigure</c> is an
+///     <c>Action</c> — a <c>with</c>-expression return value is discarded and
+///     never applied to the options instance.
 /// </remarks>
 public static class VictoriaSecretsConfiguration
 {
@@ -38,54 +26,48 @@ public static class VictoriaSecretsConfiguration
     public static IServiceCollection ResolveVictoriaSecrets(this IServiceCollection services)
     {
         services.AddOptions<VictoriaOptions>()
-            .PostConfigure(static options => ResolveAllSecrets.Apply(options));
+            .PostConfigure(static options => VictoriaSecretsResolver.ApplyInPlace(options));
         return services;
     }
 }
 
 /// <summary>
-///     Walks <see cref="VictoriaOptions.Traces" />,
-///     <see cref="VictoriaOptions.Logs" />, <see cref="VictoriaOptions.Metrics" />,
-///     and <see cref="VictoriaOptions.Auth" />. For each, the raw
-///     <c>Token</c> / <c>AuthToken</c> value (if non-null) is replaced with
-///     the result of <see cref="SecretReference.Resolve(string?)" />.
+///     Walks Traces / Logs / Metrics / Auth and resolves secret references
+///     in place. Null backends are skipped — ValidateOnStart still fails
+///     missing required sections.
 /// </summary>
-internal static class ResolveAllSecrets
+internal static class VictoriaSecretsResolver
 {
-    public static VictoriaOptions Apply(VictoriaOptions options)
+    public static void ApplyInPlace(VictoriaOptions options)
     {
-        var traces = ResolveBackend(options.Traces);
-        var logs = ResolveBackend(options.Logs);
-        var metrics = options.Metrics is { } m ? ResolveBackend(m) : null;
-
-        HttpClientAuthOptions? auth = null;
-        if (options.Auth is { } authRecord && authRecord.AuthToken is { } rawAuthToken)
+        if (options.Traces is { } traces)
         {
-            var resolvedAuth = SecretReference.Resolve(rawAuthToken);
-            auth = resolvedAuth == rawAuthToken
-                ? authRecord
-                : authRecord with { AuthToken = resolvedAuth };
+            ResolveBackendInPlace(traces);
         }
 
-        return options with
+        if (options.Logs is { } logs)
         {
-            Traces = traces,
-            Logs = logs,
-            Metrics = metrics,
-            Auth = auth,
-        };
+            ResolveBackendInPlace(logs);
+        }
+
+        if (options.Metrics is { } metrics)
+        {
+            ResolveBackendInPlace(metrics);
+        }
+
+        if (options.Auth is { AuthToken: { } rawAuthToken } auth)
+        {
+            auth.AuthToken = SecretReference.Resolve(rawAuthToken);
+        }
     }
 
-    private static VictoriaBackendOptions ResolveBackend(VictoriaBackendOptions backend)
+    public static void ResolveBackendInPlace(VictoriaBackendOptions backend)
     {
         if (backend.Token is null)
         {
-            return backend;
+            return;
         }
 
-        var resolved = SecretReference.Resolve(backend.Token);
-        return resolved == backend.Token
-            ? backend
-            : backend with { Token = resolved };
+        backend.Token = SecretReference.Resolve(backend.Token);
     }
 }

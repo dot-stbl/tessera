@@ -68,5 +68,9 @@ public sealed record VictoriaBackendOptions
     ///     <c>.agents/docs/architecture/config-format.md</c>: <c>env:VAR</c>
     ///     and <c>file:/path</c>. Resolved at startup; literal otherwise.
     /// </summary>
-    public string? Token { get; init; }
+    /// <remarks>
+    ///     Settable (not <c>init</c>) so secret resolution can rewrite
+    ///     <c>env:</c>/<c>file:</c> references in place during PostConfigure.
+    /// </remarks>
+    public string? Token { get; set; }
 }
