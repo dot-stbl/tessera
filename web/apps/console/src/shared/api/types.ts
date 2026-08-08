@@ -55,12 +55,20 @@ export type GetTraceResponse = Schemas['GetTraceResponse'];
 /** A log pinned to a point on the trace timeline, optionally to one span. */
 export type LogMarker = Schemas['LogMarker'];
 
+/** Per-trace dependency mini-map (P9). Null on logs-only responses. */
+export type DependencyGraph = Schemas['DependencyGraph'];
+export type DependencyNode = Schemas['DependencyNode'];
+export type DependencyEdge = Schemas['DependencyEdge'];
+export type DependencyNodeKind = Schemas['DependencyNodeKind'];
+
 // ─── Logs ──────────────────────────────────────────────────────────────
 export type LogEntry = Schemas['LogEntry'];
 
 // ─── Discovery / health / errors ───────────────────────────────────────
 export type ServiceSummary = Schemas['ServiceSummary'];
 export type ServiceOperation = Schemas['ServiceOperation'];
+export type ServiceRedResponse = Schemas['ServiceRedResponse'];
+export type RedSource = Schemas['RedSource'];
 export type HealthResponse = Schemas['HealthResponse'];
 export type ErrorGroupSummary = Schemas['ErrorGroupSummary'];
 
@@ -95,4 +103,9 @@ export interface ListLogsRequest extends Partial<TimeRange> {
 export interface ListErrorsRequest extends TimeRange {
   service?: string;
   limit?: number;
+}
+
+export interface GetServiceRedRequest extends TimeRange {
+  operation?: string;
+  stepSeconds?: number;
 }

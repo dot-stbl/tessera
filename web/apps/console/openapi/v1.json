@@ -215,6 +215,122 @@
         }
       }
     },
+    "/api/v1/services/{serviceName}/red": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Service RED (rate / errors / duration)",
+        "parameters": [
+          {
+            "name": "serviceName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "StartUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "EndUnixMs",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Operation",
+            "in": "query",
+            "schema": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          },
+          {
+            "name": "StepSeconds",
+            "in": "query",
+            "schema": {
+              "type": [
+                "null",
+                "integer"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceRedResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceRedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: request validation failed (model binding or FluentValidation).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway: upstream provider unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: degraded state (e.g. one or more providers unreachable).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: upstream provider exceeded its timeout budget.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem detail (https://www.rfc-editor.org/rfc/rfc9457)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -986,8 +1102,100 @@
             "items": {
               "$ref": "#/components/schemas/TraceExceptionSummary"
             }
+          },
+          "dependencyGraph": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DependencyGraph"
+              }
+            ],
+            "description": "Per-trace dependency mini-map from CLIENT spans. Null when spans are absent (logs-only)."
           }
         }
+      },
+      "DependencyEdge": {
+        "required": [
+          "fromId",
+          "toId",
+          "callCount",
+          "errorCount"
+        ],
+        "type": "object",
+        "properties": {
+          "fromId": {
+            "type": "string",
+            "description": "Caller node id."
+          },
+          "toId": {
+            "type": "string",
+            "description": "Callee node id."
+          },
+          "callCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of CLIENT spans that produced this edge."
+          },
+          "errorCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "CLIENT spans on this edge with status error."
+          }
+        }
+      },
+      "DependencyGraph": {
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyNode"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyEdge"
+            }
+          }
+        },
+        "description": "Per-trace dependency mini-map: unique nodes plus aggregated edges."
+      },
+      "DependencyNode": {
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable node key (service name, or db:… / external:…)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable label."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DependencyNodeKind"
+          }
+        }
+      },
+      "DependencyNodeKind": {
+        "enum": [
+          "service",
+          "database",
+          "external"
+        ],
+        "type": "string",
+        "description": "Role of a node on a per-trace dependency mini-map (camelCase wire)."
       },
       "HealthResponse": {
         "required": [
@@ -1277,6 +1485,50 @@
           }
         },
         "description": "Service inventory summary with aggregated metrics across traces."
+      },
+      "ServiceRedResponse": {
+        "required": [
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "requestRatePerSec": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double",
+            "description": "Requests per second, or null when unknown."
+          },
+          "errorRatio": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double",
+            "description": "Error ratio in [0, 1], or null when unknown."
+          },
+          "durationP95Ms": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double",
+            "description": "p95 duration in milliseconds, or null when unknown."
+          },
+          "source": {
+            "$ref": "#/components/schemas/RedSource"
+          }
+        },
+        "description": "HTTP body for service RED. Null fields mean unknown for that source."
+      },
+      "RedSource": {
+        "enum": [
+          "metrics",
+          "spanApprox"
+        ],
+        "type": "string",
+        "description": "Whether RED values came from PromQL metrics or span counters (camelCase wire)."
       },
       "Span": {
         "required": [

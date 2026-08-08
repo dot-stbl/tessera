@@ -1,6 +1,7 @@
 import type { TesseraApi } from './client';
 import { TesseraApiError } from './problem-details';
 import type {
+  DependencyGraph,
   ErrorGroupSummary,
   GetTraceResponse,
   HealthResponse,
@@ -8,6 +9,7 @@ import type {
   LogLevel,
   LogMarker,
   Resource,
+  ServiceRedResponse,
   ServiceSummary,
   Span,
   SpanKind,
@@ -232,6 +234,68 @@ const ERROR_GROUPS: ErrorGroupSummary[] = [
   { key: 'pricing|HttpRequestException', exceptionType: 'HttpRequestException', message: 'upstream tax service returned 503', count: 11, sampleTraceIds: ['890abcdef0123456789abcdef0123456'] },
 ];
 
+/** Flagship per-trace dependency mini-map (CLIENT edges only). */
+const FLAGSHIP_DEPS: DependencyGraph = {
+  nodes: [
+    { id: 'frontend-proxy', name: 'frontend-proxy', kind: 'service' },
+    { id: 'checkout-api', name: 'checkout-api', kind: 'service' },
+    { id: 'pricing', name: 'pricing', kind: 'service' },
+    { id: 'currency', name: 'currency', kind: 'service' },
+    { id: 'db:postgresql:cart', name: 'cart', kind: 'database' },
+    { id: 'db:postgresql:cart_items', name: 'cart_items', kind: 'database' },
+    { id: 'db:postgresql', name: 'postgresql', kind: 'database' },
+    { id: 'external:stripe', name: 'stripe', kind: 'external' },
+  ],
+  edges: [
+    { fromId: 'frontend-proxy', toId: 'checkout-api', callCount: 1, errorCount: 0 },
+    { fromId: 'checkout-api', toId: 'db:postgresql:cart', callCount: 1, errorCount: 0 },
+    { fromId: 'checkout-api', toId: 'db:postgresql:cart_items', callCount: 1, errorCount: 0 },
+    { fromId: 'checkout-api', toId: 'pricing', callCount: 1, errorCount: 0 },
+    { fromId: 'pricing', toId: 'currency', callCount: 1, errorCount: 0 },
+    { fromId: 'checkout-api', toId: 'db:postgresql', callCount: 3, errorCount: 0 },
+    { fromId: 'checkout-api', toId: 'external:stripe', callCount: 1, errorCount: 1 },
+  ],
+};
+
+const SERVICE_RED: Record<string, ServiceRedResponse> = {
+  'checkout-api': {
+    requestRatePerSec: 12.4,
+    errorRatio: 0.023,
+    durationP95Ms: 842,
+    source: 'metrics',
+  },
+  stripe: {
+    requestRatePerSec: 4.1,
+    errorRatio: 0.096,
+    durationP95Ms: 6200,
+    source: 'metrics',
+  },
+  postgres: {
+    requestRatePerSec: null,
+    errorRatio: 0,
+    durationP95Ms: null,
+    source: 'spanApprox',
+  },
+  'frontend-proxy': {
+    requestRatePerSec: 28.7,
+    errorRatio: 0.012,
+    durationP95Ms: 1180,
+    source: 'metrics',
+  },
+  pricing: {
+    requestRatePerSec: 9.2,
+    errorRatio: 0.011,
+    durationP95Ms: 210,
+    source: 'metrics',
+  },
+  currency: {
+    requestRatePerSec: null,
+    errorRatio: 0,
+    durationP95Ms: null,
+    source: 'spanApprox',
+  },
+};
+
 const HEALTH: HealthResponse = {
   provider: 'victoria',
   status: 'healthy',
@@ -251,6 +315,20 @@ export function createMockApi(): TesseraApi {
 
     listServices() {
       return delay(SERVICES);
+    },
+
+    getServiceRed(serviceName) {
+      const known = SERVICE_RED[serviceName];
+      if (known) {
+        return delay(known);
+      }
+
+      return delay<ServiceRedResponse>({
+        requestRatePerSec: null,
+        errorRatio: null,
+        durationP95Ms: null,
+        source: 'spanApprox',
+      });
     },
 
     listTraces(request) {
@@ -296,6 +374,7 @@ export function createMockApi(): TesseraApi {
               exceptionMessage: 'HTTP request timed out after 8000ms',
             },
           ],
+          dependencyGraph: FLAGSHIP_DEPS,
         };
         return delay(response, 180);
       }
@@ -342,6 +421,10 @@ export function createMockApi(): TesseraApi {
         markers: [],
         erroredSpanCount: known.status === 'error' ? 1 : 0,
         exceptions: [],
+        dependencyGraph: {
+          nodes: [{ id: known.rootService, name: known.rootService, kind: 'service' }],
+          edges: [],
+        },
       });
     },
 

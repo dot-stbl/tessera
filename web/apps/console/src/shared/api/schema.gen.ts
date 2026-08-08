@@ -201,6 +201,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/services/{serviceName}/red": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service RED (rate / errors / duration) */
+        get: {
+            parameters: {
+                query?: {
+                    StartUnixMs?: number;
+                    EndUnixMs?: number;
+                    Operation?: null | string;
+                    StepSeconds?: null | number;
+                };
+                header?: never;
+                path: {
+                    serviceName: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ServiceRedResponse"];
+                        "text/json": components["schemas"]["ServiceRedResponse"];
+                    };
+                };
+                /** @description Bad Request: request validation failed (model binding or FluentValidation). */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": Record<string, never>;
+                    };
+                };
+                /** @description Bad Gateway: upstream provider unavailable. */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": Record<string, never>;
+                    };
+                };
+                /** @description Service Unavailable: degraded state (e.g. one or more providers unreachable). */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": Record<string, never>;
+                    };
+                };
+                /** @description Gateway Timeout: upstream provider exceeded its timeout budget. */
+                504: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -748,7 +828,42 @@ export interface components {
             /** Format: int32 */
             erroredSpanCount?: number;
             exceptions?: components["schemas"]["TraceExceptionSummary"][];
+            /** @description Per-trace dependency mini-map from CLIENT spans. Null when spans are absent (logs-only). */
+            dependencyGraph?: null | components["schemas"]["DependencyGraph"];
         };
+        DependencyEdge: {
+            /** @description Caller node id. */
+            fromId: string;
+            /** @description Callee node id. */
+            toId: string;
+            /**
+             * Format: int32
+             * @description Number of CLIENT spans that produced this edge.
+             */
+            callCount: number;
+            /**
+             * Format: int32
+             * @description CLIENT spans on this edge with status error.
+             */
+            errorCount: number;
+        };
+        /** @description Per-trace dependency mini-map: unique nodes plus aggregated edges. */
+        DependencyGraph: {
+            nodes: components["schemas"]["DependencyNode"][];
+            edges: components["schemas"]["DependencyEdge"][];
+        };
+        DependencyNode: {
+            /** @description Stable node key (service name, or db:… / external:…). */
+            id: string;
+            /** @description Human-readable label. */
+            name: string;
+            kind: components["schemas"]["DependencyNodeKind"];
+        };
+        /**
+         * @description Role of a node on a per-trace dependency mini-map (camelCase wire).
+         * @enum {string}
+         */
+        DependencyNodeKind: "service" | "database" | "external";
         HealthResponse: {
             provider: string;
             status: components["schemas"]["HealthStatus"];
@@ -878,6 +993,30 @@ export interface components {
             errorCount: number;
             operations: components["schemas"]["ServiceOperation"][];
         };
+        /** @description HTTP body for service RED. Null fields mean unknown for that source. */
+        ServiceRedResponse: {
+            /**
+             * Format: double
+             * @description Requests per second, or null when unknown.
+             */
+            requestRatePerSec?: null | number;
+            /**
+             * Format: double
+             * @description Error ratio in [0, 1], or null when unknown.
+             */
+            errorRatio?: null | number;
+            /**
+             * Format: double
+             * @description p95 duration in milliseconds, or null when unknown.
+             */
+            durationP95Ms?: null | number;
+            source: components["schemas"]["RedSource"];
+        };
+        /**
+         * @description Whether RED values came from PromQL metrics or span counters (camelCase wire).
+         * @enum {string}
+         */
+        RedSource: "metrics" | "spanApprox";
         /**
          * @description A single span within a trace. May have a parent (SpanId? Span.ParentSpanId)
          *     and child spans (IReadOnlyList&lt;SpanEvent&gt; Span.Events captures span events like exceptions).
