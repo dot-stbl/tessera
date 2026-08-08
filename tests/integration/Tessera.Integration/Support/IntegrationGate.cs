@@ -2,8 +2,8 @@ namespace Tessera.Integration.Support;
 
 /// <summary>
 ///     Opt-in gate for expensive integration tests. Without
-///     <c>TESSERA_IT=1</c> (or <c>true</c>/<c>yes</c>), scenarios skip so
-///     laptops without Docker stay green.
+///     <c>TESSERA_IT=1</c> (or <c>true</c>/<c>yes</c>), scenarios soft-return so
+///     laptops without podman stay green.
 /// </summary>
 public static class IntegrationGate
 {
@@ -27,5 +27,5 @@ public static class IntegrationGate
 
     /// <summary>xUnit Skip reason when the gate is closed.</summary>
     public const string SkipReason =
-        "Set TESSERA_IT=1 and start tests/integration/stack/docker-compose.yml";
+        "Set TESSERA_IT=1 and podman compose -f tests/integration/stack/docker-compose.yml up -d";
 }

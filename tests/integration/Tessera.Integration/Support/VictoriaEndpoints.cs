@@ -1,8 +1,8 @@
 namespace Tessera.Integration.Support;
 
 /// <summary>
-///     Default loopback endpoints for <c>stack/docker-compose.yml</c> port maps.
-///     Override later via env if needed.
+///     Default loopback endpoints for <c>stack/docker-compose.yml</c> port maps
+///     (brought up with <c>podman compose</c>). Override via env if needed.
 /// </summary>
 public static class VictoriaEndpoints
 {

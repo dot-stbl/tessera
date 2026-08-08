@@ -1,29 +1,32 @@
 # Integration tests — Tessera house rules
 
-> Status: scaffold 2026-08-08. **Not** global Testcontainers/WAF dogma — house rules only.
+> Status: wave-1 seed + host HTTP (2026-08-09). **Not** global Testcontainers/WAF dogma — house rules only.
+>
+> Stack runtime: **podman compose** (not docker). Compose file remains named
+> `docker-compose.yml` for compose-spec compatibility.
 
 ## Layers
 
 | Layer | Path | When |
 |-------|------|------|
 | Unit | `tests/unit/` | always (PR / local) |
-| Integration | `tests/integration/` | Docker + seed; CI self-hosted or opt-in local |
+| Integration | `tests/integration/` | podman stack + seed; CI self-hosted or opt-in local |
 | Live | later / Trait | vironima; skip unless `TESSERA_IT_LIVE=1` |
 
 ## Integration contract
 
-1. **Real Victoria** (containers), not mocks of VT/VL.
-2. **Fixed seeds** — known `trace_id`, service, logs (see `seed/GoldenSeed.cs`).
-3. **HTTP against Tessera.Host** (process or factory — wave 1 may probe stack only).
-4. **Default skip** without `TESSERA_IT=1` so machines without Docker stay green.
+1. **Real Victoria** (containers via podman), not mocks of VT/VL.
+2. **Fixed seeds** — known `trace_id`, service, logs (see `Seed/GoldenSeed.cs` + `GoldenSeeder`).
+3. **HTTP against Tessera.Host** (process with free port + temp toml).
+4. **Default soft-return** without `TESSERA_IT=1` so machines without podman stay green.
 5. **No Respawn / no our telemetry DB** — only optional SQLite prefs for host.
 
-## Wave 1 (this scaffold + follow-up)
+## Wave 1
 
 - [x] Layout + README + PLAN + compose VT+VL + csproj + golden constants + skippable smoke
-- [ ] Seed utility (OTLP or insert API) writing GoldenSeed
-- [ ] Host process or WAF with toml → container ports
-- [ ] Scenarios: health, traces search, get-trace Full
+- [x] Seed utility (OTLP HTTP insert; VL jsonline fallback) writing GoldenSeed
+- [x] Host process with temp toml → container ports (free port discovery)
+- [x] Scenarios: stack health, host health, traces search, get-trace Full/SpansOnly
 
 ## Wave 2
 
@@ -38,9 +41,9 @@
 
 | Service | Image (draft) | Port |
 |---------|---------------|------|
-| VictoriaTraces | `victoriametrics/victoria-traces:latest` | 10428 |
-| VictoriaLogs | `victoriametrics/victoria-logs:latest` | 9428 |
-| VictoriaMetrics | `victoriametrics/victoria-metrics:latest` | 8428 |
+| VictoriaTraces | `victoriametrics/victoria-traces:v0.4.0` | 10428 |
+| VictoriaLogs | `victoriametrics/victoria-logs:v1.21.0` | 9428 |
+| VictoriaMetrics | `victoriametrics/victoria-metrics:v1.110.0` | 8428 |
 
 Confirm tags against what vironima runs before locking.
 
@@ -50,9 +53,9 @@ Confirm tags against what vironima runs before locking.
 # unit only
 dotnet test tests/unit/...
 
-# integration (opt-in)
+# integration (opt-in) — podman, not docker
 $env:TESSERA_IT=1
-docker compose -f tests/integration/stack/docker-compose.yml up -d
+podman compose -f tests/integration/stack/docker-compose.yml up -d
 dotnet test tests/integration/Tessera.Integration
-docker compose -f tests/integration/stack/docker-compose.yml down
+podman compose -f tests/integration/stack/docker-compose.yml down
 ```

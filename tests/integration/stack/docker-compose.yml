@@ -1,8 +1,11 @@
 # Tessera integration backends — VT + VL for wave 1.
 # Pins are drafts; align with vironima.internal telemetry chart versions later.
 #
-#   docker compose -f tests/integration/stack/docker-compose.yml up -d
-#   docker compose -f tests/integration/stack/docker-compose.yml down -v
+# Prefer podman compose (house rule):
+#   podman compose -f tests/integration/stack/docker-compose.yml up -d
+#   podman compose -f tests/integration/stack/docker-compose.yml down -v
+#
+# docker compose is accepted as a last resort if podman is unavailable.
 
 services:
   victoria-traces:

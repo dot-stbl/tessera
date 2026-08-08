@@ -4,8 +4,8 @@ using Xunit;
 namespace Tessera.Integration.Scenarios;
 
 /// <summary>
-///     Wave-0 smoke: Victoria containers from docker-compose answer /health.
-///     Does not start Tessera.Host yet (host+seed = next commit).
+///     Wave-0 smoke: Victoria containers from podman compose answer /health.
+///     Host + seed scenarios live in the wave1 collection fixture.
 /// </summary>
 public sealed class StackHealthSmoke
 {
