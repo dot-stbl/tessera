@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["vite/client", "node"],
-    "baseUrl": ".",
+    // No baseUrl: TypeScript 7 removed it. `paths` resolves relative to this
+    // file's directory on its own, which is what baseUrl: "." meant here anyway.
     "paths": {
       "@/*": ["./src/*"]
     }
