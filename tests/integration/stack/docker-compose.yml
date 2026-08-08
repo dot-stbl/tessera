@@ -1,0 +1,41 @@
+# Tessera integration backends — VT + VL for wave 1.
+# Pins are drafts; align with vironima.internal telemetry chart versions later.
+#
+#   docker compose -f tests/integration/stack/docker-compose.yml up -d
+#   docker compose -f tests/integration/stack/docker-compose.yml down -v
+
+services:
+  victoria-traces:
+    image: victoriametrics/victoria-traces:v0.4.0
+    command:
+      - -storageDataPath=/victoria-traces-data
+      - -httpListenAddr=:10428
+    ports:
+      - "10428:10428"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:10428/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  victoria-logs:
+    image: victoriametrics/victoria-logs:v1.21.0
+    command:
+      - -storageDataPath=/victoria-logs-data
+      - -httpListenAddr=:9428
+    ports:
+      - "9428:9428"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9428/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Wave 2 — uncomment when RED scenarios land.
+  # victoria-metrics:
+  #   image: victoriametrics/victoria-metrics:v1.110.0
+  #   command:
+  #     - -storageDataPath=/victoria-metrics-data
+  #     - -httpListenAddr=:8428
+  #   ports:
+  #     - "8428:8428"

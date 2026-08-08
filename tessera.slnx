@@ -85,9 +85,15 @@
         <Project Path="tests/unit/providers/Tessera.Providers.Victoria.Unit/Tessera.Providers.Victoria.Unit.csproj" />
     </Folder>
 
+    <!-- ============ Integration (opt-in: TESSERA_IT=1 + docker stack) === -->
+    <Folder Name="/tests/integration/">
+        <Project Path="tests/integration/Tessera.Integration/Tessera.Integration.csproj" />
+    </Folder>
+
     <!-- ============ Load generator (CLI utility, not a test project) === -->
     <Folder Name="/tests/Tessera.LoadGen/">
         <Project Path="tests/Tessera.LoadGen/Tessera.LoadGen.csproj" />
     </Folder>
 
 </Solution>
+
