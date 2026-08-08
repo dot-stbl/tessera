@@ -459,6 +459,16 @@
  * gutter's right side — and that edge *is* the app's structural rule, so the two
  * devices are one. The message is then the only free-flowing text on the row.
  */
+/* The slab the stream sits on — same material as `.listing`, because a log
+ * stream and a trace list are the same object seen from two sides. Clipping is
+ * what makes the gutter's tint stop at the rounded corner instead of squaring
+ * it off. */
+.log-stream {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow: hidden;
+}
 .log-entry {
   border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
   font-family: ui-monospace, 'JetBrains Mono', monospace;
@@ -1183,6 +1193,8 @@ tr[data-status='error'] .cell-track > i,
   font-size: 11.5px;
   color: var(--fg-2);
 }
+/* A number that is itself the bad news. Data red, per the two-reds rule. */
+.cell-num.is-bad { color: var(--err-ink); font-weight: 600; }
 
 /* Status as a word in its own colour, not a filled lozenge. Across forty rows
  * the pastel pills were the loudest thing on screen and said the least. */
@@ -1197,6 +1209,35 @@ tr[data-status='error'] .cell-track > i,
 .tag-error { color: var(--err-ink); }
 .tag-unset { color: var(--muted-2); }
 
+/* A single service mark, for the inventory where the row *is* one service.
+ * Same square as one of the dots below, so the same shape means the same thing
+ * on both screens. */
+.svc-mark {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--svc, var(--muted-2));
+  align-self: center;
+}
+
+/* Trailing operation names: supporting evidence, so they sit a level down in
+ * ink and drop out of the row rather than wrapping it to two lines. */
+.cell-ops {
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+  overflow: hidden;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.cell-ops > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Service dots: a fixed-width strip so the column stays aligned. */
 .svc-dots { display: inline-flex; gap: 3px; }
 .svc-dots > i {
@@ -1205,6 +1246,92 @@ tr[data-status='error'] .cell-track > i,
   border-radius: 1px;
   background: var(--svc, var(--muted-2));
 }
+
+/* ─── Notice ───
+ * A caveat about the data, not a dialog: one line, the full width of the thing
+ * it qualifies, no icon and no dismiss. It sits directly above what it is
+ * talking about, so an operator cannot read the view without reading it. */
+.notice {
+  display: block;
+  padding: 7px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--border-2);
+  border-radius: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.notice-attention {
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  box-shadow: inset 2px 0 0 var(--warn);
+}
+.notice-danger {
+  background: var(--err-soft);
+  color: var(--err-ink);
+  box-shadow: inset 2px 0 0 var(--err);
+}
+
+/* ─── Settings ───
+ * A form, not a table, so it drops the gutter — there is no "when" here. It
+ * keeps the slab and the hairline row rhythm so it still belongs to the app,
+ * but rows breathe: these are read once and decided, not scanned forty at a
+ * time. */
+.settings {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--card);
+  /* Bounded, unlike the listings. A table earns full bleed because more width
+   * is more data; a form does not — at 1400px the label and its control end up
+   * at opposite ends of the screen and stop reading as one row. */
+  max-width: 780px;
+  margin: 16px 18px 0;
+}
+.settings-legend {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted-foreground);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 14px;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+}
+.settings-row:last-child { border-bottom: 0; }
+.settings-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-label > span {
+  font-size: 12.5px;
+  color: var(--foreground);
+}
+.settings-label > p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.settings-value {
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+.settings-reset {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border-2);
+  border-radius: 4px;
+  background: var(--background);
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+.settings-reset:hover { color: var(--foreground); border-color: var(--rule); }
+.settings-reset:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 
 /* ─── Empty and loading ───
  * An empty screen is an instruction, not a shrug. A loading screen shows the
@@ -1219,6 +1346,16 @@ tr[data-status='error'] .cell-track > i,
 }
 .blank-title { font-size: 13.5px; color: var(--foreground); }
 .blank-body { font-size: 13px; line-height: 1.55; color: var(--muted-foreground); }
+/* Paths and endpoints inside prose are still machine values, so they keep the
+ * machine face — the type roles hold even in a sentence. */
+.blank-body code {
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+.blank-body strong { color: var(--fg-2); font-weight: 500; }
+.blank-body a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.blank-body a:hover { color: var(--foreground); }
 .blank-body kbd {
   padding: 0 4px;
   border: 1px solid var(--border-2);

@@ -1,11 +1,33 @@
-import { type CSSProperties, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
-import { Duration, TimeFormat, serviceColorIndex } from '@/shared/ui/apm';
+import { Duration, TimeFormat } from '@/shared/ui/apm';
+import {
+  Blank,
+  BlankText,
+  Cell,
+  Chip,
+  Column,
+  Listing,
+  ListingBody,
+  ListingHead,
+  LoadingRows,
+  NumCell,
+  Row,
+  Seg,
+  ServiceDots,
+  Strip,
+  StripSpacer,
+  Subject,
+  Tag,
+  TrackCell,
+  WhenCell,
+} from '@/shared/ui/console';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
+import { Button } from '@/shared/ui/primitives/button';
 import { Input } from '@/shared/ui/primitives/input';
 import {
   DEFAULT_TIME_RANGE,
@@ -66,14 +88,13 @@ export function TracesPage() {
       />
 
       {isError && (
-        <div className="blank">
-          <p className="blank-title">{t('traces.list.errorTitle')}</p>
-          <p className="blank-body">{(error as Error).message}</p>
-        </div>
+        <Blank title={t('traces.list.errorTitle')}>
+          <BlankText>{(error as Error).message}</BlankText>
+        </Blank>
       )}
 
       {isLoading ? (
-        <SkeletonRows />
+        <LoadingRows />
       ) : useAriaTable ? (
         <TraceTableAria
           traces={data?.items ?? []}
@@ -106,39 +127,22 @@ function Toolbar({
   onToggleTable,
 }: ToolbarProps) {
   return (
-    <div className="strip">
+    <Strip>
       {/* One segmented control rather than three loose buttons: the choice is
           exclusive, so it should look like a single thing being switched. */}
-      <div className="seg" role="group" aria-label="Time range">
-        {TIME_RANGES.map((key) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={range === key}
-            onClick={() => onRangeChange(key)}
-          >
-            {key}
-          </button>
-        ))}
-      </div>
+      <Seg label="Time range" value={range} options={TIME_RANGES} onChange={onRangeChange} />
 
       {/* An active filter reads as the query it is, and clears in place. */}
       {service && (
-        <span className="chip">
-          <span className="chip-key">service</span>
-          {service}
-          <button
-            type="button"
-            className="chip-clear"
-            aria-label="Clear service filter"
-            onClick={() => onServiceChange('')}
-          >
-            ×
-          </button>
-        </span>
+        <Chip
+          name="service"
+          value={service}
+          clearLabel="Clear service filter"
+          onClear={() => onServiceChange('')}
+        />
       )}
 
-      <span className="strip-spacer" />
+      <StripSpacer />
 
       <Input
         type="search"
@@ -150,28 +154,27 @@ function Toolbar({
       />
 
       {/* Spike switch — see trace-table-aria.tsx. Goes with the decision. */}
-      <button
-        type="button"
+      <Button
+        variant="outline"
         onClick={onToggleTable}
-        className="meta rounded-sm border border-border-2 bg-background px-2 py-[3px] hover:text-foreground"
+        className="meta h-[22px] rounded-sm px-2"
         title="Compare the hand-rolled table with the React Aria build"
       >
         {useAriaTable ? 'aria' : 'plain'}
-      </button>
-    </div>
+      </Button>
+    </Strip>
   );
 }
 
 function TraceTable({ traces }: { traces: TraceSummary[] }) {
   if (traces.length === 0) {
     return (
-      <div className="blank">
-        <p className="blank-title">Nothing in this window.</p>
-        <p className="blank-body">
+      <Blank title="Nothing in this window.">
+        <BlankText>
           Widen the range, or clear the service filter. If a service you expect is missing
           entirely, check that it is exporting to the collector.
-        </p>
-      </div>
+        </BlankText>
+      </Blank>
     );
   }
 
@@ -180,24 +183,26 @@ function TraceTable({ traces }: { traces: TraceSummary[] }) {
   const slowest = Math.max(...traces.map((trace) => trace.durationMs), 1);
 
   return (
-    <table className="listing">
-      <thead>
-        <tr>
-          <th className="col-when">When</th>
-          <th>Service · Operation</th>
-          <th style={{ width: 300 }}>Latency</th>
-          <th style={{ width: 68 }}>Status</th>
-          <th style={{ width: 92, textAlign: 'right' }}>Took</th>
-          <th style={{ width: 58, textAlign: 'right' }}>Spans</th>
-          <th style={{ width: 76 }}>Services</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Listing>
+      <ListingHead>
+        <Column when>When</Column>
+        <Column>Service · Operation</Column>
+        <Column width={300}>Latency</Column>
+        <Column width={68}>Status</Column>
+        <Column width={92} align="right">
+          Took
+        </Column>
+        <Column width={58} align="right">
+          Spans
+        </Column>
+        <Column width={76}>Services</Column>
+      </ListingHead>
+      <ListingBody>
         {traces.map((trace) => (
           <TraceRow key={trace.traceId} trace={trace} slowestMs={slowest} />
         ))}
-      </tbody>
-    </table>
+      </ListingBody>
+    </Listing>
   );
 }
 
@@ -218,69 +223,32 @@ export function latencyShare(durationMs: number, slowestMs: number): number {
 
 function TraceRow({ trace, slowestMs }: { trace: TraceSummary; slowestMs: number }) {
   const navigate = useNavigate();
-  const open = () =>
-    void navigate({ to: '/traces/$traceId', params: { traceId: trace.traceId }, search: {} });
 
   return (
-    <tr
-      data-status={trace.status}
-      data-slow={trace.durationMs >= 1000 ? 'true' : undefined}
-      onClick={open}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          open();
-        }
-      }}
-      tabIndex={0}
-      role="link"
-      className="cursor-pointer outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+    <Row
+      status={trace.status}
+      slow={trace.durationMs >= 1000}
+      onOpen={() =>
+        void navigate({ to: '/traces/$traceId', params: { traceId: trace.traceId }, search: {} })
+      }
     >
-      <td className="col-when">
+      <WhenCell>
         <TimeFormat ms={trace.startTime} relative />
-      </td>
-      <td>
-        <span className="cell-subject">
-          <span className="svc">{trace.rootService}</span>
-          <span className="op">{trace.rootOperation}</span>
-        </span>
-      </td>
-      <td
-        className="cell-track"
-        style={{ '--share': latencyShare(trace.durationMs, slowestMs) } as CSSProperties}
-      >
-        <i />
-      </td>
-      <td>
-        <span className={`tag tag-${trace.status}`}>{trace.status}</span>
-      </td>
-      <td className="cell-num">
+      </WhenCell>
+      <Cell>
+        <Subject service={trace.rootService} operation={trace.rootOperation} />
+      </Cell>
+      <TrackCell share={latencyShare(trace.durationMs, slowestMs)} />
+      <Cell>
+        <Tag tone={trace.status}>{trace.status}</Tag>
+      </Cell>
+      <NumCell>
         <Duration ms={trace.durationMs} />
-      </td>
-      <td className="cell-num">{trace.spanCount}</td>
-      <td>
-        <span className="svc-dots">
-          {trace.services.slice(0, 5).map((name) => (
-            <i
-              key={name}
-              title={name}
-              style={{ '--svc': `var(--svc-${serviceColorIndex(name)})` } as CSSProperties}
-            />
-          ))}
-        </span>
-      </td>
-    </tr>
-  );
-}
-
-function SkeletonRows() {
-  // Shows the shape that is coming — gutter, rule, subject — rather than grey
-  // lozenges, so nothing jumps when the rows arrive.
-  return (
-    <div className="loading-rows" aria-hidden="true">
-      {[42, 66, 34, 58, 48, 72, 38, 54].map((w, i) => (
-        <i key={i} style={{ '--w': `${w}%`, '--i': i } as CSSProperties} />
-      ))}
-    </div>
+      </NumCell>
+      <NumCell>{trace.spanCount}</NumCell>
+      <Cell>
+        <ServiceDots names={trace.services} />
+      </Cell>
+    </Row>
   );
 }

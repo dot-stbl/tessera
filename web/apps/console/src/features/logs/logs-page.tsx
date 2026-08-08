@@ -5,8 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { LogEntry } from '@/shared/ui/apm';
+import {
+  Blank,
+  BlankText,
+  Chip,
+  LoadingRows,
+  Seg,
+  Strip,
+  StripSpacer,
+} from '@/shared/ui/console';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
-import { cn } from '@/shared/lib/utils';
+import { Input } from '@/shared/ui/primitives/input';
 import {
   DEFAULT_TIME_RANGE,
   TIME_RANGES,
@@ -65,19 +74,22 @@ export function LogsPage() {
       />
 
       {isError && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load logs: {(error as Error).message}
-        </div>
+        <Blank title="Could not read the log stream.">
+          <BlankText>{(error as Error).message}</BlankText>
+        </Blank>
       )}
 
       {isLoading ? (
-        <SkeletonList />
+        <LoadingRows />
       ) : data && data.items.length === 0 ? (
-        <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          {t('logs.empty.title')}
-        </div>
+        <Blank title="No log entries in this window.">
+          <BlankText>
+            Widen the range, or clear the service and trace filters. A trace id filter shows only
+            what that request emitted, which is often nothing.
+          </BlankText>
+        </Blank>
       ) : (
-        <div className="overflow-hidden rounded-md border border-border bg-card">
+        <div className="log-stream">
           {data?.items.map((entry, i) => (
             <LogEntry
               key={`${entry.timestamp}-${i}`}
@@ -105,53 +117,54 @@ interface ToolbarProps {
   onTraceIdChange: (next: string) => void;
 }
 
-function Toolbar({ range, onRangeChange, query, onQueryChange, traceId, onTraceIdChange }: ToolbarProps) {
+function Toolbar({
+  range,
+  onRangeChange,
+  query,
+  onQueryChange,
+  traceId,
+  onTraceIdChange,
+}: ToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-3">
-      <div className="flex items-center gap-1">
-        {TIME_RANGES.map((r) => (
-          <button
-            key={r}
-            onClick={() => onRangeChange(r)}
-            className={cn(
-              'rounded-sm border px-2 py-1 text-xs',
-              range === r
-                ? 'border-foreground/60 bg-accent text-accent-foreground'
-                : 'border-border bg-background text-muted-foreground hover:border-foreground/30',
-            )}
-          >
-            {r === '1h' ? 'Last 1h' : r === '6h' ? 'Last 6h' : 'Last 24h'}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 min-w-[200px]">
-        <input
-          type="text"
-          placeholder="Service, e.g. checkout-api"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          className="h-7 w-full rounded-sm border border-border bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-foreground/60 focus:outline-none"
-        />
-      </div>
-      <div className="w-56">
-        <input
-          type="text"
-          placeholder="Trace ID"
-          value={traceId}
-          onChange={(e) => onTraceIdChange(e.target.value)}
-          className="h-7 w-full rounded-sm border border-border bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-foreground/60 focus:outline-none"
-        />
-      </div>
-    </div>
-  );
-}
+    <Strip>
+      <Seg label="Time range" value={range} options={TIME_RANGES} onChange={onRangeChange} />
 
-function SkeletonList() {
-  return (
-    <div className="space-y-1 rounded-md border border-border bg-card p-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-7 animate-pulse rounded-sm bg-surface-2" />
-      ))}
-    </div>
+      {/* Active filters read as the query they are and clear in place. */}
+      {query && (
+        <Chip
+          name="service"
+          value={query}
+          clearLabel="Clear service filter"
+          onClear={() => onQueryChange('')}
+        />
+      )}
+      {traceId && (
+        <Chip
+          name="trace"
+          value={`${traceId.slice(0, 12)}…`}
+          clearLabel="Clear trace filter"
+          onClear={() => onTraceIdChange('')}
+        />
+      )}
+
+      <StripSpacer />
+
+      <Input
+        type="search"
+        aria-label="Filter by service"
+        placeholder="service…"
+        value={query}
+        onChange={(e) => onQueryChange(e.target.value)}
+        className="h-[22px] w-40 rounded-sm px-2 font-mono text-[10.5px]"
+      />
+      <Input
+        type="search"
+        aria-label="Filter by trace id"
+        placeholder="trace id…"
+        value={traceId}
+        onChange={(e) => onTraceIdChange(e.target.value)}
+        className="h-[22px] w-52 rounded-sm px-2 font-mono text-[10.5px]"
+      />
+    </Strip>
   );
 }

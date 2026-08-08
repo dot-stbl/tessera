@@ -2,10 +2,13 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Link,
   Outlet,
   redirect,
 } from '@tanstack/react-router';
 import { AppShell, PageTemplate } from '@/shared/ui/app-shell';
+import { Blank, BlankText } from '@/shared/ui/console';
+import { SettingsPage } from '@/features/settings/settings-page';
 import { TracesPage } from '@/features/traces/traces-page';
 import { TraceDetailPage } from '@/features/traces/trace-detail-page';
 import { LogsPage } from '@/features/logs/logs-page';
@@ -28,22 +31,18 @@ import {
 // All page components are imported from @/features/<section>/<name>-page.
 // TracesPage, LogsPage, ServicesPage, DashboardsPage.
 
-function SettingsPage() {
-  return (
-    <PageTemplate title="Settings" subtitle="Victoria endpoints, theme, preferences">
-      <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Settings UI — coming in MVP phase 1.
-      </div>
-    </PageTemplate>
-  );
-}
-
 function NotFoundPage() {
   return (
-    <PageTemplate title="Not found" subtitle="The page you're looking for doesn't exist.">
-      <a href="/traces" className="text-sm text-muted-foreground underline">
-        Back to traces
-      </a>
+    <PageTemplate title="Not found" subtitle="No route matches this address">
+      <Blank title="There is nothing at this address.">
+        <BlankText>
+          A trace link goes stale once its retention window passes. If you followed one from a
+          ticket or an alert, the trace itself may have expired rather than the page being wrong.
+        </BlankText>
+        <BlankText>
+          <Link to="/traces">Back to traces</Link>
+        </BlankText>
+      </Blank>
     </PageTemplate>
   );
 }

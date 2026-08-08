@@ -4,8 +4,23 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import type { ServiceSummary } from '@/shared/api/types';
 import { PageTemplate } from '@/shared/ui/app-shell';
+import { Duration } from '@/shared/ui/apm';
+import {
+  Blank,
+  BlankText,
+  Cell,
+  Column,
+  InlineList,
+  Listing,
+  ListingBody,
+  ListingHead,
+  LoadingRows,
+  NumCell,
+  Row,
+  Subject,
+  TrackCell,
+} from '@/shared/ui/console';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
-import { cn } from '@/shared/lib/utils';
 import { DEFAULT_TIME_RANGE, resolveTimeWindow } from '@/shared/lib/search-params';
 
 export function ServicesPage() {
@@ -24,114 +39,137 @@ export function ServicesPage() {
   });
 
   return (
-    <PageTemplate
-      title={t('services.title')}
-      subtitle={`${data?.length ?? 0} services · last 1h`}
-    >
+    <PageTemplate title={t('services.title')} subtitle={`${data?.length ?? 0} services · last 1h`}>
       {isError && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load services: {(error as Error).message}
-        </div>
+        <Blank title="Could not read the service inventory.">
+          <BlankText>{(error as Error).message}</BlankText>
+        </Blank>
       )}
 
       {isLoading ? (
-        <SkeletonTable />
-      ) : data && data.length === 0 ? (
-        <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          {t('services.empty.title')}
-        </div>
+        <LoadingRows count={6} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {data?.map((service) => (
-            <ServiceCard key={service.name} service={service} />
-          ))}
-        </div>
+        <ServiceTable services={data ?? []} startUnixMs={startUnixMs} endUnixMs={endUnixMs} />
       )}
     </PageTemplate>
   );
 }
 
-function ServiceCard({ service }: { service: ServiceSummary }) {
-  const errorRate = service.spanCount > 0 ? (service.errorCount / service.spanCount) * 100 : 0;
-  const { startUnixMs, endUnixMs } = useMemo(() => resolveTimeWindow(DEFAULT_TIME_RANGE), []);
-  const red = useQuery({
-    queryKey: ['service-red', service.name, { startUnixMs, endUnixMs }],
-    queryFn: ({ signal }) =>
-      api.getServiceRed(service.name, { startUnixMs, endUnixMs }, signal),
-    staleTime: 60_000,
-  });
+function ServiceTable({
+  services,
+  startUnixMs,
+  endUnixMs,
+}: {
+  services: ServiceSummary[];
+  startUnixMs: number;
+  endUnixMs: number;
+}) {
+  if (services.length === 0) {
+    return (
+      <Blank title="No services reported spans in the last hour.">
+        <BlankText>
+          Services appear here as soon as they export a trace. If one is missing, check that its
+          collector endpoint is reachable and that sampling is not set to zero.
+        </BlankText>
+      </Blank>
+    );
+  }
+
+  // Deliberately no time gutter here. Every other listing in the app is a stream
+  // of events and its first column answers "when"; a service inventory has no
+  // per-row moment in time, and inventing one would make the gutter decorative
+  // in the one place it means nothing. Failing services still lead.
+  const ordered = [...services].sort((a, b) => errorRate(b) - errorRate(a));
+  const worst = Math.max(...ordered.map(errorRate), 0.0001);
 
   return (
-    <div className="rounded-md border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">{service.name}</h3>
-        <span
-          className={cn(
-            'rounded-sm px-2 py-0.5 text-xs',
-            errorRate > 5
-              ? 'bg-err-soft text-err-ink'
-              : errorRate > 1
-                ? 'bg-warn-soft text-warn-ink'
-                : 'bg-ok-soft text-ok-ink',
-          )}
-        >
-          {errorRate.toFixed(1)}% err
-        </span>
-      </div>
-
-      {red.data && (
-        <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
-          <div>
-            <div className="text-muted-foreground">Rate</div>
-            <div className="font-mono text-foreground">
-              {red.data.requestRatePerSec == null
-                ? '—'
-                : `${red.data.requestRatePerSec.toFixed(1)}/s`}
-            </div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">p95</div>
-            <div className="font-mono text-foreground">
-              {red.data.durationP95Ms == null ? '—' : `${Math.round(red.data.durationP95Ms)}ms`}
-            </div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Source</div>
-            <div className="font-mono text-foreground">{red.data.source}</div>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
-        <div>
-          <div className="text-muted-foreground">Spans</div>
-          <div className="font-mono text-foreground">{service.spanCount.toLocaleString()}</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground">Errors</div>
-          <div className="font-mono text-foreground">{service.errorCount.toLocaleString()}</div>
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <div className="text-xs text-muted-foreground">Top operations</div>
-        {service.operations.slice(0, 3).map((op) => (
-          <div key={op.name} className="flex items-center justify-between text-xs">
-            <span className="truncate text-foreground">{op.name}</span>
-            <span className="font-mono text-muted-foreground">{op.count.toLocaleString()}</span>
-          </div>
+    <Listing>
+      <ListingHead>
+        <Column width={220}>Service</Column>
+        <Column width={90} align="right">
+          Rate
+        </Column>
+        <Column width={90} align="right">
+          p95
+        </Column>
+        <Column width={96} align="right">
+          Errors
+        </Column>
+        <Column width={74} align="right">
+          Failing
+        </Column>
+        <Column width={120} />
+        <Column width={92} align="right">
+          Spans
+        </Column>
+        <Column>Top operations</Column>
+      </ListingHead>
+      <ListingBody>
+        {ordered.map((service) => (
+          <ServiceRow
+            key={service.name}
+            service={service}
+            worstRate={worst}
+            startUnixMs={startUnixMs}
+            endUnixMs={endUnixMs}
+          />
         ))}
-      </div>
-    </div>
+      </ListingBody>
+    </Listing>
   );
 }
 
-function SkeletonTable() {
+function errorRate(service: ServiceSummary): number {
+  return service.spanCount > 0 ? (service.errorCount / service.spanCount) * 100 : 0;
+}
+
+function ServiceRow({
+  service,
+  worstRate,
+  startUnixMs,
+  endUnixMs,
+}: {
+  service: ServiceSummary;
+  worstRate: number;
+  startUnixMs: number;
+  endUnixMs: number;
+}) {
+  // RED comes from metrics and is a separate, slower call per service, so it
+  // arrives after the inventory rather than blocking it. An em dash means "not
+  // answered yet or not available" — never a zero, which would read as a fact.
+  const red = useQuery({
+    queryKey: ['service-red', service.name, { startUnixMs, endUnixMs }],
+    queryFn: ({ signal }) => api.getServiceRed(service.name, { startUnixMs, endUnixMs }, signal),
+    staleTime: 60_000,
+  });
+
+  const rate = errorRate(service);
+  const failing = rate >= 1;
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-40 animate-pulse rounded-md border border-border bg-card" />
-      ))}
-    </div>
+    <Row status={failing ? 'error' : undefined}>
+      <Cell>
+        <Subject mark={service.name} operation={service.name} />
+      </Cell>
+      <NumCell>
+        {red.data?.requestRatePerSec == null ? '—' : `${red.data.requestRatePerSec.toFixed(1)}/s`}
+      </NumCell>
+      <NumCell>
+        {red.data?.durationP95Ms == null ? '—' : <Duration ms={red.data.durationP95Ms} />}
+      </NumCell>
+      <NumCell>{service.errorCount.toLocaleString()}</NumCell>
+      {/* The number first, the bar second. A bar alone cannot separate 2.1%
+       * from 0.27%, and the bar is ranked against the worst row on screen
+       * rather than against 100% — otherwise every healthy service collapses
+       * into the same stub and the column stops answering anything. */}
+      <NumCell bad={failing}>
+        {rate === 0 ? '0' : `${rate < 0.1 ? rate.toFixed(2) : rate.toFixed(1)}%`}
+      </NumCell>
+      <TrackCell share={rate > 0 ? Math.max((rate / worstRate) * 100, 3) : 0} />
+      <NumCell>{service.spanCount.toLocaleString()}</NumCell>
+      <Cell>
+        <InlineList items={service.operations.map((operation) => operation.name)} />
+      </Cell>
+    </Row>
   );
 }

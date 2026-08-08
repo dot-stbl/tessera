@@ -5,6 +5,15 @@ import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
 import { LogEntry, SpanDetailPanel, Waterfall, formatDuration } from '@/shared/ui/apm';
 import type { SpanRowMarker, WaterfallSpan } from '@/shared/ui/apm';
+import {
+  Blank,
+  BlankText,
+  LoadingRows,
+  Meta,
+  Notice,
+  Strip,
+} from '@/shared/ui/console';
+import { Button } from '@/shared/ui/primitives/button';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import type {
   LogEntry as LogEntryData,
@@ -152,30 +161,28 @@ export function TraceDetailPage() {
       }
     >
       {requestView.isError && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load trace: {(requestView.error as Error).message}
-        </div>
+        <Blank title="Could not load this trace.">
+          <BlankText>{(requestView.error as Error).message}</BlankText>
+        </Blank>
       )}
 
       {requestView.isLoading ? (
-        <WaterfallSkeleton />
+        <LoadingRows count={6} />
       ) : view ? (
         <div className="flex flex-col">
           {/* Backend 200 + mode when spans or logs exist; empty only when both miss. */}
-          {view.mode !== 'full' && (
-            <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-xs text-warn-ink">
-              Partial view — {modeBanner(view.mode)}.
-            </div>
-          )}
+          {view.mode !== 'full' && <Notice>Partial view — {modeBanner(view.mode)}.</Notice>}
 
           {view.dependencyGraph && view.dependencyGraph.edges.length > 0 && (
-            <div className="border-b border-border-2 px-[18px] py-2 text-xs text-muted-foreground">
-              Dependencies · {view.dependencyGraph.nodes.length} nodes ·{' '}
-              {view.dependencyGraph.edges.length} edges
-              {view.dependencyGraph.edges.some((edge) => edge.errorCount > 0)
-                ? ` · ${view.dependencyGraph.edges.reduce((sum, edge) => sum + edge.errorCount, 0)} client errors`
-                : ''}
-            </div>
+            <Strip>
+              <Meta>
+                Dependencies · {view.dependencyGraph.nodes.length} nodes ·{' '}
+                {view.dependencyGraph.edges.length} edges
+                {view.dependencyGraph.edges.some((edge) => edge.errorCount > 0)
+                  ? ` · ${view.dependencyGraph.edges.reduce((sum, edge) => sum + edge.errorCount, 0)} client errors`
+                  : ''}
+              </Meta>
+            </Strip>
           )}
 
           {trace ? (
@@ -220,9 +227,12 @@ export function TraceDetailPage() {
           />
         </div>
       ) : (
-        <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          Trace not found.
-        </div>
+        <Blank title={`No trace with id ${traceId}.`}>
+          <BlankText>
+            Either it fell outside the retention window, or the id belongs to a different tenant.
+            Check the id against the alert it came from.
+          </BlankText>
+        </Blank>
       )}
     </PageTemplate>
   );
@@ -239,30 +249,30 @@ function LogsSection({ entries, totalCount, selectedSpanId, onClearSpanFilter }:
   const scoped = selectedSpanId !== undefined;
 
   return (
-    <section className="flex flex-col">
-      <header className="flex items-center gap-3 px-[18px] py-2">
-        <h2 className="meta">
+    <div className="flex flex-col">
+      <Strip>
+        <Meta>
           {scoped ? 'Logs for selected span' : 'Logs'} · {entries.length}
-        </h2>
+        </Meta>
         {scoped && (
-          <button
-            type="button"
-            onClick={onClearSpanFilter}
-            className="text-xs text-muted-foreground underline hover:text-foreground"
-          >
+          <Button variant="link" className="h-auto p-0 text-[11px]" onClick={onClearSpanFilter}>
             show all {totalCount}
-          </button>
+          </Button>
         )}
-      </header>
+      </Strip>
 
       {entries.length === 0 ? (
-        <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          {scoped
-            ? 'This span emitted no logs. Clear the filter to see the rest of the trace.'
-            : 'No logs were correlated to this trace.'}
-        </div>
+        <Blank
+          title={scoped ? 'This span emitted no logs.' : 'No logs were correlated to this trace.'}
+        >
+          <BlankText>
+            {scoped
+              ? 'Clear the span filter to read the rest of the trace — the failure is often logged by the caller, not by the span that failed.'
+              : 'Logs correlate by span id, which the SDK writes automatically inside a span. A service that logs outside its spans will not appear here.'}
+          </BlankText>
+        </Blank>
       ) : (
-        <div className="border-y border-border-2 bg-card">
+        <div className="log-stream">
           {entries.map((entry, index) => (
             <LogEntry
               key={`${entry.timestamp}-${index}`}
@@ -277,7 +287,7 @@ function LogsSection({ entries, totalCount, selectedSpanId, onClearSpanFilter }:
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -294,14 +304,3 @@ function modeBanner(mode: RequestViewMode): string {
   }
 }
 
-function WaterfallSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-md border border-border bg-card">
-      <div className="space-y-2 p-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-8 animate-pulse rounded-md bg-surface-2" />
-        ))}
-      </div>
-    </div>
-  );
-}
