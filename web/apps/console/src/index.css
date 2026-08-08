@@ -24,242 +24,226 @@
 
 /* =========================================================================
  * Tessera Design System — tokens.
- * Source of truth: .agents/docs/ui/design-system.md
- * Strategy: shadcn-ui slot values overridden with Tessera DS (OKLCH palette),
- * status semantics tokens, APM extensions. NO layout/typography tokens —
- * use Tailwind utilities.
+ *
+ * Two layers, and the order matters:
+ *
+ *   1. FOUNDATION — functional names borrowed from GitHub's Primer:
+ *      canvas / border / fg / accent / status. The name says the role, so
+ *      `borderColor-muted` needs no lookup, unlike `--border-2` where you
+ *      cannot tell which of the two is darker without opening this file.
+ *
+ *   2. SHADCN SLOTS — `--background`, `--card`, `--primary` and friends,
+ *      derived from layer 1. Every vendored primitive keeps working; the
+ *      palette is decided in one place instead of sixty.
+ *
+ * Neutral values are Primer's own, converted to OKLCH. The visual register is
+ * GitHub's — a quiet functional grey, hairline structure, 6px radius, and
+ * colour that only speaks when state changes — with two deliberate departures:
+ *
+ *   • Density. Primer is roomier than an APM can afford. Rows are 28px and the
+ *     type scale is a step smaller; this screen shows forty traces, not four.
+ *   • Accent. GitHub's is blue and its danger is red, so the two never collide.
+ *     Ours is red on both counts, which is resolved by role and lightness:
+ *       accent  — deep, and only ever STRUCTURE: the rail bar, the gutter
+ *                 stamp, focus rings, the selected row, primary buttons.
+ *       danger  — bright, and only ever DATA: the word ERROR, failing bars,
+ *                 error timestamps.
+ *     Never use accent for a status or danger for a control. That rule is what
+ *     keeps two reds legible on the same screen.
  * ========================================================================= */
 
 :root {
-  /* ─── Surface (3 layers) ─── */
-  --background: oklch(1 0 0);
-  --card: oklch(1 0 0);
-  --popover: oklch(1 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --muted: oklch(0.967 0.001 286.375);
-  --surface-2: oklch(97% 0.006 250);
-  --surface-3: oklch(95% 0.008 240);
+  /* ─── Foundation: canvas ─── */
+  --canvas-default: oklch(100% 0 0);
+  --canvas-subtle: oklch(97.8% 0.003 248);
+  --canvas-inset: oklch(97.8% 0.003 248);
+  --canvas-overlay: oklch(100% 0 0);
 
-  /* ─── Ink (4 levels) ─── */
-  --foreground: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --fg-2: oklch(35% 0.018 240);
-  --muted-2: oklch(65% 0.014 240);
+  /* ─── Foundation: border ─── */
+  --borderColor-default: oklch(88.1% 0.013 244);
+  --borderColor-muted: oklch(92.5% 0.008 248);
+  --borderColor-emphasis: oklch(78% 0.016 248);
 
-  /* ─── Borders (3 levels) ───
-   * --border was oklch(92%): visible on a swatch, invisible in a dense table,
-   * which left every screen reading as one flat sheet. Darkened so a hairline
-   * can carry structure on its own — this app has hundreds of rows and no room
-   * for a box around each of them.
-   *   --border    hairline between rows
-   *   --border-2  edge of a surface
-   *   --rule      the one strong line: gutter edge, header underline
-   */
-  --border: oklch(0.895 0.005 250);
-  --border-2: oklch(0.83 0.007 250);
-  --rule: oklch(0.72 0.010 250);
-  --input: oklch(0.885 0.005 250);
+  /* ─── Foundation: foreground ─── */
+  --fgColor-default: oklch(25.4% 0.011 254);
+  --fgColor-muted: oklch(49.5% 0.022 251);
+  --fgColor-subtle: oklch(56.5% 0.019 251);
+
+  /* ─── Foundation: accent (structure) and status (data) ─── */
+  --accentColor-fg: oklch(45.5% 0.187 29);
+  --accentColor-emphasis: oklch(45.5% 0.187 29);
+  --accentColor-onEmphasis: oklch(99% 0.005 27);
+  --successColor-fg: oklch(52.4% 0.140 148);
+  --dangerColor-fg: oklch(55.7% 0.206 25);
+  --attentionColor-fg: oklch(55.4% 0.117 75);
+
+  /* ─── shadcn slots, derived ───
+   * Page and slab swap roles between themes, exactly as GitHub's do: in light a
+   * white slab sits on a grey page, in dark a lighter slab sits on a near-black
+   * one. Deriving both from the same token would collapse them into one plane —
+   * which is the flat-sheet failure this whole layer exists to prevent. */
+  --background: var(--canvas-subtle);
+  --card: var(--canvas-default);
+  --popover: var(--canvas-overlay);
+  --secondary: var(--canvas-subtle);
+  --muted: var(--canvas-subtle);
+  --surface-2: oklch(96% 0.005 248);
+  --surface-3: oklch(93.5% 0.007 248);
+
+  --foreground: var(--fgColor-default);
+  --card-foreground: var(--fgColor-default);
+  --popover-foreground: var(--fgColor-default);
+  --secondary-foreground: var(--fgColor-default);
+  --muted-foreground: var(--fgColor-muted);
+  --fg-2: oklch(37% 0.016 251);
+  --muted-2: var(--fgColor-subtle);
+
+  --border: var(--borderColor-muted);
+  --border-2: var(--borderColor-default);
+  --rule: var(--borderColor-emphasis);
+  --input: var(--borderColor-default);
+
+  --primary: var(--accentColor-emphasis);
+  --primary-foreground: var(--accentColor-onEmphasis);
+  --accent: var(--canvas-subtle);
+  --accent-foreground: var(--fgColor-default);
+  --ring: var(--accentColor-emphasis);
+  --destructive: var(--dangerColor-fg);
+  --destructive-foreground: oklch(99% 0.005 27);
 
   /* ─── Density and the time gutter ───
-   * Time runs down the left edge of every listing in this app, always at the
-   * same width, always monospaced. --gutter is that column.
-   */
+   * Time runs down the left edge of every listing, always the same width,
+   * always monospaced. --gutter is that column. */
   --row: 28px;
   --gutter: 62px;
   --rail: 52px;
 
-  /* ─── Waterfall gridlines + categorical service palette (APM) ───
-   * Service hues live in 190–320 only, clear of the status hues
-   * (green 145 / orange 50 / amber 75 / red 25) so a service colour is
-   * never mistaken for a status. */
-  --grid: oklch(0.55 0.02 260 / 0.14);
-  --svc-1: oklch(0.60 0.12 250);
-  --svc-2: oklch(0.60 0.10 190);
-  --svc-3: oklch(0.58 0.13 300);
-  --svc-4: oklch(0.62 0.10 220);
-  --svc-5: oklch(0.55 0.13 275);
-  --svc-6: oklch(0.60 0.11 320);
-
-  /* ─── Accent (Tessera DS — dark red, distinctive from --err) ─── */
-  /* Accent is the deep, primary-action red. --err is the brighter, status-only red. */
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --ring: oklch(0.705 0.015 286.067);
-
-  /* ─── Destructive ─── */
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(98% 0.005 250);
+  /* Primer's radius. Small enough to stay out of the way in a dense table,
+   * large enough that nothing reads as a brutalist exercise. */
+  --radius: 0.375rem;
 
   /* ─── Status semantics ───
- * --err is the BRIGHT red for status (error/exception). Distinct from --accent
- * (deep red for primary actions) by lightness + chroma:
- *   - accent: oklch(35% 0.18 25)  (dark, primary action — buttons, links)
- *   - err:    oklch(58% 0.20 25)  (bright, status semantic)
- * In dark mode they invert (accent brightens, err stays).
- */
-  --ok: oklch(58% 0.16 145);
-  --ok-soft: oklch(95% 0.03 145);
-  --ok-ink: oklch(45% 0.13 145);
-  --err: oklch(58% 0.20 25);
-  --err-soft: oklch(96% 0.03 25);
-  --err-ink: oklch(50% 0.17 25);
-  --warn: oklch(72% 0.15 75);
+   * Three levels each: the pure colour, a wash for fills, an ink for text on
+   * that wash. `err` is the DATA red — never used for a control. */
+  --ok: var(--successColor-fg);
+  --ok-soft: oklch(95.5% 0.035 148);
+  --ok-ink: oklch(45% 0.13 148);
+  --err: var(--dangerColor-fg);
+  --err-soft: oklch(96% 0.030 25);
+  --err-ink: oklch(48% 0.19 25);
+  --warn: oklch(72% 0.145 75);
   --warn-soft: oklch(96% 0.05 75);
-  --warn-ink: oklch(48% 0.10 75);
-  --idle: oklch(60% 0.008 240);
-  --idle-soft: oklch(95% 0.006 240);
-  --idle-ink: oklch(45% 0.012 240);
+  --warn-ink: var(--attentionColor-fg);
+  --idle: oklch(62% 0.008 250);
+  --idle-soft: oklch(95% 0.005 250);
+  --idle-ink: oklch(46% 0.012 250);
+  --slow: oklch(68% 0.16 55);
+  --slow-soft: oklch(96% 0.04 55);
+  --slow-ink: oklch(47% 0.13 55);
 
-  /* ─── Tessera APM extensions ─── */
-  --slow: oklch(68% 0.18 50);
-  --slow-soft: oklch(96% 0.04 50);
-  --slow-ink: oklch(45% 0.12 50);
+  /* ─── Categorical service palette ───
+   * Hues live in 190–320 only, clear of the status hues (green 148 / amber 75 /
+   * orange 55 / red 25), so a service colour is never read as a state. */
+  --grid: oklch(50% 0.01 250 / 0.10);
+  --svc-1: oklch(0.52 0.13 258);
+  --svc-2: oklch(0.54 0.11 195);
+  --svc-3: oklch(0.50 0.15 300);
+  --svc-4: oklch(0.56 0.11 225);
+  --svc-5: oklch(0.50 0.15 275);
+  --svc-6: oklch(0.54 0.13 322);
 
-  /* Log level colors (OpenTelemetry/VictoriaLogs severity) */
-  --level-trace: oklch(60% 0.005 240);
-  --level-debug: oklch(60% 0.05 220);
-  --level-info: oklch(58% 0.10 230);
-  --level-warn: var(--warn);
-  --level-error: var(--err);
-  --level-fatal: oklch(45% 0.22 0);
+  /* Log severity, keyed to the status ladder above. */
+  --level-trace: var(--fgColor-subtle);
+  --level-debug: oklch(55% 0.07 250);
+  --level-info: var(--fgColor-muted);
+  --level-warn: var(--warn-ink);
+  --level-error: var(--err-ink);
+  --level-fatal: oklch(44% 0.21 8);
 
-  --level-trace-bg: oklch(96% 0.005 240);
-  --level-debug-bg: oklch(96% 0.03 220);
-  --level-info-bg: oklch(96% 0.04 230);
-  --level-warn-bg: var(--warn-soft);
-  --level-error-bg: var(--err-soft);
-  --level-fatal-bg: oklch(95% 0.05 0);
+  --chart-1: var(--svc-1);
+  --chart-2: var(--svc-2);
+  --chart-3: var(--svc-3);
+  --chart-4: var(--svc-4);
+  --chart-5: var(--svc-5);
 
-  /* ─── Radius ─── */
-  --radius: 0.45rem;
-
-  /* ─── Chart colors (shadcn defaults — OK for MVP) ─── */
-  --chart-1: oklch(0.808 0.114 19.571);
-  --chart-2: oklch(0.637 0.237 25.331);
-  --chart-3: oklch(0.577 0.245 27.325);
-  --chart-4: oklch(0.505 0.213 27.518);
-  --chart-5: oklch(0.444 0.177 26.899);
-
-  /* ─── Sidebar (shadcn defaults — keep) ─── */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.577 0.245 27.325);
-  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
-  --primary: oklch(0.505 0.213 27.518);
-  --primary-foreground: oklch(0.971 0.013 17.38);
+  --sidebar: var(--canvas-inset);
+  --sidebar-foreground: var(--fgColor-default);
+  --sidebar-primary: var(--accentColor-emphasis);
+  --sidebar-primary-foreground: var(--accentColor-onEmphasis);
+  --sidebar-accent: var(--canvas-subtle);
+  --sidebar-accent-foreground: var(--fgColor-default);
+  --sidebar-border: var(--borderColor-default);
+  --sidebar-ring: var(--accentColor-emphasis);
 }
 
 /* =========================================================================
- * Dark — the primary design, not an inversion of the light one.
+ * Dark — the primary target, designed rather than derived.
  *
- * Three grounds, and depth comes from *stacking* them rather than from shadow:
- *   --background  the shell: near-black, faintly blue
- *   --card        the raised surface content sits on
- *   --surface-2   recessed — the time gutter, strip and rail sink INTO the page
- *   --surface-3   the lift under a hovered or selected row
- *
- * On dark, a recessed gutter reads better than a lighter one: a lighter strip
- * looks painted on top, a darker one looks like a channel cut into the surface.
- * That is the opposite of the light theme, which is why this block is designed
- * rather than derived.
- *
- * Borders are white at low alpha, not a grey hue. A grey line on a dark ground
- * reads as a drawn stroke; translucent white reads as an edge catching light,
- * which is what a raised panel actually has.
+ * Neutrals are Primer's dark canvas ladder in OKLCH. Note that `inset` is
+ * DARKER than `default` while `subtle` is lighter: on a dark ground a lighter
+ * strip looks painted on top, a darker one looks like a channel cut into the
+ * surface. The time gutter, the rail and the filter strip are channels; the
+ * listing slab is raised. That inverts in the light theme, which is exactly
+ * why this block is written out instead of being generated from the other.
  * ========================================================================= */
 .dark,
-[data-theme="dark"] {
-  --background: oklch(9.5% 0.011 258);
-  --card: oklch(17.5% 0.016 258);
-  --popover: oklch(21% 0.017 258);
-  --secondary: oklch(23% 0.017 258);
-  --muted: oklch(23% 0.017 258);
-  --surface-2: oklch(13.5% 0.014 258);
-  --surface-3: oklch(23.5% 0.018 258);
+[data-theme='dark'] {
+  --canvas-default: oklch(17.6% 0.014 258);
+  --canvas-subtle: oklch(22.0% 0.016 257);
+  --canvas-inset: oklch(10.4% 0.019 248);
+  --canvas-overlay: oklch(24.6% 0.015 257);
 
-  --foreground: oklch(96% 0.004 258);
-  --card-foreground: var(--foreground);
-  --popover-foreground: var(--foreground);
-  --secondary-foreground: var(--foreground);
-  --muted-foreground: oklch(64% 0.012 258);
-  --fg-2: oklch(80% 0.008 258);
-  --muted-2: oklch(48% 0.012 258);
+  --borderColor-default: oklch(33.0% 0.015 252);
+  --borderColor-muted: oklch(26.7% 0.015 257);
+  --borderColor-emphasis: oklch(42% 0.016 254);
 
-  --border: oklch(100% 0 0 / 0.08);
-  --border-2: oklch(100% 0 0 / 0.15);
-  --rule: oklch(100% 0 0 / 0.28);
-  --input: oklch(100% 0 0 / 0.11);
+  --fgColor-default: oklch(94.3% 0.011 244);
+  --fgColor-muted: oklch(61.4% 0.019 256);
+  --fgColor-subtle: oklch(56.3% 0.020 256);
 
-  --grid: oklch(1 0 0 / 0.05);
-  /* Service hues gain lightness and chroma: on a near-black ground the light
-   * theme's 54-60% values collapse into each other and stop being categorical. */
-  --svc-1: oklch(0.72 0.14 250);
-  --svc-2: oklch(0.76 0.13 190);
+  /* Deep enough to stay clearly below the data red, bright enough to carry a
+   * 2px rail bar on a near-black ground. */
+  --accentColor-fg: oklch(58% 0.195 26);
+  --accentColor-emphasis: oklch(55% 0.200 26);
+  --accentColor-onEmphasis: oklch(98% 0.008 26);
+  --successColor-fg: oklch(69.5% 0.181 146);
+  --dangerColor-fg: oklch(70% 0.190 27);
+  --attentionColor-fg: oklch(72.0% 0.140 80);
+
+  --background: var(--canvas-default);
+  --card: var(--canvas-subtle);
+  --surface-2: var(--canvas-inset);
+  --surface-3: oklch(27% 0.017 257);
+  --fg-2: oklch(78% 0.012 250);
+  --muted-2: oklch(48% 0.018 256);
+
+  --ok-soft: oklch(24% 0.05 146);
+  --ok-ink: oklch(80% 0.15 146);
+  --err-soft: oklch(24% 0.07 27);
+  --err-ink: oklch(78% 0.17 27);
+  --warn: oklch(80% 0.14 80);
+  --warn-soft: oklch(25% 0.06 80);
+  --warn-ink: oklch(84% 0.13 80);
+  --idle: oklch(64% 0.008 256);
+  --idle-soft: oklch(23% 0.006 256);
+  --idle-ink: oklch(70% 0.012 256);
+  --slow: oklch(76% 0.16 58);
+  --slow-soft: oklch(25% 0.06 58);
+  --slow-ink: oklch(82% 0.14 58);
+
+  --grid: oklch(100% 0 0 / 0.05);
+  /* Lifted well above the light theme's values: at 50-56% these hues collapse
+   * into each other on near-black and stop being categorical. */
+  --svc-1: oklch(0.72 0.14 258);
+  --svc-2: oklch(0.76 0.12 195);
   --svc-3: oklch(0.72 0.15 300);
-  --svc-4: oklch(0.78 0.12 220);
+  --svc-4: oklch(0.78 0.11 225);
   --svc-5: oklch(0.70 0.15 275);
-  --svc-6: oklch(0.74 0.13 320);
+  --svc-6: oklch(0.74 0.13 322);
 
-  --primary: oklch(64% 0.21 26);
-  --primary-foreground: oklch(13% 0.02 26);
-  --accent: oklch(21% 0.016 258);
-  --accent-foreground: var(--foreground);
-  --destructive: oklch(0.70 0.19 25);
-  --ring: oklch(64% 0.21 26);
-
-  --ok: oklch(76% 0.16 150);
-  --ok-soft: oklch(24% 0.05 150);
-  --ok-ink: oklch(82% 0.15 150);
-  --err: oklch(70% 0.20 25);
-  --err-soft: oklch(24% 0.07 25);
-  --err-ink: oklch(80% 0.17 25);
-  --warn: oklch(82% 0.15 72);
-  --warn-soft: oklch(25% 0.06 72);
-  --warn-ink: oklch(85% 0.13 72);
-  --idle: oklch(66% 0.008 258);
-  --idle-soft: oklch(22% 0.006 258);
-  --idle-ink: oklch(72% 0.012 258);
-
-  --slow: oklch(78% 0.17 55);
-  --slow-soft: oklch(25% 0.06 55);
-  --slow-ink: oklch(84% 0.14 55);
-
-  --level-trace: oklch(70% 0.005 240);
-  --level-debug: oklch(70% 0.05 220);
-  --level-info: oklch(72% 0.10 230);
-  --level-warn: var(--warn);
-  --level-error: var(--err);
-  --level-fatal: oklch(68% 0.22 0);
-
-  --level-trace-bg: oklch(22% 0.005 240);
-  --level-debug-bg: oklch(22% 0.02 220);
-  --level-info-bg: oklch(22% 0.025 230);
-  --level-warn-bg: var(--warn-soft);
-  --level-error-bg: var(--err-soft);
-  --level-fatal-bg: oklch(25% 0.05 0);
-
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.637 0.237 25.331);
-  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+  --level-debug: oklch(70% 0.07 250);
+  --level-fatal: oklch(66% 0.20 8);
 }
-
-/* =========================================================================
- * @theme inline — maps tokens to Tailwind utilities.
- * After this: bg-primary, text-foreground, bg-ok-soft, text-ok-ink etc.
- * all resolve to Tessera DS values automatically.
- * ========================================================================= */
 
 @theme inline {
   --color-background: var(--background);
