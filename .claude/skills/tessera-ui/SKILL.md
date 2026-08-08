@@ -80,7 +80,9 @@ and reserving the human face for sentences is information, not decoration.
 
 `--row: 28px`, `--gutter: 62px`, `--rail: 52px`.
 
-**The time gutter is the app's signature.** Every listing gets a fixed first
+**Two signatures, and they are the same axis.**
+
+**The time gutter.** Every listing gets a fixed first
 column carrying position in time, separated by `--borderColor-emphasis`:
 
 - trace list — how long ago
@@ -91,6 +93,13 @@ A failing row states it **in red on that axis**; the selected span claims the
 axis with the accent. Wherever you are, "when" is in the same place. A trace is
 a timeline, so the axis is the thing being navigated — never move it, never
 change its width per screen.
+
+**The volume mosaic** sits above a listing on that same axis, its plot padded
+left to `--gutter` so a spike lines up with the rows that caused it. Stacked
+tiles, one per N events, failures at the bottom in the data red — not smooth
+bars. A tessera is a tile in a mosaic; the name is load-bearing, and at operator
+volumes three-versus-four is countable in tiles and a guess in a 2px bar.
+Columns are buttons: the chart is the time control, not a picture of one.
 
 ---
 
@@ -145,6 +154,10 @@ tokens, never with hard-coded colour.
 | loading | `LoadingRows` — shows the shape that is coming, gutter included |
 | nothing to show | `Blank` — a direction, never a shrug |
 | a settings surface | `Panel` + `PanelRow` |
+| volume over the window | `Mosaic` + `bucketize` |
+| per-row verbs | `RowActions` — hover/focus reveal, never a permanent column |
+| a non-exclusive filter | `MultiFilter` — empty means unfiltered, not empty |
+| which columns are shown | `ColumnPicker` — local state, never the URL |
 | a duration, a timestamp, a level | `Duration`, `TimeFormat`, `LogLevel` |
 
 ---
@@ -192,6 +205,13 @@ Calm, precise, technical. No exclamation marks, no apologies, no emoji.
   the window (`resolveTimeWindow`).
 - **Filled pastel pills for status.** Across forty rows they were the loudest
   thing on screen and said the least. A word in its own colour.
+- **Borrowing a look from a sibling project.** An ambient gradient lifted from
+  another app shipped and had to come out: it belonged to that product's
+  register, not to Primer's. Reference projects are for *functionality* — what
+  controls a screen needs — never for the skin.
+- **A list you can only read.** Sorting, row actions and filters are not polish
+  on an APM. A table without them is a report, and the second question anyone
+  asks is "the slowest ones — now show me its logs".
 - **Raw markup in a screen.** Every `<table>`, `<button>` and `<p>` written into
   a feature file was a component that should have existed. Half of them already
   did, in `primitives/`, unread. See §5 — this is the rule most often broken.
