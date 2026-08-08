@@ -78,7 +78,7 @@ and reserving the human face for sentences is information, not decoration.
 
 ## 4. Density and the time gutter
 
-`--row: 28px`, `--gutter: 62px`, `--rail: 52px`.
+`--row: 33px`, `--gutter: 76px`, `--rail: 176px` (a labelled sidebar, not an icon rail — icon-only navigation has no discoverability).
 
 **Two signatures, and they are the same axis.**
 
