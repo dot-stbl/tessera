@@ -1,388 +1,52 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import "shadcn/tailwind.css";
 
 @import '@fontsource-variable/onest';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import '@fontsource-variable/jetbrains-mono';
 
-/* Tailwind 4 content sources. By default Tailwind auto-detects from the
- * Vite module graph. We add explicit `@source` rules so Ladle stories
- * (which live under `.ladle/stories/`) are also scanned — Ladle's Vite
- * root is its own bundled app dir, so they would otherwise be missed. */
+/* =============================================================================
+ * Tessera console stylesheet.
+ *
+ * The design system lives in ./styles/, one file per concern, and each states
+ * the rule it encodes rather than only its values:
+ *
+ *   tokens.css    the premise and the palette that follows from it
+ *   base.css      the defaults every screen inherits
+ *   controls.css  the small shared interactive parts
+ *   shell.css     bar / spine / sidebar / main
+ *
+ * Everything below the imports is the previous system's component CSS, kept
+ * running by legacy-bridge.css while the screens are rebuilt one at a time. It
+ * shrinks with every screen that moves over; when it is empty, the bridge goes
+ * with it.
+ * ============================================================================= */
+
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/controls.css';
+@import './styles/shell.css';
+@import './styles/legacy-bridge.css';
+
 @source './**/*.{ts,tsx}';
-@source './.ladle/stories/**/*.{ts,tsx,mdx}';
+@source '../stories/**/*.{ts,tsx,mdx}';
 
 /*
  * Dark mode variant. Listens to BOTH:
- *   - `.dark` class on any ancestor (used by next-themes / shadcn convention)
- *   - `[data-theme="dark"]` on any ancestor (used by Ladle theme toggle)
- * This way the same index.css works in both the console SPA and the Ladle
- * playground without each call site needing its own dark-mode plumbing.
+ *   - `.dark` on any ancestor (next-themes / shadcn convention)
+ *   - `[data-theme="dark"]` on any ancestor (the Ladle theme toggle)
  */
 @custom-variant dark (&:is(.dark *, [data-theme="dark"] *, [data-theme="dark"]));
-
-/* =========================================================================
- * Tessera Design System — tokens.
- *
- * Two layers, and the order matters:
- *
- *   1. FOUNDATION — functional names borrowed from GitHub's Primer:
- *      canvas / border / fg / accent / status. The name says the role, so
- *      `borderColor-muted` needs no lookup, unlike `--border-2` where you
- *      cannot tell which of the two is darker without opening this file.
- *
- *   2. SHADCN SLOTS — `--background`, `--card`, `--primary` and friends,
- *      derived from layer 1. Every vendored primitive keeps working; the
- *      palette is decided in one place instead of sixty.
- *
- * Neutral values are Primer's own, converted to OKLCH. The visual register is
- * GitHub's — a quiet functional grey, hairline structure, 6px radius, and
- * colour that only speaks when state changes — with two deliberate departures:
- *
- *   • Density. Primer is roomier than an APM can afford. Rows are 28px and the
- *     type scale is a step smaller; this screen shows forty traces, not four.
- *   • Accent. GitHub's is blue and its danger is red, so the two never collide.
- *     Ours is red on both counts, which is resolved by role and lightness:
- *       accent  — deep, and only ever STRUCTURE: the rail bar, the gutter
- *                 stamp, focus rings, the selected row, primary buttons.
- *       danger  — bright, and only ever DATA: the word ERROR, failing bars,
- *                 error timestamps.
- *     Never use accent for a status or danger for a control. That rule is what
- *     keeps two reds legible on the same screen.
- * ========================================================================= */
-
-:root {
-  /* ─── Foundation: canvas ─── */
-  --canvas-default: oklch(100% 0 0);
-  --canvas-subtle: oklch(97.8% 0.003 248);
-  --canvas-inset: oklch(97.8% 0.003 248);
-  --canvas-overlay: oklch(100% 0 0);
-
-  /* ─── Foundation: border ─── */
-  --borderColor-default: oklch(88.1% 0.013 244);
-  --borderColor-muted: oklch(92.5% 0.008 248);
-  --borderColor-emphasis: oklch(78% 0.016 248);
-
-  /* ─── Foundation: foreground ─── */
-  --fgColor-default: oklch(25.4% 0.011 254);
-  --fgColor-muted: oklch(49.5% 0.022 251);
-  --fgColor-subtle: oklch(56.5% 0.019 251);
-
-  /* ─── Foundation: accent (structure) and status (data) ─── */
-  --accentColor-fg: oklch(45.5% 0.187 29);
-  --accentColor-emphasis: oklch(45.5% 0.187 29);
-  --accentColor-onEmphasis: oklch(99% 0.005 27);
-  --successColor-fg: oklch(52.4% 0.140 148);
-  --dangerColor-fg: oklch(55.7% 0.206 25);
-  --attentionColor-fg: oklch(55.4% 0.117 75);
-
-  /* ─── shadcn slots, derived ───
-   * Page and slab swap roles between themes, exactly as GitHub's do: in light a
-   * white slab sits on a grey page, in dark a lighter slab sits on a near-black
-   * one. Deriving both from the same token would collapse them into one plane —
-   * which is the flat-sheet failure this whole layer exists to prevent. */
-  --background: var(--canvas-subtle);
-  --card: var(--canvas-default);
-  --popover: var(--canvas-overlay);
-  --secondary: var(--canvas-subtle);
-  --muted: var(--canvas-subtle);
-  --surface-2: oklch(96% 0.005 248);
-  --surface-3: oklch(93.5% 0.007 248);
-
-  --foreground: var(--fgColor-default);
-  --card-foreground: var(--fgColor-default);
-  --popover-foreground: var(--fgColor-default);
-  --secondary-foreground: var(--fgColor-default);
-  --muted-foreground: var(--fgColor-muted);
-  --fg-2: oklch(37% 0.016 251);
-  --muted-2: var(--fgColor-subtle);
-
-  --border: var(--borderColor-muted);
-  --border-2: var(--borderColor-default);
-  --rule: var(--borderColor-emphasis);
-  --input: var(--borderColor-default);
-
-  --primary: var(--accentColor-emphasis);
-  --primary-foreground: var(--accentColor-onEmphasis);
-  --accent: var(--canvas-subtle);
-  --accent-foreground: var(--fgColor-default);
-  --ring: var(--accentColor-emphasis);
-  --destructive: var(--dangerColor-fg);
-  --destructive-foreground: oklch(99% 0.005 27);
-
-  /* ─── Density and the time gutter ───
-   * Time runs down the left edge of every listing, always the same width,
-   * always monospaced. --gutter is that column. */
-  --row: 33px;
-  --gutter: 76px;
-  --rail: 176px;
-
-  /* Primer's radius. Small enough to stay out of the way in a dense table,
-   * large enough that nothing reads as a brutalist exercise. */
-  --radius: 0.375rem;
-
-  /* ─── Status semantics ───
-   * Three levels each: the pure colour, a wash for fills, an ink for text on
-   * that wash. `err` is the DATA red — never used for a control. */
-  --ok: var(--successColor-fg);
-  --ok-soft: oklch(95.5% 0.035 148);
-  --ok-ink: oklch(45% 0.13 148);
-  --err: var(--dangerColor-fg);
-  --err-soft: oklch(96% 0.030 25);
-  --err-ink: oklch(48% 0.19 25);
-  --warn: oklch(72% 0.145 75);
-  --warn-soft: oklch(96% 0.05 75);
-  --warn-ink: var(--attentionColor-fg);
-  --idle: oklch(62% 0.008 250);
-  --idle-soft: oklch(95% 0.005 250);
-  --idle-ink: oklch(46% 0.012 250);
-  --slow: oklch(68% 0.16 55);
-  --slow-soft: oklch(96% 0.04 55);
-  --slow-ink: oklch(47% 0.13 55);
-
-  /* ─── Categorical service palette ───
-   * Hues live in 190–320 only, clear of the status hues (green 148 / amber 75 /
-   * orange 55 / red 25), so a service colour is never read as a state. */
-  --grid: oklch(50% 0.01 250 / 0.10);
-  --svc-1: oklch(0.52 0.13 258);
-  --svc-2: oklch(0.54 0.11 195);
-  --svc-3: oklch(0.50 0.15 300);
-  --svc-4: oklch(0.56 0.11 225);
-  --svc-5: oklch(0.50 0.15 275);
-  --svc-6: oklch(0.54 0.13 322);
-
-  /* Log severity, keyed to the status ladder above. */
-  --level-trace: var(--fgColor-subtle);
-  --level-debug: oklch(55% 0.07 250);
-  --level-info: var(--fgColor-muted);
-  --level-warn: var(--warn-ink);
-  --level-error: var(--err-ink);
-  --level-fatal: oklch(44% 0.21 8);
-
-  --chart-1: var(--svc-1);
-  --chart-2: var(--svc-2);
-  --chart-3: var(--svc-3);
-  --chart-4: var(--svc-4);
-  --chart-5: var(--svc-5);
-
-  --sidebar: var(--canvas-inset);
-  --sidebar-foreground: var(--fgColor-default);
-  --sidebar-primary: var(--accentColor-emphasis);
-  --sidebar-primary-foreground: var(--accentColor-onEmphasis);
-  --sidebar-accent: var(--canvas-subtle);
-  --sidebar-accent-foreground: var(--fgColor-default);
-  --sidebar-border: var(--borderColor-default);
-  --sidebar-ring: var(--accentColor-emphasis);
-}
-
-/* =========================================================================
- * Dark — the primary target, designed rather than derived.
- *
- * Neutrals are Primer's dark canvas ladder in OKLCH. Note that `inset` is
- * DARKER than `default` while `subtle` is lighter: on a dark ground a lighter
- * strip looks painted on top, a darker one looks like a channel cut into the
- * surface. The time gutter, the rail and the filter strip are channels; the
- * listing slab is raised. That inverts in the light theme, which is exactly
- * why this block is written out instead of being generated from the other.
- * ========================================================================= */
-.dark,
-[data-theme='dark'] {
-  --canvas-default: oklch(17.6% 0.014 258);
-  --canvas-subtle: oklch(22.0% 0.016 257);
-  --canvas-inset: oklch(10.4% 0.019 248);
-  --canvas-overlay: oklch(24.6% 0.015 257);
-
-  --borderColor-default: oklch(33.0% 0.015 252);
-  --borderColor-muted: oklch(26.7% 0.015 257);
-  --borderColor-emphasis: oklch(42% 0.016 254);
-
-  --fgColor-default: oklch(94.3% 0.011 244);
-  --fgColor-muted: oklch(61.4% 0.019 256);
-  --fgColor-subtle: oklch(56.3% 0.020 256);
-
-  /* Deep enough to stay clearly below the data red, bright enough to carry a
-   * 2px rail bar on a near-black ground. */
-  --accentColor-fg: oklch(58% 0.195 26);
-  --accentColor-emphasis: oklch(55% 0.200 26);
-  --accentColor-onEmphasis: oklch(98% 0.008 26);
-  --successColor-fg: oklch(69.5% 0.181 146);
-  --dangerColor-fg: oklch(70% 0.190 27);
-  --attentionColor-fg: oklch(72.0% 0.140 80);
-
-  --background: var(--canvas-default);
-  --card: var(--canvas-subtle);
-  --surface-2: var(--canvas-inset);
-  --surface-3: oklch(27% 0.017 257);
-  --fg-2: oklch(78% 0.012 250);
-  /* 61%, not 48%. This is the third ink level, and it is not decoration — log
-   * timestamps and the KPI sub-lines are set in it. At 48% it measured 2.65:1
-   * against the slab, well under WCAG AA, which is a real failure on the value
-   * an operator reads most often. 61% measures 4.57:1. The light theme's 56.5%
-   * already passes at 4.55:1, so only dark moved. */
-  --muted-2: oklch(61% 0.018 256);
-
-  --ok-soft: oklch(24% 0.05 146);
-  --ok-ink: oklch(80% 0.15 146);
-  --err-soft: oklch(24% 0.07 27);
-  --err-ink: oklch(78% 0.17 27);
-  --warn: oklch(80% 0.14 80);
-  --warn-soft: oklch(25% 0.06 80);
-  --warn-ink: oklch(84% 0.13 80);
-  --idle: oklch(64% 0.008 256);
-  --idle-soft: oklch(23% 0.006 256);
-  --idle-ink: oklch(70% 0.012 256);
-  --slow: oklch(76% 0.16 58);
-  --slow-soft: oklch(25% 0.06 58);
-  --slow-ink: oklch(82% 0.14 58);
-
-  --grid: oklch(100% 0 0 / 0.05);
-  /* Lifted well above the light theme's values: at 50-56% these hues collapse
-   * into each other on near-black and stop being categorical. */
-  --svc-1: oklch(0.72 0.14 258);
-  --svc-2: oklch(0.76 0.12 195);
-  --svc-3: oklch(0.72 0.15 300);
-  --svc-4: oklch(0.78 0.11 225);
-  --svc-5: oklch(0.70 0.15 275);
-  --svc-6: oklch(0.74 0.13 322);
-
-  --level-debug: oklch(70% 0.07 250);
-  --level-fatal: oklch(66% 0.20 8);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-border-2: var(--border-2);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  /* Tessera DS extra scale */
-  --color-surface-2: var(--surface-2);
-  --color-surface-3: var(--surface-3);
-  --color-fg-2: var(--fg-2);
-  --color-muted-2: var(--muted-2);
-
-  /* Status semantics */
-  --color-ok: var(--ok);
-  --color-ok-soft: var(--ok-soft);
-  --color-ok-ink: var(--ok-ink);
-  --color-err: var(--err);
-  --color-err-soft: var(--err-soft);
-  --color-err-ink: var(--err-ink);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-warn-ink: var(--warn-ink);
-  --color-idle: var(--idle);
-  --color-idle-soft: var(--idle-soft);
-  --color-idle-ink: var(--idle-ink);
-
-  /* APM extensions */
-  --color-slow: var(--slow);
-  --color-slow-soft: var(--slow-soft);
-  --color-slow-ink: var(--slow-ink);
-
-  /* Log severity */
-  --color-level-trace: var(--level-trace);
-  --color-level-debug: var(--level-debug);
-  --color-level-info: var(--level-info);
-  --color-level-warn: var(--level-warn);
-  --color-level-error: var(--level-error);
-  --color-level-fatal: var(--level-fatal);
-  --color-level-trace-bg: var(--level-trace-bg);
-  --color-level-debug-bg: var(--level-debug-bg);
-  --color-level-info-bg: var(--level-info-bg);
-  --color-level-warn-bg: var(--level-warn-bg);
-  --color-level-error-bg: var(--level-error-bg);
-  --color-level-fatal-bg: var(--level-fatal-bg);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  /* Typography */
-  --font-sans: 'Geist Variable', sans-serif;
-  --font-mono: ui-monospace, 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace;
-
-  /* Radii */
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --font-heading: var(--font-sans);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-
-/* =========================================================================
- * Base layer — Tailwind
- * ========================================================================= */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    /* One consistent thin scrollbar everywhere (Firefox). Replaces the
-     * chunky ~17px native Windows scrollbar that reserved width in every
-     * overflow container and read as random gaps. */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-2) transparent;
-  }
-  /* Chromium / Edge / Safari counterpart. */
-  *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  *::-webkit-scrollbar-thumb {
-    background: var(--border-2);
-    border: 2px solid transparent;
-    border-radius: 999px;
-    background-clip: padding-box;
-  }
-  *::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-2);
-    background-clip: padding-box;
-  }
-  *::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-  body {
-    @apply antialiased bg-background text-foreground;
-    font-family: 'Onest Variable', system-ui, sans-serif;
-  }
-  html {
-    @apply font-sans;
   }
 }
+
+/* ═════════════════════════════ LEGACY BELOW ═════════════════════════════════
+ * Component CSS from the previous system. Being replaced screen by screen.
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 /* =========================================================================
  * APM components — Tessera extensions

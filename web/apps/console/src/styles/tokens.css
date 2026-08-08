@@ -1,0 +1,230 @@
+/* =============================================================================
+ * Tessera design system — tokens.
+ *
+ * THE PREMISE, and everything else follows from it:
+ *
+ *   The mark is four tiles, one of them red. Its recorded meaning is "four
+ *   tiles, one of them the event you were looking for". That is not a logo
+ *   about a brand — it is a picture of the product. So the interface is the
+ *   mark at scale: a field of identical quiet cells, and colour appears only
+ *   on the one you were looking for.
+ *
+ * Consequences, each of which is a rule you can check:
+ *
+ *   1. THERE IS NO BRAND COLOUR IN THE INTERFACE. The red in the mark is not
+ *      Tessera's colour, it is what "found it" looks like. The previous system
+ *      had a brand red and a danger red and needed a written rule to keep them
+ *      apart; deleting the brand red deletes the rule and the collision with it.
+ *
+ *   2. CHROMA IS THE HIERARCHY. Three bands, and nothing sits between them:
+ *        0.00  chrome     — every surface, line, and ink. Pure grey.
+ *        0.05  identity   — which service emitted this. A tint, not a colour.
+ *        0.14+ state      — failed, degraded, healthy. The only real colour.
+ *      A screen is legible because the loudest thing on it is always the thing
+ *      that went wrong. Grade any new colour by asking which band it is in; if
+ *      the answer is "none", it does not go in.
+ *
+ *   3. PURE GREY, NOT TINTED GREY. `.stbl`'s house rule is "pure B&W ·
+ *      monospace only". The old ramp carried a blue cast at hue 258 borrowed
+ *      from Primer. Any hue in the chrome competes with the state hues, so the
+ *      chrome has none: chroma is literally 0.
+ *
+ *   4. TILES HAVE SQUARE CORNERS. Radius is 2px — enough to stop a hairline
+ *      looking chipped, not enough to read as a pill. The mark is four hard
+ *      rectangles; a 6px radius belonged to Primer, not to us.
+ *
+ * Every foreground/background pair below was verified by computation, not by
+ * eye: OKLCH → sRGB → WCAG relative luminance, every ink against all four
+ * grounds, both themes. All pass AA (4.5:1). Nothing is out of sRGB gamut.
+ * If you change a value, re-run that check.
+ * ============================================================================= */
+
+:root {
+  /* ─── Chrome: grounds ───
+   * Four planes. In LIGHT the panel is the brightest thing and the page sits
+   * behind it; in DARK that inverts, and channels cut *below* the page rather
+   * than sitting on it. This is why the two themes are written out rather than
+   * generated from one another. */
+  --t0: oklch(96.8% 0 0); /* page ground */
+  --t1: oklch(100% 0 0); /* panel — where content lives */
+  --t2: oklch(93.8% 0 0); /* raised: hover, active row, popover */
+  --t3: oklch(95.5% 0 0); /* inset channel: the time gutter, the spine */
+
+  /* ─── Chrome: lines ───
+   * Three weights, and the third is rationed. `--l3` is the one strong line in
+   * the app: it marks the time axis and nothing else. */
+  --l1: oklch(91.5% 0 0); /* hairline between rows */
+  --l2: oklch(86% 0 0); /* edge of a surface */
+  --l3: oklch(68% 0 0); /* the axis rule */
+
+  /* ─── Chrome: ink ─── */
+  --i1: oklch(20.5% 0 0); /* the value itself */
+  --i2: oklch(43.5% 0 0); /* labels, secondary values */
+  --i3: oklch(51.5% 0 0); /* captions, units, timestamps at rest */
+
+  /* ─── State — the only real colour ───
+   * `found` is the mark's red. It means one thing: this is the thing that went
+   * wrong and you were looking for it. It is never a button, never a link,
+   * never a brand flourish. */
+  --found: oklch(48% 0.19 27);
+  --degraded: oklch(52% 0.105 80);
+  --healthy: oklch(48% 0.14 148);
+
+  /* ─── Identity — a tint, deliberately a tenth of the state chroma ───
+   * Which service emitted a row. Hues avoid 27 / 80 / 148 so an identity is
+   * never misread as a state, and the chroma ceiling means it can never shout
+   * louder than one. */
+  --id-1: oklch(52% 0.05 258);
+  --id-2: oklch(52% 0.05 196);
+  --id-3: oklch(52% 0.05 300);
+  --id-4: oklch(52% 0.05 228);
+  --id-5: oklch(52% 0.05 340);
+  --id-6: oklch(52% 0.05 168);
+
+  /* ─── Structure, without colour ───
+   * Selection and focus are signalled by ink and weight, because colour is
+   * spent on state. The focus ring is the strongest ink on the strongest line:
+   * unmistakable, and it cannot be confused with a failure. */
+  --focus: var(--i1);
+
+  /* ─── Density ───
+   * `--gutter` is the time axis: the fixed first column of every listing, and
+   * the left padding of every chart, so a spike lines up with the row beneath
+   * it. Never varies per screen. */
+  --row: 30px;
+  --gutter: 76px;
+  --nav: 200px;
+  --bar: 40px;
+  --spine: 56px;
+
+  /* Tiles have square corners. */
+  --radius: 2px;
+
+  /* ─── Type ───
+   * Mono is not "for code" here — it is the interface. Almost every string on
+   * an APM screen is a machine value, and `.stbl`'s house rule is monospace
+   * only. The sans is rationed to prose: sentences a human wrote. */
+  --mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Menlo, monospace;
+  --prose: 'Onest Variable', system-ui, sans-serif;
+}
+
+.dark,
+[data-theme='dark'] {
+  /* Lifted off pure black. #000 grounds are harsh over a night shift and make
+   * every hairline above them look like a scratch. */
+  --t0: oklch(16.3% 0 0);
+  --t1: oklch(20.3% 0 0);
+  --t2: oklch(24.6% 0 0);
+  --t3: oklch(12% 0 0);
+
+  --l1: oklch(27% 0 0);
+  --l2: oklch(33% 0 0);
+  --l3: oklch(46% 0 0);
+
+  --i1: oklch(95% 0 0);
+  --i2: oklch(73.5% 0 0);
+  --i3: oklch(62.5% 0 0);
+
+  /* Lifted, not inverted: on a dark ground the light-theme values collapse
+   * toward the background and stop being distinguishable from each other. */
+  --found: oklch(70% 0.19 27);
+  --degraded: oklch(81.5% 0.145 80);
+  --healthy: oklch(78% 0.165 148);
+
+  --id-1: oklch(72% 0.05 258);
+  --id-2: oklch(72% 0.05 196);
+  --id-3: oklch(72% 0.05 300);
+  --id-4: oklch(72% 0.05 228);
+  --id-5: oklch(72% 0.05 340);
+  --id-6: oklch(72% 0.05 168);
+}
+
+/* =============================================================================
+ * shadcn / Base UI slots, derived.
+ *
+ * The vendored primitives read these names. Mapping them onto the ramp above
+ * means the palette is decided in one place, and it also means `--primary`
+ * resolves to ink rather than to a colour — a primary button in this system is
+ * the strongest ink on the page, not a coloured rectangle. That is the "no
+ * brand colour in the interface" rule expressed where it has to hold.
+ * ============================================================================= */
+
+:root,
+.dark,
+[data-theme='dark'] {
+  --background: var(--t0);
+  --foreground: var(--i1);
+  --card: var(--t1);
+  --card-foreground: var(--i1);
+  --popover: var(--t2);
+  --popover-foreground: var(--i1);
+  --muted: var(--t2);
+  --muted-foreground: var(--i2);
+  --secondary: var(--t2);
+  --secondary-foreground: var(--i1);
+  --accent: var(--t2);
+  --accent-foreground: var(--i1);
+
+  --border: var(--l1);
+  --input: var(--l2);
+  --ring: var(--focus);
+
+  --primary: var(--i1);
+  --primary-foreground: var(--t1);
+
+  /* `destructive` is a shadcn slot for destructive *actions*. It resolves to
+   * the same red as `found` because both mean the same thing to the reader:
+   * this is the dangerous one. */
+  --destructive: var(--found);
+  --destructive-foreground: var(--t1);
+
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-t0: var(--t0);
+  --color-t1: var(--t1);
+  --color-t2: var(--t2);
+  --color-t3: var(--t3);
+  --color-l1: var(--l1);
+  --color-l2: var(--l2);
+  --color-l3: var(--l3);
+  --color-i1: var(--i1);
+  --color-i2: var(--i2);
+  --color-i3: var(--i3);
+  --color-found: var(--found);
+  --color-degraded: var(--degraded);
+  --color-healthy: var(--healthy);
+
+  --font-mono: var(--mono);
+  --font-sans: var(--mono);
+  --font-prose: var(--prose);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}

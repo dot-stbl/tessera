@@ -6,7 +6,8 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router';
-import { AppShell, PageTemplate } from '@/shared/ui/app-shell';
+import { PageTemplate } from '@/shared/ui/app-shell';
+import { Shell } from '@/shared/ui/shell';
 import { Blank, BlankText } from '@/shared/ui/console';
 import { SettingsPage } from '@/features/settings/settings-page';
 import { TracesPage } from '@/features/traces/traces-page';
@@ -56,9 +57,9 @@ function NotFoundPage() {
 const rootRoute = createRootRoute({
   component: function RootLayout() {
     return (
-      <AppShell>
+      <Shell>
         <Outlet />
-      </AppShell>
+      </Shell>
     );
   },
   notFoundComponent: NotFoundPage,

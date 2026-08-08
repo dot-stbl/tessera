@@ -1,0 +1,105 @@
+/* =============================================================================
+ * Base — the defaults every screen inherits.
+ *
+ * The console is monospaced. Not "code is monospaced" — the interface is. An
+ * APM screen is almost entirely machine values (durations, ids, timestamps,
+ * service and operation names, counts), and setting those in a proportional
+ * face and switching to mono for "the technical bits" gets the ratio exactly
+ * backwards. The sans is the exception, reserved for sentences a human wrote.
+ * ============================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--t0);
+  color: var(--i1);
+  font-family: var(--mono);
+  /* 13px, and the whole scale is built from it. Small enough for forty rows,
+   * large enough that a hex id is readable without leaning in. */
+  font-size: 13px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Sentences. Anything a person wrote rather than a machine emitted: empty
+ * states, error explanations, settings hints, help. */
+.prose {
+  font-family: var(--prose);
+  font-variant-numeric: normal;
+  line-height: 1.6;
+}
+
+/* Labels and column headers — the scaffolding around the data. Uppercase and
+ * tracked so they read as furniture at a glance and never compete with a
+ * value for attention. */
+.label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--i3);
+}
+
+/* One focus treatment for the whole app. Ink, not colour — colour is spent on
+ * state, and a coloured focus ring on a screen where colour means "broken" is
+ * a false alarm every time you press Tab. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+::selection {
+  background: var(--i1);
+  color: var(--t1);
+}
+
+/* Scrollbars belong to the chrome, so they are chrome-coloured. Left at the
+ * OS default they are the one bright element on a dark screen. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--l2) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

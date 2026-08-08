@@ -1,0 +1,96 @@
+/* =============================================================================
+ * TEMPORARY — the old token names, aliased onto the new ramp.
+ *
+ * The design system was rebuilt from its premise (see tokens.css). The screens
+ * have not been rebuilt yet, and they reference eighty-odd token names from the
+ * previous Primer-derived system. Deleting those names in one commit would
+ * blank every screen in the app; this file keeps them resolving to the closest
+ * value in the new ramp so the console stays usable while the screens are
+ * rewritten one at a time.
+ *
+ * Note what the mapping does to colour, because it is the point of the
+ * rebuild: `--primary` no longer resolves to a red. It resolves to ink. Every
+ * button, focus ring and selected row in the old screens therefore loses its
+ * brand red immediately, while `--err`/`--err-ink` keep theirs — which is the
+ * new rule ("colour means state") applied to old markup for free.
+ *
+ * DELETE THIS FILE when no `.tsx` or component stylesheet references a name
+ * below. Check with:
+ *   grep -rE -- "--(canvas|borderColor|fgColor|accentColor|surface-[23]|fg-2|muted-2|border-2|rule|primary|ok|err|warn|idle|slow|svc|level|grid)\b" src
+ * ============================================================================= */
+
+:root,
+.dark,
+[data-theme='dark'] {
+  /* Surfaces */
+  --canvas-default: var(--t1);
+  --canvas-subtle: var(--t0);
+  --canvas-inset: var(--t3);
+  --canvas-overlay: var(--t2);
+  --surface-2: var(--t3);
+  --surface-3: var(--t2);
+
+  /* Lines */
+  --borderColor-muted: var(--l1);
+  --borderColor-default: var(--l2);
+  --borderColor-emphasis: var(--l3);
+  --border-2: var(--l2);
+  --rule: var(--l3);
+
+  /* Ink */
+  --fgColor-default: var(--i1);
+  --fgColor-muted: var(--i2);
+  --fgColor-subtle: var(--i3);
+  --fg-2: var(--i2);
+  --muted-2: var(--i3);
+
+  /* The old brand red, now ink. This is the rebuild's central change and it
+   * lands on the old screens the moment this file loads. */
+  --accentColor-fg: var(--i1);
+  --accentColor-emphasis: var(--i1);
+  --accentColor-onEmphasis: var(--t1);
+
+  /* State keeps its colour, because state is what colour is for. */
+  --successColor-fg: var(--healthy);
+  --dangerColor-fg: var(--found);
+  --attentionColor-fg: var(--degraded);
+
+  --ok: var(--healthy);
+  --ok-ink: var(--healthy);
+  --ok-soft: color-mix(in oklch, var(--healthy) 12%, transparent);
+  --err: var(--found);
+  --err-ink: var(--found);
+  --err-soft: color-mix(in oklch, var(--found) 12%, transparent);
+  --warn: var(--degraded);
+  --warn-ink: var(--degraded);
+  --warn-soft: color-mix(in oklch, var(--degraded) 12%, transparent);
+  --idle: var(--i3);
+  --idle-ink: var(--i3);
+  --idle-soft: var(--t2);
+  /* "Slow" was a fourth status hue between amber and red. The new system has
+   * three states and slow is not one of them — a slow request has not failed.
+   * It maps to degraded. */
+  --slow: var(--degraded);
+  --slow-ink: var(--degraded);
+  --slow-soft: color-mix(in oklch, var(--degraded) 12%, transparent);
+
+  /* Categorical identity */
+  --svc-1: var(--id-1);
+  --svc-2: var(--id-2);
+  --svc-3: var(--id-3);
+  --svc-4: var(--id-4);
+  --svc-5: var(--id-5);
+  --svc-6: var(--id-6);
+  --grid: color-mix(in oklch, var(--i3) 14%, transparent);
+
+  /* Log severity, keyed to the three states plus two inks. */
+  --level-trace: var(--i3);
+  --level-debug: var(--i3);
+  --level-info: var(--i2);
+  --level-warn: var(--degraded);
+  --level-error: var(--found);
+  --level-fatal: var(--found);
+
+  /* Density carried over from the old shell so listings keep their rhythm. */
+  --rail: var(--nav);
+}
