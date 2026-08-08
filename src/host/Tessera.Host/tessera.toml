@@ -1,9 +1,9 @@
-# Default host config (committed) — like appsettings.json.
-# Machine-specific overrides: tessera.local.toml (gitignored) next to this file.
-# Explicit path: TESSERA_CONFIG=/path/to/tessera.toml
+# Default host config (committed) — vironima.internal stack (always-on home lab).
+# Machine overrides: tessera.local.toml (gitignored) next to this file.
 #
-# Dev against vironima stack: port-forward VT/VL/VM to localhost, or put
-# cluster-reachable URLs in tessera.local.toml.
+# Ingress hosts from vironima.internal README / ops docs:
+#   vtraces / vlogs / vmui .vironima.internal  →  VT :10428, VL :9428, vmsingle :8428
+# Requires DNS (or hosts) for *.vironima.internal and network reachability to the lab.
 
 [server]
 host = "127.0.0.1"
@@ -11,22 +11,26 @@ port = 1990
 
 [victoria]
 tenant = "0"
-timeout_ms = 10000
+timeout_ms = 15000
 
 [victoria.traces]
-url = "http://127.0.0.1:10428"
+# Base for Refit paths /select/{tenant}/jaeger/api/...
+url = "https://vtraces.vironima.internal"
 
 [victoria.logs]
-url = "http://127.0.0.1:9428"
+# Base for /select/{tenant}/logsql/query
+url = "https://vlogs.vironima.internal"
 
 [victoria.metrics]
-url = "http://127.0.0.1:8428"
+# vmsingle Prometheus API (vmui ingress) — /api/v1/query (no cluster select prefix)
+url = "https://vmui.vironima.internal"
 
 [storage]
 provider = "sqlite"
 
 [telemetry]
 service_name = "tessera"
+# Optional local collector; export failures are non-fatal if nothing listens.
 otlp_endpoint = "http://127.0.0.1:4317"
 enable_console_exporter = false
 enable_asp_net_core_instrumentation = true

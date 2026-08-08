@@ -1,6 +1,5 @@
-# Reference template (also shipped next to the binary on publish).
-# Day-to-day: edit committed tessera.toml; machine overrides in
-# tessera.local.toml (gitignored). Explicit path: TESSERA_CONFIG=...
+# Template / alternate deploy shapes. Day-to-day defaults live in tessera.toml
+# (vironima.internal). Overrides: tessera.local.toml (gitignored).
 
 [server]
 host = "0.0.0.0"
@@ -11,21 +10,17 @@ tenant = "0"
 timeout_ms = 5000
 
 [victoria.traces]
-url = "http://vt:10428"
-token = "env:TESSERA_VICTORIA_TOKEN"
+url = "https://vtraces.vironima.internal"
 
 [victoria.logs]
-url = "http://vl:9428"
-token = "env:TESSERA_VICTORIA_TOKEN"
+url = "https://vlogs.vironima.internal"
 
 [victoria.metrics]
-url = "http://vm:8428"
-token = "env:TESSERA_VICTORIA_TOKEN"
+url = "https://vmui.vironima.internal"
 
 [storage]
 provider = "sqlite"
 
 [telemetry]
 service_name = "tessera"
-otlp_endpoint = "http://localhost:4317"
-enable_console_exporter = false
+otlp_endpoint = "http://127.0.0.1:4317"

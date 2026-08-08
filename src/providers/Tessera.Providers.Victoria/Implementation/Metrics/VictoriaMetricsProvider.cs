@@ -1,5 +1,4 @@
 using Tessera.Providers.Victoria.Clients;
-using Tessera.Providers.Victoria.Configuration;
 using Tessera.Shared.Kernel.Domain.Metrics.Results;
 using Tessera.Shared.Kernel.Providers.Metrics;
 using Tessera.Shared.Kernel.Time;
@@ -7,12 +6,11 @@ using Tessera.Shared.Kernel.Time;
 namespace Tessera.Providers.Victoria.Implementation.Metrics;
 
 /// <summary>
-///     VictoriaMetrics implementation of <see cref="IMetricsProvider" />.
-///     Thin transport + mapping; RED assembly lives above the provider.
+///     VictoriaMetrics (vmsingle / Prometheus API) implementation of
+///     <see cref="IMetricsProvider" />. Thin transport + mapping; RED assembly
+///     lives above the provider.
 /// </summary>
-public sealed class VictoriaMetricsProvider(
-    IVictoriaMetricsClient client,
-    VictoriaOptions options) : IMetricsProvider
+public sealed class VictoriaMetricsProvider(IVictoriaMetricsClient client) : IMetricsProvider
 {
     /// <inheritdoc />
     public async Task<MetricMatrix> QueryRangeAsync(
@@ -20,7 +18,6 @@ public sealed class VictoriaMetricsProvider(
         CancellationToken cancellationToken = default)
     {
         var response = await client.QueryRangeAsync(
-            options.Tenant,
             query.Query,
             VictoriaMetricsMapper.FormatUnixSeconds(query.StartUnixMs),
             VictoriaMetricsMapper.FormatUnixSeconds(query.EndUnixMs),
@@ -36,7 +33,6 @@ public sealed class VictoriaMetricsProvider(
         CancellationToken cancellationToken = default)
     {
         var response = await client.QueryAsync(
-            options.Tenant,
             query.Query,
             VictoriaMetricsMapper.FormatUnixSeconds(query.TimeUnixMs),
             cancellationToken);
@@ -51,7 +47,6 @@ public sealed class VictoriaMetricsProvider(
         CancellationToken cancellationToken = default)
     {
         var response = await client.LabelValuesAsync(
-            options.Tenant,
             label,
             VictoriaMetricsMapper.FormatUnixSeconds(range.StartUnixMs),
             VictoriaMetricsMapper.FormatUnixSeconds(range.EndUnixMs),
