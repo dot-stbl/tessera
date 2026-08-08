@@ -39,6 +39,8 @@ export function ListingBody({ children }: { children: ReactNode }) {
   return <TableBody>{children}</TableBody>;
 }
 
+export type SortDirection = 'asc' | 'desc';
+
 export interface ColumnProps {
   children?: ReactNode;
   /** Fixed width in px. Omit on the column that should absorb the slack. */
@@ -46,15 +48,33 @@ export interface ColumnProps {
   align?: 'left' | 'right';
   /** Marks the time gutter — the fixed first column carrying "when". */
   when?: boolean;
+  /**
+   * Makes the header a sort control. `sort` is this column's direction when it
+   * is the active one; undefined means some other column is sorting. The header
+   * carries `aria-sort` either way, so a screen reader hears the table's order
+   * rather than having to infer it from the rows.
+   */
+  onSort?: () => void;
+  sort?: SortDirection;
 }
 
-export function Column({ children, width, align, when }: ColumnProps) {
+export function Column({ children, width, align, when, onSort, sort }: ColumnProps) {
   return (
     <TableHead
-      className={cn(when && 'col-when')}
+      className={cn(when && 'col-when', onSort && 'col-sortable')}
+      aria-sort={onSort ? (sort === 'asc' ? 'ascending' : sort === 'desc' ? 'descending' : 'none') : undefined}
       style={{ ...(width ? { width } : {}), ...(align === 'right' ? { textAlign: 'right' } : {}) }}
     >
-      {children}
+      {onSort ? (
+        <button type="button" onClick={onSort} data-active={sort ? 'true' : undefined}>
+          {children}
+          {/* An arrow only on the active column. A permanent pair of chevrons on
+           * every header is eight glyphs of noise saying nothing. */}
+          <i aria-hidden="true">{sort === 'asc' ? '↑' : sort === 'desc' ? '↓' : ''}</i>
+        </button>
+      ) : (
+        children
+      )}
     </TableHead>
   );
 }

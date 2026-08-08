@@ -43,6 +43,26 @@ export function parseTraceStatusFilter(value: unknown): TraceStatusFilter {
     : 'all';
 }
 
+/**
+ * How the trace list is ordered. Named pairs rather than a `field:direction`
+ * tuple: it keeps the URL readable — `?sort=slowest` says what you are looking
+ * at, `?sortBy=duration&order=desc` makes you assemble it.
+ */
+export const TRACE_SORTS = [
+  'recent',
+  'oldest',
+  'slowest',
+  'fastest',
+  'widest',
+  'narrowest',
+] as const;
+
+export type TraceSort = (typeof TRACE_SORTS)[number];
+
+export function parseTraceSort(value: unknown): TraceSort {
+  return TRACE_SORTS.includes(value as TraceSort) ? (value as TraceSort) : 'recent';
+}
+
 /** A non-empty trimmed string, or undefined. Empty means "no filter". */
 export function parseOptionalString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;

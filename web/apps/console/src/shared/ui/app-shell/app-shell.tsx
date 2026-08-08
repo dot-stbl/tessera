@@ -11,18 +11,21 @@ export interface AppShellProps {
 /**
  * Tessera app shell.
  *
- *   ┌────┬──────────────────────────────┐
- *   │    │ path · · · · · · · · health  │
- *   │rail├──────────────────────────────┤
- *   │52px│ main                         │
- *   └────┴──────────────────────────────┘
+ *   ┌─────────┬─────────────────────────┐
+ *   │ sidebar │ path · · · · · · health │
+ *   │  176px  ├─────────────────────────┤
+ *   │         │ main                    │
+ *   └─────────┴─────────────────────────┘
  *
- * Navigation is an icon rail, not a labelled sidebar. Five destinations that an
- * operator learns in a day do not need 220px of text on every screen; the
- * timeline does need those pixels. Names appear on hover and on keyboard focus.
+ * The sidebar was a 52px icon rail, on the argument that five destinations an
+ * operator learns in a day do not need 220px of text on every screen and the
+ * timeline does need those pixels. That trade was wrong: an icon-only nav has
+ * no discoverability, the names were reachable only by hovering, and 124px is
+ * not what makes or breaks a waterfall. Icon *and* label, as every navigation
+ * guideline says.
  *
- * The top bar carries the two things that hold regardless of which screen you are
- * on: where you are, and whether the providers are answering.
+ * The top bar carries where you are, and — only when there is something to say —
+ * whether the providers are answering.
  */
 export function AppShell({ children }: AppShellProps) {
   const location = useLocation();
@@ -33,14 +36,21 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="app-shell">
+      {/* Six tab stops sit between the address bar and the first row of data on
+       * every page load. This is the way past them. */}
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
+
       <nav className="app-sidebar" aria-label="Main navigation">
-        <Link to="/" className="app-sidebar-brand" aria-label="Tessera home">
+        <Link to="/" className="app-sidebar-brand">
           <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
             <rect x="9" y="3" width="6" height="6" fill="currentColor" />
             <rect x="21" y="14" width="6" height="6" fill="currentColor" />
             <rect x="5" y="22" width="6" height="6" fill="currentColor" />
             <rect x="12" y="22" width="6" height="6" fill="var(--primary)" />
           </svg>
+          Tessera
         </Link>
 
         {APP_SECTIONS.map((section) => (
@@ -55,7 +65,6 @@ export function AppShell({ children }: AppShellProps) {
             aria-current={currentSection?.id === section.id ? 'page' : undefined}
           >
             {section.icon}
-            {/* Shown on hover and focus; still the link's accessible name. */}
             <span>{section.label}</span>
           </Link>
         ))}
@@ -67,7 +76,10 @@ export function AppShell({ children }: AppShellProps) {
         <ProviderHealth />
       </header>
 
-      <main className="app-main">{children}</main>
+      {/* tabIndex -1 so the skip link can land here; it is not in the tab order. */}
+      <main id="main" className="app-main" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }

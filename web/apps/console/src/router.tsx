@@ -17,8 +17,10 @@ import { DashboardsPage } from '@/features/dashboards/dashboards-page';
 import {
   parseOptionalString,
   parseTimeRange,
+  parseTraceSort,
   parseTraceStatusFilter,
   type TimeRangeKey,
+  type TraceSort,
   type TraceStatusFilter,
 } from '@/shared/lib/search-params';
 
@@ -103,6 +105,8 @@ export interface TracesSearch {
    * incident channel, and it has to survive being pasted.
    */
   status?: TraceStatusFilter;
+  /** Column order. See TRACE_SORTS — named pairs, so the URL stays readable. */
+  sort?: TraceSort;
 }
 
 const tracesRoute = createRoute({
@@ -114,6 +118,7 @@ const tracesRoute = createRoute({
     range: parseTimeRange(search['range']),
     table: search['table'] === 'aria' ? 'aria' : undefined,
     status: parseTraceStatusFilter(search['status']),
+    sort: parseTraceSort(search['sort']),
   }),
 });
 

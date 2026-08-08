@@ -116,7 +116,7 @@
    * always monospaced. --gutter is that column. */
   --row: 33px;
   --gutter: 76px;
-  --rail: 52px;
+  --rail: 176px;
 
   /* Primer's radius. Small enough to stay out of the way in a dense table,
    * large enough that nothing reads as a brutalist exercise. */
@@ -215,7 +215,12 @@
   --surface-2: var(--canvas-inset);
   --surface-3: oklch(27% 0.017 257);
   --fg-2: oklch(78% 0.012 250);
-  --muted-2: oklch(48% 0.018 256);
+  /* 61%, not 48%. This is the third ink level, and it is not decoration — log
+   * timestamps and the KPI sub-lines are set in it. At 48% it measured 2.65:1
+   * against the slab, well under WCAG AA, which is a real failure on the value
+   * an operator reads most often. 61% measures 4.57:1. The light theme's 56.5%
+   * already passes at 4.55:1, so only dark moved. */
+  --muted-2: oklch(61% 0.018 256);
 
   --ok-soft: oklch(24% 0.05 146);
   --ok-ink: oklch(80% 0.15 146);
@@ -801,9 +806,8 @@
   grid-area: rail;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 9px 0;
+  gap: 1px;
+  padding: 9px 8px;
   /* Recessed, not tinted-lighter. The rail belongs to the window frame, so it
    * sits behind the content rather than on top of it. */
   background: var(--surface-2);
@@ -811,21 +815,28 @@
   z-index: 20;
 }
 .app-sidebar-brand {
-  display: grid;
-  place-items: center;
-  width: 34px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   height: 34px;
-  margin-bottom: 10px;
+  padding: 0 9px;
+  margin-bottom: 12px;
   color: var(--foreground);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
 }
 .app-sidebar-section {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  padding: 0 9px;
   border-radius: var(--radius-sm);
   color: var(--muted-foreground);
+  font-size: 12.5px;
   text-decoration: none;
   transition: color 90ms ease, background 90ms ease;
 }
@@ -851,34 +862,41 @@
 .app-sidebar-section.is-active::before {
   content: '';
   position: absolute;
-  left: -9px;
-  top: 5px;
-  bottom: 5px;
+  left: -8px;
+  top: 4px;
+  bottom: 4px;
   width: 2px;
+  border-radius: 0 2px 2px 0;
   background: var(--primary);
 }
-/* The name arrives when asked for; the rail stays 52px. */
-.app-sidebar-section > span {
+
+/* Skip link: a nav-heavy app puts six tab stops between the address bar and the
+ * first row of data, every single page load. Visible only when focused. */
+.skip-link {
   position: absolute;
-  left: calc(100% + 8px);
-  padding: 3px 8px;
+  left: 8px;
+  top: 8px;
+  z-index: 100;
+  padding: 7px 12px;
+  border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
-  background: var(--foreground);
-  color: var(--background);
-  font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12.5px;
+  translate: 0 -200%;
+}
+.skip-link:focus {
+  translate: 0 0;
+}
+/* The name is always there. It used to be a tooltip that appeared on hover,
+ * which meant the only way to learn the app was to sweep the cursor down a
+ * column of glyphs. */
+.app-sidebar-section > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 90ms ease;
-  z-index: 30;
 }
-.app-sidebar-section:hover > span,
-.app-sidebar-section:focus-visible > span {
-  opacity: 1;
-}
+.app-sidebar-section.is-active > span { font-weight: 500; }
 
 /* ─── Top bar ─── */
 .app-topnav {
@@ -1217,6 +1235,33 @@
   color: var(--primary);
   box-shadow: inset -2px 0 0 var(--primary);
 }
+/* Sortable header. The whole cell is the target, and the arrow appears only on
+ * the column actually doing the sorting. */
+.listing thead th.col-sortable { padding: 0; }
+.listing thead th.col-sortable > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.listing thead th.col-sortable[style*='right'] > button { justify-content: flex-end; }
+.listing thead th.col-sortable > button:hover { color: var(--foreground); }
+.listing thead th.col-sortable > button[data-active='true'] { color: var(--foreground); }
+.listing thead th.col-sortable > button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.listing thead th.col-sortable > button > i { font-style: normal; color: var(--primary); }
+
 /* Hover lifts the row off the panel. One step, no transition — a table that
  * animates under the cursor at forty rows is noise. */
 .listing tbody tr:hover { background: var(--surface-3); }
@@ -1490,6 +1535,18 @@ tr[data-status='error'] .cell-track > i,
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+/* Reduced motion, stated once for the whole app rather than per animation — a
+ * per-rule opt-out is a rule someone forgets to add next time. The skeleton
+ * still shows its shape and the refresh button still disables itself; only the
+ * movement stops. */
 @media (prefers-reduced-motion: reduce) {
   .loading-rows > i::after { animation: none; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -39,6 +39,7 @@ import {
   TRACE_STATUS_FILTERS,
   resolveTimeWindow,
   type TimeRangeKey,
+  type TraceSort,
   type TraceStatusFilter,
 } from '@/shared/lib/search-params';
 import { TraceTableAria } from './trace-table-aria';
@@ -51,9 +52,16 @@ export function TracesPage() {
   useDocumentTitle('Traces');
 
   // Filters live in the URL, so this view is a link someone else can open.
-  const { service, range: rangeParam, table, status: statusParam } = routeApi.useSearch();
+  const {
+    service,
+    range: rangeParam,
+    table,
+    status: statusParam,
+    sort: sortParam,
+  } = routeApi.useSearch();
   const range = rangeParam ?? DEFAULT_TIME_RANGE;
   const status = statusParam ?? 'all';
+  const sort = sortParam ?? 'recent';
   const navigate = routeApi.useNavigate();
   const useAriaTable = table === 'aria';
 
@@ -71,11 +79,32 @@ export function TracesPage() {
   // Status narrows client-side. The window is already in hand, so a round trip
   // to drop rows would only add latency to a filter that has to feel instant.
   const visible = useMemo(() => {
-    const items = data?.items ?? [];
-    if (status === 'errors') return items.filter((trace) => trace.status === 'error');
-    if (status === 'slow') return items.filter((trace) => trace.durationMs >= SLOW_THRESHOLD_MS);
-    return items;
-  }, [data?.items, status]);
+    let items = data?.items ?? [];
+    if (status === 'errors') items = items.filter((trace) => trace.status === 'error');
+    if (status === 'slow') items = items.filter((trace) => trace.durationMs >= SLOW_THRESHOLD_MS);
+
+    // Sorting is a view concern, not a query one: the window is already in hand
+    // and re-fetching to reorder rows would make a click feel like a page load.
+    const by: Record<TraceSort, (a: TraceSummary, b: TraceSummary) => number> = {
+      recent: (a, b) => b.startTime - a.startTime,
+      oldest: (a, b) => a.startTime - b.startTime,
+      slowest: (a, b) => b.durationMs - a.durationMs,
+      fastest: (a, b) => a.durationMs - b.durationMs,
+      widest: (a, b) => b.spanCount - a.spanCount,
+      narrowest: (a, b) => a.spanCount - b.spanCount,
+    };
+    return [...items].sort(by[sort]);
+  }, [data?.items, status, sort]);
+
+  // A header click toggles that column's direction and leaves the others alone.
+  const sortBy = (descending: TraceSort, ascending: TraceSort) =>
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        sort: sort === descending ? ascending : descending,
+      }),
+      replace: true,
+    });
 
   return (
     <PageTemplate
@@ -139,7 +168,7 @@ export function TracesPage() {
           }
         />
       ) : (
-        <TraceTable traces={visible} />
+        <TraceTable traces={visible} sort={sort} onSort={sortBy} />
       )}
     </PageTemplate>
   );
@@ -263,7 +292,15 @@ function Toolbar({
   );
 }
 
-function TraceTable({ traces }: { traces: TraceSummary[] }) {
+function TraceTable({
+  traces,
+  sort,
+  onSort,
+}: {
+  traces: TraceSummary[];
+  sort: TraceSort;
+  onSort: (descending: TraceSort, ascending: TraceSort) => void;
+}) {
   if (traces.length === 0) {
     return (
       <Blank title="Nothing in this window.">
@@ -285,14 +322,30 @@ function TraceTable({ traces }: { traces: TraceSummary[] }) {
   return (
     <Listing>
       <ListingHead>
-        <Column when>When</Column>
+        <Column
+          when
+          onSort={() => onSort('recent', 'oldest')}
+          sort={sort === 'recent' ? 'desc' : sort === 'oldest' ? 'asc' : undefined}
+        >
+          When
+        </Column>
         <Column>Service · Operation</Column>
         <Column width={300}>Latency</Column>
         <Column width={68}>Status</Column>
-        <Column width={92} align="right">
+        <Column
+          width={92}
+          align="right"
+          onSort={() => onSort('slowest', 'fastest')}
+          sort={sort === 'slowest' ? 'desc' : sort === 'fastest' ? 'asc' : undefined}
+        >
           Took
         </Column>
-        <Column width={58} align="right">
+        <Column
+          width={58}
+          align="right"
+          onSort={() => onSort('widest', 'narrowest')}
+          sort={sort === 'widest' ? 'desc' : sort === 'narrowest' ? 'asc' : undefined}
+        >
           Spans
         </Column>
         <Column width={76}>Services</Column>
