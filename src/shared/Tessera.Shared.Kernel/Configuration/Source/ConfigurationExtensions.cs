@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Tessera.Shared.Kernel.Configuration.Paths;
 
@@ -30,18 +31,8 @@ public static class TesseraConfigurationExtensions
         var mainPath = TesseraConfigPaths.ResolveMainPath(contentRoot);
         var localPath = TesseraConfigPaths.ResolveLocalOverridePath(mainPath);
 
-        builder.Add(new TomlConfigurationSource
-        {
-            Path = mainPath,
-            Optional = true,
-            ReloadOnChange = false,
-        })
-            .Add(new TomlConfigurationSource
-            {
-                Path = localPath,
-                Optional = true,
-                ReloadOnChange = false,
-            });
+        AddTomlFile(builder, mainPath, optional: true);
+        AddTomlFile(builder, localPath, optional: true);
 
         return builder;
     }
@@ -56,5 +47,27 @@ public static class TesseraConfigurationExtensions
     {
         builder.Configuration.AddTesseraConfiguration(builder.Environment.ContentRootPath);
         return builder;
+    }
+
+    /// <summary>
+    ///     Register a TOML file. Absolute paths must use a
+    ///     <see cref="PhysicalFileProvider" /> rooted at the file's directory —
+    ///     <see cref="FileConfigurationSource.EnsureDefaults" /> otherwise only
+    ///     looks under <c>AppContext.BaseDirectory</c> (bin/Debug), so a
+    ///     content-root <c>tessera.toml</c> is silently skipped when Optional.
+    /// </summary>
+    public static void AddTomlFile(IConfigurationBuilder builder, string path, bool optional)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(fullPath) ?? ".";
+        var fileName = Path.GetFileName(fullPath);
+
+        builder.Add(new TomlConfigurationSource
+        {
+            FileProvider = new PhysicalFileProvider(directory),
+            Path = fileName,
+            Optional = optional,
+            ReloadOnChange = false,
+        });
     }
 }
