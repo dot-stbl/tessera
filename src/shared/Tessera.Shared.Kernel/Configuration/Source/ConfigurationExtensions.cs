@@ -8,23 +8,26 @@ namespace Tessera.Shared.Kernel.Configuration.Source;
 ///     Tessera composition-root extensions for the
 ///     <see cref="IConfigurationBuilder" /> pipeline. Wires the two-file TOML
 ///     stack: <c>tessera.toml</c> base plus optional <c>tessera.local.toml</c>
-///     override, ahead of env-var sources so secrets stay in env while
-///     non-secret config lives in version-controlled files.
+///     override (same idea as <c>appsettings.json</c> + local overrides).
 /// </summary>
 public static class TesseraConfigurationExtensions
 {
     /// <summary>
-    ///     Add Tessera's TOML configuration sources to the builder. Resolves
-    ///     the main path via <see cref="TesseraConfigPaths.ResolveMainPath" />,
-    ///     then chains the local-override file at <c>tessera.local.toml</c> in
-    ///     the same directory. Both files are optional; missing files are
-    ///     silently skipped.
+    ///     Add Tessera's TOML configuration sources. Prefer the host
+    ///     <paramref name="contentRoot" /> (project directory under
+    ///     <c>dotnet run</c>) so developers do not depend on process cwd.
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
+    /// <param name="contentRoot">
+    ///     Host content root; when null, falls back to
+    ///     <see cref="TesseraConfigPaths.ResolveMainPath(string?)"/> without a root.
+    /// </param>
     /// <returns>The same builder, for chaining.</returns>
-    public static IConfigurationBuilder AddTesseraConfiguration(this IConfigurationBuilder builder)
+    public static IConfigurationBuilder AddTesseraConfiguration(
+        this IConfigurationBuilder builder,
+        string? contentRoot = null)
     {
-        var mainPath = TesseraConfigPaths.ResolveMainPath();
+        var mainPath = TesseraConfigPaths.ResolveMainPath(contentRoot);
         var localPath = TesseraConfigPaths.ResolveLocalOverridePath(mainPath);
 
         builder.Add(new TomlConfigurationSource
@@ -44,14 +47,14 @@ public static class TesseraConfigurationExtensions
     }
 
     /// <summary>
-    ///     Convenience overload that augments a <see cref="HostApplicationBuilder" />
-    ///     with <see cref="AddTesseraConfiguration(IConfigurationBuilder)" /> before
-    ///     any other sources. Call this as the first builder mutation so
-    ///     defaults in code remain the lowest-precedence layer.
+    ///     Convenience overload for <see cref="HostApplicationBuilder" />.
+    ///     Uses <see cref="IHostEnvironment.ContentRootPath" /> so
+    ///     <c>dotnet run --project Tessera.Host</c> loads
+    ///     <c>src/host/Tessera.Host/tessera.toml</c> regardless of shell cwd.
     /// </summary>
     public static HostApplicationBuilder AddTesseraConfiguration(this HostApplicationBuilder builder)
     {
-        builder.Configuration.AddTesseraConfiguration();
+        builder.Configuration.AddTesseraConfiguration(builder.Environment.ContentRootPath);
         return builder;
     }
 }

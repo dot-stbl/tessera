@@ -1,13 +1,10 @@
-# Tessera configuration — sample.
-#
-# Copy to `tessera.toml` (or `tessera.local.toml` for env-specific overrides)
-# and edit values. The host composition root loads `tessera.toml` first then
-# `tessera.local.toml` second — later keys win. Secrets stay in env vars,
-# not in this file (use `env:VAR_NAME` references in TOML, resolved at bind time).
+# Reference template (also shipped next to the binary on publish).
+# Day-to-day: edit committed tessera.toml; machine overrides in
+# tessera.local.toml (gitignored). Explicit path: TESSERA_CONFIG=...
 
 [server]
 host = "0.0.0.0"
-port = 1990                         # Tessera-reserved backend range: 1990-2120
+port = 1990
 
 [victoria]
 tenant = "0"
@@ -22,30 +19,13 @@ url = "http://vl:9428"
 token = "env:TESSERA_VICTORIA_TOKEN"
 
 [victoria.metrics]
-url = "http://vm:8429"
+url = "http://vm:8428"
 token = "env:TESSERA_VICTORIA_TOKEN"
 
-[auth]
-# Optional in MVP-01. When unset, /api/v1/admin/* endpoints return 401.
-# Set TESSERA_ADMIN_TOKEN env var to enable.
-# admin_token_source = "env:TESSERA_ADMIN_TOKEN"
+[storage]
+provider = "sqlite"
 
 [telemetry]
-service_name = "tessera"                       # resource.service.name in OTLP
-service_version = "0.0.0"                      # resource.service.version; default reads AssemblyInformationalVersion
-
-otlp_endpoint = "http://localhost:4317"         # gRPC OTLP — matches compose/otel-collector config.yaml
-
-# Off by default to keep logs / metrics under control. Flip on
-# while developing a new endpoint or chasing an issue:
+service_name = "tessera"
+otlp_endpoint = "http://localhost:4317"
 enable_console_exporter = false
-
-# Auto-instrumentation toggles. Per diagnostics.md §5: do not
-# double-instrument HTTP with manual StartActivity() — these cover
-# the per-request and per-HTTP-client-call spans.
-enable_asp_net_core_instrumentation = true
-enable_http_client_instrumentation = true
-
-# Trace sampling ratio applied to the root span. 1.0 keeps every
-# trace; 0.05–0.1 is typical for high-RPS production deployments.
-trace_sampling_ratio = 1.0

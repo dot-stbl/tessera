@@ -1,4 +1,3 @@
-# Tessera runtime config — gitignored.
-# Copy tessera.toml.example to tessera.toml and edit values, or rely on env vars.
-tessera.toml
+# Machine-specific overrides only (like user secrets / local appsettings).
+# Base tessera.toml is committed (appsettings.json equivalent).
 tessera.local.toml

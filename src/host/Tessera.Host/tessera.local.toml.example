@@ -1,17 +1,13 @@
-# Tessera local-override config — sample.
+# Copy to tessera.local.toml (gitignored) for machine-specific overrides.
+# Loaded after tessera.toml — later keys win.
 #
-# Copy to `tessera.local.toml` next to `tessera.toml`. The host loads this
-# AFTER the main file — keys here override the base config. Use for:
-#   - per-host URLs (pointing at local Victoria stack)
-#   - secrets-as-files (`token_file = "/etc/tessera/secrets/vt-token"`)
-#   - dev-only tweaks (log_level = "debug")
-#
-# This file is gitignored. NEVER commit real secrets here.
+# Example: point at vironima after port-forward, or in-cluster DNS from a pod.
 
-# Example: point at a local dev Victoria stack
 # [victoria.traces]
-# url = "http://localhost:10428"
-
-# Example: enable debug logging in dev
-# [telemetry]
-# log_level = "debug"
+# url = "http://127.0.0.1:10428"
+#
+# [victoria.logs]
+# url = "http://127.0.0.1:9428"
+#
+# [victoria.metrics]
+# url = "http://127.0.0.1:8428"

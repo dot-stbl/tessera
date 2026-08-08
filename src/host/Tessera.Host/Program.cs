@@ -45,12 +45,11 @@ var builder = WebApplication.CreateBuilder(args);
 // --------------------------------------------------------------------
 // Configuration
 // --------------------------------------------------------------------
-// AddTesseraConfiguration must run before any other configuration source so
-// defaults in code remain the lowest-precedence layer. TesseraConfigPaths
-// resolves the main `tessera.toml` per the 4-level lookup (TESSERA_CONFIG
-// env > /etc/tessera > XDG > cwd), then chains the optional
-// `tessera.local.toml` override in the same directory.
-builder.Configuration.AddTesseraConfiguration();
+// Dev = appsettings-style: load tessera.toml (+ optional tessera.local.toml)
+// from the host ContentRoot (project directory under `dotnet run`), not from
+// process cwd. Production still falls back to OS layout / TESSERA_CONFIG when
+// content-root files are absent. See TesseraConfigPaths.ResolveMainPath.
+builder.Configuration.AddTesseraConfiguration(builder.Environment.ContentRootPath);
 
 // --------------------------------------------------------------------
 // File-system layout ([fs_layout] section in tessera.toml)

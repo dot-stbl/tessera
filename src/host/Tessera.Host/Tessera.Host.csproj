@@ -36,4 +36,13 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Base TOML like appsettings.json: content root under `dotnet run`,
+         and next to the published binary for deploy. local override is
+         gitignored and never packaged. -->
+    <Content Include="tessera.toml" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="tessera.toml.example" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="tessera.local.toml.example" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
+

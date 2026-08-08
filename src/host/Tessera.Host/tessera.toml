@@ -1,0 +1,34 @@
+# Default host config (committed) — like appsettings.json.
+# Machine-specific overrides: tessera.local.toml (gitignored) next to this file.
+# Explicit path: TESSERA_CONFIG=/path/to/tessera.toml
+#
+# Dev against vironima stack: port-forward VT/VL/VM to localhost, or put
+# cluster-reachable URLs in tessera.local.toml.
+
+[server]
+host = "127.0.0.1"
+port = 1990
+
+[victoria]
+tenant = "0"
+timeout_ms = 10000
+
+[victoria.traces]
+url = "http://127.0.0.1:10428"
+
+[victoria.logs]
+url = "http://127.0.0.1:9428"
+
+[victoria.metrics]
+url = "http://127.0.0.1:8428"
+
+[storage]
+provider = "sqlite"
+
+[telemetry]
+service_name = "tessera"
+otlp_endpoint = "http://127.0.0.1:4317"
+enable_console_exporter = false
+enable_asp_net_core_instrumentation = true
+enable_http_client_instrumentation = true
+trace_sampling_ratio = 1.0

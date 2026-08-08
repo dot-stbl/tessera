@@ -5,7 +5,7 @@ namespace Tessera.Shared.Kernel.Configuration.Options;
 
 /// <summary>
 ///     HTTP server bind settings. Bound from the <c>[server]</c> TOML table by
-///     <see cref="TesseraConfigurationExtensions.AddTesseraConfiguration(Microsoft.Extensions.Configuration.IConfigurationBuilder)" />.
+    ///     <see cref="TesseraConfigurationExtensions.AddTesseraConfiguration(Microsoft.Extensions.Configuration.IConfigurationBuilder, string?)" />.
 ///     <see cref="Port" /> is constrained to the Tessera-reserved range
 ///     (1990–2120, per <c>.agents/rules/coding/project-ports.md</c>) so a typo
 ///     in <c>tessera.toml</c> fails startup, not at first request.

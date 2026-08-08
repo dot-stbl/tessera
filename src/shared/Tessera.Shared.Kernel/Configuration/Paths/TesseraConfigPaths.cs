@@ -4,30 +4,26 @@ namespace Tessera.Shared.Kernel.Configuration.Paths;
 
 /// <summary>
 ///     Filesystem-anchored lookup for Tessera's TOML configuration files.
-///     The resolution order is fixed per
-///     <c>.agents/docs/architecture/config-format.md</c> — first non-empty
-///     hit wins. Per ADR-0001 Decision 7, Linux-specific paths delegate to
-///     <see cref="LinuxFileSystemLayout" /> via <see cref="FileSystemLayoutProvider.Detect" />;
-///     Windows-specific paths use <see cref="WindowsFileSystemLayout" /> (in
-///     Phase 4a via DI, here a static fallback for the bootstrap path).
+///     Dev mirrors ASP.NET <c>appsettings.json</c>: files next to the host
+///     content root (project directory under <c>dotnet run</c>). Production
+///     still resolves OS layout paths when content-root files are absent.
 /// </summary>
 public static class TesseraConfigPaths
 {
     /// <summary>Environment variable name for an explicit config-path override.</summary>
     public const string EnvOverride = "TESSERA_CONFIG";
 
-    /// <summary>Main config file name (committed to source).</summary>
+    /// <summary>Main config file name (committed next to the host, like appsettings.json).</summary>
     public const string MainFileName = "tessera.toml";
 
     /// <summary>
-    ///     Local-override config file name (gitignored; env-specific overrides).
+    ///     Local-override config file name (gitignored; machine-specific
+    ///     overrides — like user secrets / local appsettings).
     /// </summary>
     public const string LocalFileName = "tessera.local.toml";
 
     /// <summary>
-    ///     Standard Linux system config directory (production-style). Kept as a
-    ///     <c>const</c> for backward-compat with the original MVP-01 lookup.
-    ///     Windows paths come from the layout abstraction instead.
+    ///     Standard Linux system config directory (production-style).
     /// </summary>
     public const string EtcDirectory = "/etc/tessera";
 
@@ -37,21 +33,38 @@ public static class TesseraConfigPaths
     ///     Resolve the absolute path of the main <c>tessera.toml</c> to load.
     ///     First non-empty hit wins:
     ///     <list type="number">
-    ///         <item><c>TESSERA_CONFIG</c> env var (explicit override).</item>
-    ///         <item><c>{layout.ConfigDirectory}/tessera.toml</c> for the active
-    ///             OS (Linux: /etc/tessera or XDG fallback; Windows:
-    ///             %ProgramData% / %APPDATA% / XDG-equivalent).</item>
-    ///         <item><c>{cwd}/tessera.toml</c> (dev) — always returned even if
-    ///             the file does not exist, so a missing file is the caller's
-    ///             problem to surface.</item>
+    ///         <item><c>TESSERA_CONFIG</c> env var (explicit file path).</item>
+    ///         <item>
+    ///             <c>{contentRoot}/tessera.toml</c> when
+    ///             <paramref name="contentRoot" /> is set and the file exists
+    ///             (dev: host project directory under <c>dotnet run</c>).
+    ///         </item>
+    ///         <item>OS layout / <c>/etc/tessera</c> / XDG when those files exist.</item>
+    ///         <item>
+    ///             <c>{contentRoot}/tessera.toml</c> or <c>{cwd}/tessera.toml</c>
+    ///             even if missing — optional load still points at a stable path.
+    ///         </item>
     ///     </list>
     /// </summary>
-    public static string ResolveMainPath()
+    /// <param name="contentRoot">
+    ///     Host content root (<see cref="Microsoft.Extensions.Hosting.IHostEnvironment.ContentRootPath" />).
+    ///     Null falls back to legacy cwd-only resolution.
+    /// </param>
+    public static string ResolveMainPath(string? contentRoot = null)
     {
         var envOverride = Environment.GetEnvironmentVariable(EnvOverride);
         if (!string.IsNullOrWhiteSpace(envOverride))
         {
             return envOverride;
+        }
+
+        if (!string.IsNullOrWhiteSpace(contentRoot))
+        {
+            var contentRootMain = Path.Combine(contentRoot, MainFileName);
+            if (File.Exists(contentRootMain))
+            {
+                return contentRootMain;
+            }
         }
 
         var layout = FileSystemLayoutProvider.Detect();
@@ -61,17 +74,12 @@ public static class TesseraConfigPaths
             return layoutPath;
         }
 
-        // Legacy /etc/tessera fallback — Linux-only. The LinuxFileSystemLayout
-        // already resolves this internally so the File.Exists check is
-        // redundant for Linux; keeping it as a transitional safety net during
-        // the layout migration window.
         var etcPath = Path.Combine(EtcDirectory, MainFileName);
         if (File.Exists(etcPath))
         {
             return etcPath;
         }
 
-        // XDG fallback for user dev (Linux/macOS path).
         var xdgRoot = Environment.GetEnvironmentVariable(XdgConfigHome);
         var xdgBase = string.IsNullOrWhiteSpace(xdgRoot)
             ? Path.Combine(
@@ -83,6 +91,11 @@ public static class TesseraConfigPaths
         if (File.Exists(xdgPath))
         {
             return xdgPath;
+        }
+
+        if (!string.IsNullOrWhiteSpace(contentRoot))
+        {
+            return Path.Combine(contentRoot, MainFileName);
         }
 
         return Path.Combine(Directory.GetCurrentDirectory(), MainFileName);
