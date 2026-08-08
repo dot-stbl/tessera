@@ -1,11 +1,11 @@
 # Tessera — system map (living)
 
 > **Status:** living doc. Update when modules/contracts/phases land.  
-> **Tip:** `develop` @ `8b46612`. After each phase, bump “Last updated” + commit table.  
+> **Tip:** `develop` @ `1eb5da9`. After each phase, bump “Last updated” + commit table.  
 > **ADRs:** `0001` platform · `0002` observability model · `0003` module cut  
 > **Plans:** `.agents/plans/mvp-2-core/P5`…`P9`
 
-**Last updated:** 2026-08-07 (P5–P9 core track complete on `develop`)
+**Last updated:** 2026-08-08 (wire JSON + route templates + Vironima backends; P5–P9 still complete)
 
 ---
 
@@ -104,6 +104,31 @@ DI: **only** inside `AddVictoriaProvider` / `VictoriaServicesRegistration` (not 
 Single source: `Tessera.Shared.Kernel.Api.ApiRoutes`.  
 Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 
+### Wire JSON (`TesseraJsonOptions`)
+
+Single definition: `Tessera.Shared.Kernel.Api.TesseraJsonOptions` — applied to MVC (`AddJsonOptions`) and to `TesseraExceptionHandler` (ProblemDetails body). Do not invent a second options set.
+
+| Rule | Wire shape |
+|------|------------|
+| Property names | **camelCase** (`PropertyNamingPolicy` + dictionary keys) |
+| Enums | **camelCase strings** via `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` — e.g. `"ok"`, `"healthy"`, `"full"`, `"metrics"` |
+| `TraceId` / `SpanId` | **bare JSON strings** (`"abc…"`), not `{ "value": "…" }` — `TraceIdJsonConverter` / `SpanIdJsonConverter` |
+| `LogLevel` | **`info` / `warn`** (and `trace`/`debug`/`error`/`fatal`) — enum members are OTel-style `Info`/`Warn`, not .NET `Information`/`Warning` |
+
+### Route templates — relative vs absolute
+
+Controllers use **class `[Route]` + relative method templates**. Absolute constants are for docs/tests/link generation only.
+
+| Constant | Value | Use |
+|----------|-------|-----|
+| `ApiRoutes.Traces` | `api/v1/traces` | `[Route]` on `TracesController` |
+| `ApiRoutes.TraceByIdRelative` | `{traceId:length(32)}` | `[HttpGet]` on that controller |
+| `ApiRoutes.Trace` | `api/v1/traces/{traceId:length(32)}` | **docs / tests / links only** |
+| `ApiRoutes.TraceLogsRelative` | `{traceId:length(32)}/logs` | relative method (if used on Traces group) |
+| `ApiRoutes.TraceLogs` | absolute path | docs / tests only |
+
+Putting `ApiRoutes.Trace` on a method under `[Route(ApiRoutes.Traces)]` double-prefixes (`api/v1/traces/api/v1/traces/{id}`) — that bug is why `*Relative` exists.
+
 ### Health — `Modules.Health`
 
 | Method | Route | Response |
@@ -115,7 +140,7 @@ Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 | Method | Route | Query | Response |
 |--------|-------|-------|----------|
 | GET | `/api/v1/services` | — | `ServiceSummary[]` (`name`, `spanCount`, `errorCount`, `operations[]`) |
-| GET | `/api/v1/services/{serviceName}/red` | `startUnixMs`, `endUnixMs`, `operation?`, `stepSeconds?` | `ServiceRedResponse`: `requestRatePerSec?`, `errorRatio?`, `durationP95Ms?`, `source`: `Metrics` \| `SpanApprox` |
+| GET | `/api/v1/services/{serviceName}/red` | `startUnixMs`, `endUnixMs`, `operation?`, `stepSeconds?` | `ServiceRedResponse`: `requestRatePerSec?`, `errorRatio?`, `durationP95Ms?`, `source`: `metrics` \| `spanApprox` (camelCase enum) |
 
 **RED behavior:** PromQL first (OTel HTTP histogram metrics); on metrics failure → SpanApprox from inventory (ratio only; rate/p95 null).
 
@@ -124,7 +149,7 @@ Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 | Method | Route | Query / notes | Response |
 |--------|-------|---------------|----------|
 | GET | `/api/v1/traces` | service, operation, start/end, duration, limit, cursor | `Page<TraceSummary>` |
-| GET | `/api/v1/traces/{traceId}` | 32-char hex | **Request view** `GetTraceResponse` (below) |
+| GET | `/api/v1/traces/{traceId}` | 32-char hex; controller: `TraceByIdRelative` | **Request view** `GetTraceResponse` (below) |
 | GET | `/api/v1/errors` | `startUnixMs`, `endUnixMs`, `service?`, `limit?` | `ErrorGroupSummary[]` |
 
 #### `GetTraceResponse` (request view)
@@ -133,9 +158,9 @@ Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 |-------|---------|
 | `trace` | `TraceDetail?` (null in logs-only mode) |
 | `correlatedLogs` | `LogEntry[]` |
-| `mode` | `Full` \| `SpansOnly` \| `LogsOnly` \| `Empty` |
+| `mode` | `full` \| `spansOnly` \| `logsOnly` \| `empty` (camelCase enum) |
 | `markers` | log markers for waterfall (`spanId?`, `offsetMs`, level, …) |
-| `erroredSpanCount` | spans with `status == Error` |
+| `erroredSpanCount` | spans with `status == error` |
 | `exceptions` | `{ exceptionType?, exceptionMessage?, spanId, service, operation }[]` |
 | `dependencyGraph` | `DependencyGraph?` — per-trace mini-map (`null` logs-only; empty when no CLIENT deps) |
 
@@ -144,10 +169,10 @@ Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 ```json
 {
   "nodes": [
-    { "id": "checkout-api", "name": "checkout-api", "kind": "Service" },
-    { "id": "currency", "name": "currency", "kind": "Service" },
-    { "id": "db:postgresql:orders", "name": "orders", "kind": "Database" },
-    { "id": "external:stripe", "name": "stripe", "kind": "External" }
+    { "id": "checkout-api", "name": "checkout-api", "kind": "service" },
+    { "id": "currency", "name": "currency", "kind": "service" },
+    { "id": "db:postgresql:orders", "name": "orders", "kind": "database" },
+    { "id": "external:stripe", "name": "stripe", "kind": "external" }
   ],
   "edges": [
     { "fromId": "checkout-api", "toId": "currency", "callCount": 1, "errorCount": 0 },
@@ -161,6 +186,7 @@ Wire times: **UTC unix ms** (`*UnixMs`). Errors: **RFC 9457** ProblemDetails.
 - **Database** synthetic: `db:{db.system}` or `db:{db.system}:{db.name}`.
 - **External** synthetic: `external:{peer.service|server.address}`.
 - **ErrorCount**: CLIENT span `Status == Error` only (child SERVER status ignored).
+- Node `kind` on the wire is camelCase enum (`service` / `database` / `external`).
 
 **404 rules:** only when **both** spans and logs empty. Log-only / spans-only → **200** + `mode`.
 
@@ -175,6 +201,8 @@ MVP: only traces with **root** `Status == Error`; detail fetch cap **20**.
 |--------|-------|-------|----------|
 | GET | `/api/v1/logs` | `traceId` (required MVP), time range, limit | log page / list |
 
+Log entries: `level` is `info` / `warn` / … (see Wire JSON), not `information` / `warning`.
+
 ### OpenAPI / Scalar
 
 - Doc: `GET /openapi/v1.json`
@@ -187,8 +215,8 @@ MVP: only traces with **root** `Status == Error`; detail fetch cap **20**.
 | Type | Notes |
 |------|--------|
 | `Span` | id, parent, Service, Operation, StartTime (ms), DurationMs, Status, Tags, Events, **Kind**, **Resource** |
-| `TraceDetail` / `TraceSummary` | root service/op, status, spans / counts |
-| `LogEntry` | timestamp, level (`severity_number`), service, traceId?, spanId?, message, fields |
+| `TraceDetail` / `TraceSummary` | root service/op, status, spans / counts; ids as `TraceId`/`SpanId` domain wrappers |
+| `LogEntry` | timestamp, level (`LogLevel`: Info/Warn/…), service, traceId?, spanId?, message, fields |
 | `Resource` | service.name + attrs |
 | `Metric*` | sample/series/matrix/vector for PromQL results |
 | `ServiceSummary` | inventory + span/error counts |
@@ -206,6 +234,8 @@ MVP: only traces with **root** `Status == Error`; detail fetch cap **20**.
 | **P9** | Per-trace dependency mini-map | `33f6a49`, `9d3b434` (+ docs) | ✅ |
 | post-core | Projects, rollup cache, global map | — | ⏸ |
 
+Wire-format unification (enums, ids, relative routes): `fc84c88` on `develop` (after P9).
+
 ---
 
 ## 9. Config / ops (short)
@@ -218,13 +248,33 @@ MVP: only traces with **root** `Status == Error`; detail fetch cap **20**.
 
 ---
 
-## 10. How to update this doc
+## 10. Vironima live backends (reference)
+
+In-cluster URLs on **vironima.internal** (no secrets). Tessera is a **read UI** over these; it is **not** on the OTLP path.
+
+| Signal | In-cluster base | Tessera protocol |
+|--------|-----------------|------------------|
+| **Metrics** | `http://vmsingle-victoriametrics-victoria-metrics-k8s-stack.telemetry.svc:8428` | PromQL (`/prometheus/api/v1/*`) |
+| **Logs** | `http://victorialogs.telemetry.svc:9428` | LogsQL |
+| **Traces** | `http://victoriatraces.telemetry.svc:10428` | **Jaeger** API under `/select/jaeger/...` |
+
+**Grafana vs Tessera on traces:** Grafana datasource uses Tempo-compatible `/select/tempo`; Tessera uses **Jaeger** `/select/jaeger`. Same VT process, different select APIs.
+
+**Public UI (cluster ingress):** vmui / vlogs / vtraces / grafana under `*.vironima.internal`.
+
+**OTLP path (apps → storage):** apps → **otel-collector** → Victoria Traces / Logs / Metrics. Tessera only **queries** VT/VL/VM; it does not receive OTLP.
+
+Configure Tessera with the in-cluster bases above in `[victoria.traces|logs|metrics]` (or port-forward / ingress equivalents for local dev).
+
+---
+
+## 11. How to update this doc
 
 After a phase lands on `develop`:
 
 1. Bump **Last updated** + tip SHA.
-2. Refresh §3–§6 if routes/fields changed.
+2. Refresh §3–§6 if routes/fields/wire format changed.
 3. Tick §8 phase row + commit hashes.
-4. Commit: `[.stbl](feat/docs): system-map — P9 deps` (example).
+4. Commit: `[.stbl](feat/docs): system-map — …` (example).
 
 **Related:** `core-design.md` (semantics) · `modules.md` (older; prefer this map when drift) · ADRs.

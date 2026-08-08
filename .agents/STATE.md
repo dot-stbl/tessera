@@ -1,6 +1,7 @@
 # Tessera state
 
 > **Authoritative decisions:** see [`.agents/docs/decisions/0001-mvp01-locked-decisions.md`](docs/decisions/0001-mvp01-locked-decisions.md).
+> **Living system map (modules / routes / wire):** [`.agents/docs/architecture/system-map.md`](docs/architecture/system-map.md).
 > STATE.md tracks progress + open questions; ADRs lock architectural choices.
 
 ## Milestone
