@@ -1,21 +1,33 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
-import { Description, Error as ErrorGlyph, Hub, Warning } from '@nine-thirty-five/material-symbols-react/rounded/400';
+import {
+  Description,
+  Error as ErrorGlyph,
+  Hub,
+  Pause,
+  PlayArrow,
+  Warning,
+} from '@nine-thirty-five/material-symbols-react/rounded/400';
 import { LogEntry } from '@/shared/ui/apm';
 import {
+  Actions,
   Blank,
   BlankText,
   Chip,
   LoadingRows,
+  Mosaic,
+  MultiFilter,
   Seg,
   StatBar,
   Strip,
   StripSpacer,
 } from '@/shared/ui/console';
+import { Button } from '@/shared/ui/primitives/button';
+import { bucketize } from '@/shared/lib/buckets';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { Input } from '@/shared/ui/primitives/input';
 import {
@@ -28,6 +40,18 @@ import type { LogEntry as LogEntryData } from '@/shared/api/types';
 
 const routeApi = getRouteApi('/logs');
 
+/**
+ * Levels, coarsest first. Ordered by how often an operator reaches for them
+ * rather than by severity: nobody opens a log viewer to read `trace` first.
+ */
+const LEVELS = ['error', 'warn', 'info', 'debug', 'trace', 'fatal'] as const;
+
+type Level = (typeof LEVELS)[number];
+
+/** How often live tail re-reads the window. Fast enough to feel live, slow
+ *  enough that a busy stream does not re-render forty times a second. */
+const TAIL_INTERVAL_MS = 5_000;
+
 export function LogsPage() {
   const { t } = useTranslation();
   useDocumentTitle('Logs');
@@ -37,6 +61,11 @@ export function LogsPage() {
   const { stream, traceId, range: rangeParam } = routeApi.useSearch();
   const range = rangeParam ?? DEFAULT_TIME_RANGE;
   const navigate = routeApi.useNavigate();
+
+  // Level filtering and tailing are workstation state, not a shared view: they
+  // describe how you are watching, not what you are looking at.
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [tailing, setTailing] = useState(false);
 
   const setSearch = (patch: { stream?: string; traceId?: string; range?: TimeRangeKey }) =>
     void navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
@@ -59,13 +88,34 @@ export function LogsPage() {
         },
         signal,
       ),
-    refetchInterval: 30_000,
+    refetchInterval: tailing ? TAIL_INTERVAL_MS : 30_000,
   });
+
+  // An empty selection means no filter rather than no results: someone who
+  // unticks every level wants the stream back, not an empty screen.
+  const entries = useMemo(() => {
+    const items = data?.items ?? [];
+    if (levels.length === 0) return items;
+    return items.filter((entry) => levels.includes(entry.level as Level));
+  }, [data?.items, levels]);
 
   return (
     <PageTemplate
       title={t('logs.title')}
-      subtitle={`${data?.items.length ?? 0} log entries · last ${range}`}
+      subtitle={`${entries.length.toLocaleString()} of ${(data?.items.length ?? 0).toLocaleString()} · last ${range}`}
+      actions={
+        <Actions>
+          <Button
+            variant={tailing ? 'default' : 'outline'}
+            className="h-[26px] gap-1.5 px-2.5 text-[11.5px]"
+            onClick={() => setTailing((on) => !on)}
+            title={`Re-read the window every ${TAIL_INTERVAL_MS / 1000} seconds`}
+          >
+            {tailing ? <Pause className="size-3.5" /> : <PlayArrow className="size-3.5" />}
+            {tailing ? 'Tailing' : 'Live tail'}
+          </Button>
+        </Actions>
+      }
     >
       <Toolbar
         range={range}
@@ -74,6 +124,8 @@ export function LogsPage() {
         onQueryChange={(next) => setSearch({ stream: next === '' ? undefined : next })}
         traceId={traceId ?? ''}
         onTraceIdChange={(next) => setSearch({ traceId: next === '' ? undefined : next })}
+        levels={levels}
+        onLevelsChange={setLevels}
       />
 
       {isError && (
@@ -82,22 +134,38 @@ export function LogsPage() {
         </Blank>
       )}
 
-      {!isLoading && !isError && data && data.items.length > 0 && (
-        <LogStats entries={data.items} range={range} />
+      {!isLoading && !isError && entries.length > 0 && (
+        <LogStats entries={entries} range={range} />
+      )}
+
+      {!isLoading && !isError && entries.length > 0 && (
+        <Mosaic
+          buckets={bucketize(
+            entries,
+            { startUnixMs, endUnixMs, count: 32 },
+            (entry) => entry.timestamp,
+            (entry) => entry.level === 'error' || entry.level === 'fatal',
+          )}
+          unitLabel="log entries"
+          onSelect={() =>
+            void navigate({ search: (prev) => ({ ...prev, range: '15m' }), replace: true })
+          }
+        />
       )}
 
       {isLoading ? (
         <LoadingRows count={12} />
-      ) : data && data.items.length === 0 ? (
+      ) : entries.length === 0 ? (
         <Blank title="No log entries in this window.">
           <BlankText>
-            Widen the range, or clear the service and trace filters. A trace id filter shows only
-            what that request emitted, which is often nothing.
+            {levels.length > 0
+              ? `Nothing at ${levels.join(' or ')} level here. Clear the level filter, or widen the range.`
+              : 'Widen the range, or clear the service and trace filters. A trace id filter shows only what that request emitted, which is often nothing.'}
           </BlankText>
         </Blank>
       ) : (
         <div className="log-stream">
-          {data?.items.map((entry, i) => (
+          {entries.map((entry, i) => (
             <LogEntry
               key={`${entry.timestamp}-${i}`}
               timestamp={entry.timestamp}
@@ -168,6 +236,8 @@ interface ToolbarProps {
   onQueryChange: (next: string) => void;
   traceId: string;
   onTraceIdChange: (next: string) => void;
+  levels: Level[];
+  onLevelsChange: (next: Level[]) => void;
 }
 
 function Toolbar({
@@ -177,10 +247,22 @@ function Toolbar({
   onQueryChange,
   traceId,
   onTraceIdChange,
+  levels,
+  onLevelsChange,
 }: ToolbarProps) {
   return (
     <Strip>
       <Seg label="Time range" value={range} options={TIME_RANGES} onChange={onRangeChange} />
+
+      {/* Levels are not exclusive: "warn and error" is the normal thing to want
+          during an incident, and a segmented control cannot say it. */}
+      <MultiFilter
+        label="Log level"
+        options={LEVELS}
+        selected={levels}
+        onChange={onLevelsChange}
+        tone={(level) => `level-${level}`}
+      />
 
       {/* Active filters read as the query they are and clear in place. */}
       {query && (

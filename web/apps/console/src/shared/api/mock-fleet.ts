@@ -402,9 +402,13 @@ function planTrace(index: number, now: number): Plan {
 
   const durationMs = Math.max(4, Math.round(scenario.p50 * jitter(next(), 0.7)));
   const failed = next() < scenario.errorRate;
-  // Traffic thins out overnight: the draw is squared so recent hours carry more
-  // of the fleet, which is also what makes "last 1h" a useful default.
-  const ago = Math.round(next() ** 2 * 24 * HOUR);
+  // Traffic thins out overnight, so the draw is biased toward recent hours —
+  // which is also what makes "last 1h" a useful default. The exponent was 2,
+  // and that skewed so hard that within a single hour the volume chart showed a
+  // cliff rising to "now" rather than a shape. 1.35 plus a slow wobble reads as
+  // traffic instead of as an artefact of the generator.
+  const wobble = 0.85 + 0.3 * Math.sin(next() * Math.PI * 2);
+  const ago = Math.round(Math.min(next() ** 1.35 * wobble, 1) * 24 * HOUR);
 
   return {
     scenario,
@@ -615,7 +619,10 @@ function buildDependencies(spans: Span[]): DependencyGraph {
 
 // ─── Public surface ────────────────────────────────────────────────────────
 
-const FLEET_SIZE = 220;
+// 900, not 220. A 24-hour fleet of 220 leaves ~35 traces in the default hour,
+// which is a real enough table and far too thin for the volume mosaic — most
+// buckets held nothing and the chart read as broken rather than as quiet.
+const FLEET_SIZE = 900;
 
 export function buildFleet(now: number): {
   traces: TraceSummary[];
@@ -693,11 +700,11 @@ export function buildFleet(now: number): {
       // Scaled up: the sample is 220 traces, a real hour is thousands. The ratio
       // is what the screen reads, and a service inventory showing 41 spans in an
       // hour looks like a broken collector rather than a quiet service.
-      spanCount: counter.spans * 37,
-      errorCount: counter.errors * 37,
+      spanCount: counter.spans * 9,
+      errorCount: counter.errors * 9,
       operations: [...counter.ops.entries()]
         .sort((a, b) => b[1] - a[1])
-        .map(([operation, count]) => ({ name: operation, count: count * 37 })),
+        .map(([operation, count]) => ({ name: operation, count: count * 9 })),
     }))
     .sort((a, b) => b.spanCount - a.spanCount);
 
@@ -710,7 +717,7 @@ export function buildFleet(now: number): {
     // to render as an em dash rather than as a zero.
     const instrumented = NAMESPACES[name] !== 'data';
     red[name] = {
-      requestRatePerSec: instrumented ? Number(((counter.spans * 37) / 3600).toFixed(1)) : null,
+      requestRatePerSec: instrumented ? Number(((counter.spans * 9) / 3600).toFixed(1)) : null,
       errorRatio: counter.spans > 0 ? counter.errors / counter.spans : 0,
       durationP95Ms: instrumented ? p95 : null,
       source: instrumented ? 'metrics' : 'spanApprox',

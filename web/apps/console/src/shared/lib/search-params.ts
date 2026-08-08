@@ -8,17 +8,23 @@
  * the app.
  */
 
-/** Relative time windows the UI offers. */
-export const TIME_RANGES = ['1h', '6h', '24h'] as const;
+/**
+ * Relative time windows the UI offers. `15m` and `7d` were added because the two
+ * real questions are "what is happening right now" and "did this start today" —
+ * an hour is too coarse for the first and too short for the second.
+ */
+export const TIME_RANGES = ['15m', '1h', '6h', '24h', '7d'] as const;
 
 export type TimeRangeKey = (typeof TIME_RANGES)[number];
 
 export const DEFAULT_TIME_RANGE: TimeRangeKey = '1h';
 
 const RANGE_MS: Record<TimeRangeKey, number> = {
+  '15m': 15 * 60 * 1000,
   '1h': 60 * 60 * 1000,
   '6h': 6 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
 };
 
 export function parseTimeRange(value: unknown): TimeRangeKey {

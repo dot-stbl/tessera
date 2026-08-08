@@ -1,23 +1,36 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import { PageTemplate } from '@/shared/ui/app-shell';
-import { Autorenew, Hub, Speed, Timeline, Warning } from '@nine-thirty-five/material-symbols-react/rounded/400';
+import {
+  Autorenew,
+  ContentCopy,
+  Description,
+  FilterAlt,
+  Hub,
+  Speed,
+  Timeline,
+  Warning,
+} from '@nine-thirty-five/material-symbols-react/rounded/400';
 import { Duration, TimeFormat, formatDuration } from '@/shared/ui/apm';
 import {
+  Actions,
   Blank,
   BlankText,
   Cell,
   Chip,
   Column,
+  ColumnPicker,
   Listing,
   ListingBody,
   ListingHead,
   LoadingRows,
+  Mosaic,
   NumCell,
   Row,
+  RowActions,
   Seg,
   ServiceDots,
   StatBar,
@@ -42,10 +55,27 @@ import {
   type TraceSort,
   type TraceStatusFilter,
 } from '@/shared/lib/search-params';
+import { bucketize } from '@/shared/lib/buckets';
 import { TraceTableAria } from './trace-table-aria';
 import type { TraceSummary } from '@/shared/api/types';
 
 const routeApi = getRouteApi('/traces');
+
+/**
+ * Columns an operator can drop. `when` and the subject are not in the list: the
+ * time gutter is the app's spine, and a row with no subject is not a row.
+ */
+const OPTIONAL_COLUMNS = ['latency', 'status', 'took', 'spans', 'services'] as const;
+
+type OptionalColumn = (typeof OPTIONAL_COLUMNS)[number];
+
+const COLUMN_LABELS: Record<OptionalColumn, string> = {
+  latency: 'Latency',
+  status: 'Status',
+  took: 'Took',
+  spans: 'Spans',
+  services: 'Services',
+};
 
 export function TracesPage() {
   const { t } = useTranslation();
@@ -64,6 +94,18 @@ export function TracesPage() {
   const sort = sortParam ?? 'recent';
   const navigate = routeApi.useNavigate();
   const useAriaTable = table === 'aria';
+
+  // Column visibility is a workstation preference, not a view someone shares —
+  // it stays out of the URL and in local state, so a pasted link opens on the
+  // recipient's own layout rather than imposing the sender's.
+  const [hidden, setHidden] = useState<ReadonlySet<OptionalColumn>>(new Set());
+  const toggleColumn = (column: OptionalColumn) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(column)) next.delete(column);
+      else next.add(column);
+      return next;
+    });
 
   // A raw Date.now() lands in the query key, so every render was a cache miss:
   // the skeleton never cleared and requests fired in a loop. Quantized instead —
@@ -111,15 +153,23 @@ export function TracesPage() {
       title={t('traces.list.title')}
       subtitle={`${visible.length.toLocaleString()} of ${(data?.items.length ?? 0).toLocaleString()} · last ${range}`}
       actions={
-        <Button
-          variant="outline"
-          className="h-[26px] gap-1.5 px-2.5 text-[11.5px]"
-          onClick={() => void refetch()}
-          disabled={isFetching}
-        >
-          <Autorenew className={cn('size-3.5', isFetching && 'animate-spin')} />
-          {isFetching ? 'Refreshing' : 'Refresh'}
-        </Button>
+        <Actions>
+          <ColumnPicker
+            columns={OPTIONAL_COLUMNS}
+            hidden={hidden}
+            onToggle={toggleColumn}
+            labels={COLUMN_LABELS}
+          />
+          <Button
+            variant="outline"
+            className="h-[26px] gap-1.5 px-2.5 text-[11.5px]"
+            onClick={() => void refetch()}
+            disabled={isFetching}
+          >
+            <Autorenew className={cn('size-3.5', isFetching && 'animate-spin')} />
+            {isFetching ? 'Refreshing' : 'Refresh'}
+          </Button>
+        </Actions>
       }
     >
       <Toolbar
@@ -158,6 +208,24 @@ export function TracesPage() {
 
       {!isLoading && !isError && <TraceStats traces={visible} range={range} />}
 
+      {!isLoading && !isError && visible.length > 0 && (
+        <Mosaic
+          buckets={bucketize(
+            visible,
+            { startUnixMs, endUnixMs, count: 32 },
+            (trace) => trace.startTime,
+            (trace) => trace.status === 'error',
+          )}
+          unitLabel="traces"
+          onSelect={() =>
+            // Clicking a column narrows to the tightest preset. An absolute
+            // custom range is the honest answer here and does not exist yet, so
+            // the control does the nearest true thing rather than faking a zoom.
+            void navigate({ search: (prev) => ({ ...prev, range: '15m' }), replace: true })
+          }
+        />
+      )}
+
       {isLoading ? (
         <LoadingRows count={12} />
       ) : useAriaTable ? (
@@ -168,7 +236,15 @@ export function TracesPage() {
           }
         />
       ) : (
-        <TraceTable traces={visible} sort={sort} onSort={sortBy} />
+        <TraceTable
+          traces={visible}
+          sort={sort}
+          onSort={sortBy}
+          hidden={hidden}
+          onFilterService={(name) =>
+            void navigate({ search: (prev) => ({ ...prev, service: name }), replace: true })
+          }
+        />
       )}
     </PageTemplate>
   );
@@ -296,10 +372,14 @@ function TraceTable({
   traces,
   sort,
   onSort,
+  hidden,
+  onFilterService,
 }: {
   traces: TraceSummary[];
   sort: TraceSort;
   onSort: (descending: TraceSort, ascending: TraceSort) => void;
+  hidden: ReadonlySet<OptionalColumn>;
+  onFilterService: (name: string) => void;
 }) {
   if (traces.length === 0) {
     return (
@@ -330,25 +410,30 @@ function TraceTable({
           When
         </Column>
         <Column>Service · Operation</Column>
-        <Column width={300}>Latency</Column>
-        <Column width={68}>Status</Column>
-        <Column
-          width={92}
-          align="right"
-          onSort={() => onSort('slowest', 'fastest')}
-          sort={sort === 'slowest' ? 'desc' : sort === 'fastest' ? 'asc' : undefined}
-        >
-          Took
-        </Column>
-        <Column
-          width={58}
-          align="right"
-          onSort={() => onSort('widest', 'narrowest')}
-          sort={sort === 'widest' ? 'desc' : sort === 'narrowest' ? 'asc' : undefined}
-        >
-          Spans
-        </Column>
-        <Column width={76}>Services</Column>
+        {!hidden.has('latency') && <Column width={300}>Latency</Column>}
+        {!hidden.has('status') && <Column width={68}>Status</Column>}
+        {!hidden.has('took') && (
+          <Column
+            width={92}
+            align="right"
+            onSort={() => onSort('slowest', 'fastest')}
+            sort={sort === 'slowest' ? 'desc' : sort === 'fastest' ? 'asc' : undefined}
+          >
+            Took
+          </Column>
+        )}
+        {!hidden.has('spans') && (
+          <Column
+            width={58}
+            align="right"
+            onSort={() => onSort('widest', 'narrowest')}
+            sort={sort === 'widest' ? 'desc' : sort === 'narrowest' ? 'asc' : undefined}
+          >
+            Spans
+          </Column>
+        )}
+        {!hidden.has('services') && <Column width={76}>Services</Column>}
+        <Column width={84} />
       </ListingHead>
       <ListingBody>
         {traces.map((trace) => (
@@ -357,6 +442,8 @@ function TraceTable({
             trace={trace}
             slowestMs={slowest}
             fastestMs={fastest}
+            hidden={hidden}
+            onFilterService={onFilterService}
           />
         ))}
       </ListingBody>
@@ -397,10 +484,14 @@ function TraceRow({
   trace,
   slowestMs,
   fastestMs,
+  hidden,
+  onFilterService,
 }: {
   trace: TraceSummary;
   slowestMs: number;
   fastestMs: number;
+  hidden: ReadonlySet<OptionalColumn>;
+  onFilterService: (name: string) => void;
 }) {
   const navigate = useNavigate();
 
@@ -418,16 +509,46 @@ function TraceRow({
       <Cell>
         <Subject service={trace.rootService} operation={trace.rootOperation} />
       </Cell>
-      <TrackCell share={latencyShare(trace.durationMs, slowestMs, fastestMs)} />
+      {!hidden.has('latency') && (
+        <TrackCell share={latencyShare(trace.durationMs, slowestMs, fastestMs)} />
+      )}
+      {!hidden.has('status') && (
+        <Cell>
+          <Tag tone={trace.status}>{trace.status}</Tag>
+        </Cell>
+      )}
+      {!hidden.has('took') && (
+        <NumCell>
+          <Duration ms={trace.durationMs} />
+        </NumCell>
+      )}
+      {!hidden.has('spans') && <NumCell>{trace.spanCount}</NumCell>}
+      {!hidden.has('services') && (
+        <Cell>
+          <ServiceDots names={trace.services} />
+        </Cell>
+      )}
+      {/* Every row is a starting point, not a destination. */}
       <Cell>
-        <Tag tone={trace.status}>{trace.status}</Tag>
-      </Cell>
-      <NumCell>
-        <Duration ms={trace.durationMs} />
-      </NumCell>
-      <NumCell>{trace.spanCount}</NumCell>
-      <Cell>
-        <ServiceDots names={trace.services} />
+        <RowActions
+          actions={[
+            {
+              icon: Description,
+              label: 'Open the logs for this trace',
+              onAct: () => void navigate({ to: '/logs', search: { traceId: trace.traceId } }),
+            },
+            {
+              icon: FilterAlt,
+              label: `Filter the list to ${trace.rootService}`,
+              onAct: () => onFilterService(trace.rootService),
+            },
+            {
+              icon: ContentCopy,
+              label: 'Copy the trace id',
+              onAct: () => void navigator.clipboard.writeText(trace.traceId),
+            },
+          ]}
+        />
       </Cell>
     </Row>
   );

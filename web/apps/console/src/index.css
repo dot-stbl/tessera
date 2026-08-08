@@ -949,21 +949,10 @@
 /* Content is a raised panel, not more of the same sheet. One light top edge is
  * what makes it read as a surface at all — on a dark ground that hairline does
  * the work a drop shadow does on a light one. */
-/* A very faint accent bloom at the top of the content area. Two radial washes at
- * 5% — below the threshold where it reads as a colour, above the one where the
- * screen reads as unlit. It moves nothing and costs nothing; it is the only
- * decoration in the app, and it exists because a dead-flat ground under bounded
- * panels looks like an unstyled document. */
-.app-main::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 420px;
-  pointer-events: none;
-  background-image:
-    radial-gradient(60% 100% at 12% 0%, color-mix(in oklch, var(--primary) 7%, transparent), transparent 70%),
-    radial-gradient(50% 90% at 92% 0%, color-mix(in oklch, var(--primary) 4%, transparent), transparent 65%);
-}
+/* No ambient gradient here. It was borrowed from a sibling project, and it is
+ * the one thing in this file that came from somewhere else: Primer has no
+ * atmospheric wash, and a console that glows at the top edge is decoration
+ * pretending to be depth. The depth comes from the panels and their edges. */
 .app-main {
   grid-area: main;
   position: relative;
@@ -1030,6 +1019,7 @@
  * rather than on each component, so a new screen cannot forget the frame. */
 .page-body > .listing,
 .page-body > .stat-bar,
+.page-body > .mosaic,
 .page-body > .waterfall,
 .page-body > .log-stream,
 .page-body > .loading-rows,
@@ -1055,6 +1045,120 @@
     inset 0 1px 0 0 oklch(100% 0 0 / 0.045),
     0 1px 2px 0 oklch(0% 0 0 / 0.35);
 }
+
+/* ─── Volume mosaic ───
+ * The signature. Tiles, not bars: at operator volumes a bucket holds three or
+ * four events, and three-versus-four is countable in tiles and a guess in a 2px
+ * bar. It also happens to be what the product is named after.
+ *
+ * The plot's left edge is padded to --gutter so the chart's time axis and the
+ * listing's time gutter are the same column origin — a spike lines up with the
+ * rows underneath that caused it. */
+.mosaic {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 16px 9px calc(var(--gutter) + 16px);
+  background: var(--card);
+}
+.mosaic-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 52px;
+  border-bottom: 1px solid var(--rule);
+}
+.mosaic-col {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+button.mosaic-col { cursor: pointer; }
+button.mosaic-col:disabled { cursor: default; }
+.mosaic-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  width: 100%;
+  min-width: 2px;
+}
+.mosaic-stack > i {
+  display: block;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--muted-2);
+}
+/* Failures stack at the bottom, so the bad part of a column is always in the
+ * same place and a scan reads the red band as a baseline, not as noise. */
+.mosaic-stack > i.is-bad { background: var(--err); }
+.mosaic-stack > i.is-empty {
+  height: 2px;
+  background: var(--border-2);
+}
+button.mosaic-col:hover .mosaic-stack > i { background: var(--foreground); }
+button.mosaic-col:hover .mosaic-stack > i.is-bad { background: var(--err-ink); }
+button.mosaic-col:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.mosaic-plot.is-loading .mosaic-stack > i { opacity: 0.5; }
+/* The caption is a sentence, so it is NOT .meta — uppercase tracking on a full
+ * sentence shouts, and this line is a footnote. */
+.mosaic-caption {
+  font-size: 11px;
+  color: var(--muted-2);
+}
+
+/* ─── Row actions ───
+ * Revealed on row hover and on keyboard focus. A forty-row table with a
+ * permanent column of icon buttons is eighty pieces of chrome competing with
+ * the data; the actions are there when the row is, and invisible otherwise.
+ * They stay in the layout at all times so nothing reflows when they appear. */
+.row-actions {
+  display: inline-flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 90ms ease;
+}
+tr:hover .row-actions,
+tr:focus-within .row-actions { opacity: 1; }
+.row-actions > button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted-2);
+  cursor: pointer;
+}
+.row-actions > button:hover { color: var(--foreground); background: var(--surface-2); }
+.row-actions > button:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.row-actions svg { width: 15px; height: 15px; }
+/* Keyboard users never hover, so focus alone has to reveal the cluster. */
+.row-actions:focus-within { opacity: 1; }
+
+.column-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.column-option:hover { background: var(--surface-2); }
 
 /* ─── Summary bar ───
  * One card divided by hairlines, not four floating tiles: these are facets of

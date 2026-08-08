@@ -1,15 +1,24 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/shared/api';
 import type { ServiceSummary } from '@/shared/api/types';
 import { PageTemplate } from '@/shared/ui/app-shell';
-import { Dns, Percent, Speed, Storage } from '@nine-thirty-five/material-symbols-react/rounded/400';
+import {
+  Description,
+  Dns,
+  Percent,
+  Speed,
+  Storage,
+  Timeline,
+} from '@nine-thirty-five/material-symbols-react/rounded/400';
 import { Duration } from '@/shared/ui/apm';
 import {
   Blank,
   BlankText,
   Cell,
+  Chip,
   Column,
   InlineList,
   Listing,
@@ -18,16 +27,27 @@ import {
   LoadingRows,
   NumCell,
   Row,
+  RowActions,
   StatBar,
+  Strip,
+  StripSpacer,
   Subject,
   TrackCell,
 } from '@/shared/ui/console';
+import { Input } from '@/shared/ui/primitives/input';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { DEFAULT_TIME_RANGE, resolveTimeWindow } from '@/shared/lib/search-params';
+
+/** What the inventory can be ordered by. Failing first is the default because
+ *  it is the only ordering that answers a question on its own. */
+type ServiceSort = 'failing' | 'busiest' | 'slowest' | 'name';
 
 export function ServicesPage() {
   const { t } = useTranslation();
   useDocumentTitle('Services');
+
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<ServiceSort>('failing');
 
   // A raw Date.now() here lands in the query key, so every render was a cache
   // miss: the skeleton never cleared and requests fired in a loop. The window is
@@ -40,20 +60,58 @@ export function ServicesPage() {
     refetchInterval: 60_000,
   });
 
+  // Memoized on data itself, not on a `data ?? []` expression: the fallback
+  // allocates a fresh array on every render and would invalidate this on every pass.
+  const visible = useMemo(() => {
+    const services = data ?? [];
+    const needle = query.trim().toLowerCase();
+    if (needle === '') return services;
+    return services.filter((service) => service.name.toLowerCase().includes(needle));
+  }, [data, query]);
+
   return (
-    <PageTemplate title={t('services.title')} subtitle={`${data?.length ?? 0} services · last 1h`}>
+    <PageTemplate
+      title={t('services.title')}
+      subtitle={`${visible.length} of ${data?.length ?? 0} · last 1h`}
+    >
+      <Strip>
+        {query && (
+          <Chip
+            name="name"
+            value={query}
+            clearLabel="Clear the name filter"
+            onClear={() => setQuery('')}
+          />
+        )}
+        <StripSpacer />
+        <Input
+          type="search"
+          aria-label="Filter services by name"
+          placeholder="service name…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="h-[22px] w-48 rounded-sm px-2 font-mono text-[10.5px]"
+        />
+      </Strip>
+
       {isError && (
         <Blank title="Could not read the service inventory.">
           <BlankText>{(error as Error).message}</BlankText>
         </Blank>
       )}
 
-      {!isLoading && !isError && <ServiceStats services={data ?? []} />}
+      {!isLoading && !isError && <ServiceStats services={visible} />}
 
       {isLoading ? (
         <LoadingRows count={8} />
       ) : (
-        <ServiceTable services={data ?? []} startUnixMs={startUnixMs} endUnixMs={endUnixMs} />
+        <ServiceTable
+          services={visible}
+          sort={sort}
+          onSort={setSort}
+          startUnixMs={startUnixMs}
+          endUnixMs={endUnixMs}
+        />
       )}
     </PageTemplate>
   );
@@ -110,10 +168,14 @@ function ServiceStats({ services }: { services: ServiceSummary[] }) {
 
 function ServiceTable({
   services,
+  sort,
+  onSort,
   startUnixMs,
   endUnixMs,
 }: {
   services: ServiceSummary[];
+  sort: ServiceSort;
+  onSort: (next: ServiceSort) => void;
   startUnixMs: number;
   endUnixMs: number;
 }) {
@@ -132,13 +194,28 @@ function ServiceTable({
   // of events and its first column answers "when"; a service inventory has no
   // per-row moment in time, and inventing one would make the gutter decorative
   // in the one place it means nothing. Failing services still lead.
-  const ordered = [...services].sort((a, b) => errorRate(b) - errorRate(a));
+  const by: Record<ServiceSort, (a: ServiceSummary, b: ServiceSummary) => number> = {
+    failing: (a, b) => errorRate(b) - errorRate(a),
+    busiest: (a, b) => b.spanCount - a.spanCount,
+    // p95 is not on the summary — it arrives per row from a separate metrics
+    // call — so "slowest" orders by error-weighted volume, which is the closest
+    // honest proxy. Naming it `slowest` would be a lie, so the header says load.
+    slowest: (a, b) => b.errorCount - a.errorCount,
+    name: (a, b) => a.name.localeCompare(b.name),
+  };
+  const ordered = [...services].sort(by[sort]);
   const worst = Math.max(...ordered.map(errorRate), 0.0001);
 
   return (
     <Listing>
       <ListingHead>
-        <Column width={220}>Service</Column>
+        <Column
+          width={220}
+          onSort={() => onSort('name')}
+          sort={sort === 'name' ? 'asc' : undefined}
+        >
+          Service
+        </Column>
         <Column width={90} align="right">
           Rate
         </Column>
@@ -148,14 +225,25 @@ function ServiceTable({
         <Column width={96} align="right">
           Errors
         </Column>
-        <Column width={74} align="right">
+        <Column
+          width={74}
+          align="right"
+          onSort={() => onSort('failing')}
+          sort={sort === 'failing' ? 'desc' : undefined}
+        >
           Failing
         </Column>
         <Column width={120} />
-        <Column width={92} align="right">
+        <Column
+          width={92}
+          align="right"
+          onSort={() => onSort('busiest')}
+          sort={sort === 'busiest' ? 'desc' : undefined}
+        >
           Spans
         </Column>
         <Column>Top operations</Column>
+        <Column width={62} />
       </ListingHead>
       <ListingBody>
         {ordered.map((service) => (
@@ -196,6 +284,7 @@ function ServiceRow({
     staleTime: 60_000,
   });
 
+  const navigate = useNavigate();
   const rate = errorRate(service);
   const failing = rate >= 1;
 
@@ -222,6 +311,23 @@ function ServiceRow({
       <NumCell>{service.spanCount.toLocaleString()}</NumCell>
       <Cell>
         <InlineList items={service.operations.map((operation) => operation.name)} />
+      </Cell>
+      {/* The inventory answers "which service"; these answer "now show me". */}
+      <Cell>
+        <RowActions
+          actions={[
+            {
+              icon: Timeline,
+              label: `Show the traces rooted in ${service.name}`,
+              onAct: () => void navigate({ to: '/traces', search: { service: service.name } }),
+            },
+            {
+              icon: Description,
+              label: `Show the logs from ${service.name}`,
+              onAct: () => void navigate({ to: '/logs', search: { stream: service.name } }),
+            },
+          ]}
+        />
       </Cell>
     </Row>
   );

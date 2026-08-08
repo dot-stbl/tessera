@@ -32,3 +32,9 @@ export { Panel, PanelRow, PanelValue, LoadingRows } from './panel';
 
 export { StatBar } from './stats';
 export type { StatItem } from './stats';
+
+export { Mosaic, MosaicSkeleton } from './mosaic';
+export type { MosaicProps } from './mosaic';
+
+export { RowActions, CopyAction, ColumnPicker, MultiFilter, Actions } from './actions';
+export type { RowAction } from './actions';
